@@ -2,20 +2,8 @@ import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-
-// Fix for default marker icons in Leaflet with React
-// This handles the webpack/vite asset loading issues for marker images
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-
-let DefaultIcon = L.icon({
-    iconUrl: icon,
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41]
-});
-
-L.Marker.prototype.options.icon = DefaultIcon;
+import { renderToStaticMarkup } from 'react-dom/server';
+import { Utensils, Bed, Camera, Tent, Landmark, Music, ShoppingBag, MapPin } from 'lucide-react';
 
 // Component to recenter map when coordinates change
 const ChangeView = ({ center, zoom }) => {
@@ -24,6 +12,61 @@ const ChangeView = ({ center, zoom }) => {
         map.setView(center, zoom);
     }, [center, zoom, map]);
     return null;
+};
+
+// Helper to create custom marker icons
+const getMarkerIcon = (type) => {
+    let IconComponent = MapPin;
+    let colorClass = 'bg-slate-500';
+    let ringClass = 'ring-slate-300';
+
+    // Normalize type
+    const t = type?.toLowerCase() || '';
+
+    if (t.includes('food') || t.includes('restaurant') || t.includes('dinner') || t.includes('lunch') || t.includes('breakfast')) {
+        IconComponent = Utensils;
+        colorClass = 'bg-orange-500';
+        ringClass = 'ring-orange-200';
+    } else if (t.includes('hotel') || t.includes('stay') || t.includes('accommodation')) {
+        IconComponent = Bed;
+        colorClass = 'bg-blue-500';
+        ringClass = 'ring-blue-200';
+    } else if (t.includes('nature') || t.includes('park') || t.includes('hike')) {
+        IconComponent = Tent; // or Trees if available, but Tent is reliable for outdoors
+        colorClass = 'bg-green-500';
+        ringClass = 'ring-green-200';
+    } else if (t.includes('museum') || t.includes('culture') || t.includes('history')) {
+        IconComponent = Landmark;
+        colorClass = 'bg-purple-500';
+        ringClass = 'ring-purple-200';
+    } else if (t.includes('shopping') || t.includes('market')) {
+        IconComponent = ShoppingBag;
+        colorClass = 'bg-pink-500';
+        ringClass = 'ring-pink-200';
+    } else if (t.includes('nightlife') || t.includes('party')) {
+        IconComponent = Music;
+        colorClass = 'bg-indigo-500';
+        ringClass = 'ring-indigo-200';
+    } else if (t.includes('sight') || t.includes('landmark')) {
+        IconComponent = Camera;
+        colorClass = 'bg-red-500';
+        ringClass = 'ring-red-200';
+    }
+
+    const iconHtml = renderToStaticMarkup(
+        <div className={`relative w-10 h-10 rounded-full border-2 border-white shadow-xl flex items-center justify-center ${colorClass} ${ringClass} ring-4 ring-opacity-30`}>
+            <IconComponent size={20} color="white" strokeWidth={2.5} />
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rotate-45 transform border-b-2 border-r-2 border-slate-200"></div>
+        </div>
+    );
+
+    return L.divIcon({
+        html: iconHtml,
+        className: 'custom-marker-icon', // Use this class to remove default styles if needed
+        iconSize: [40, 40],
+        iconAnchor: [20, 45], // Anchored at bottom tip
+        popupAnchor: [0, -45]
+    });
 };
 
 const Map = ({ activities = [], destination }) => {
@@ -48,10 +91,11 @@ const Map = ({ activities = [], destination }) => {
                             return;
                         }
 
+                        // Delay to prevent rate limiting if multiple components mount
+                        await new Promise(r => setTimeout(r, 500));
+
                         const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(destination)}&limit=1`, {
-                            headers: {
-                                'Accept-Language': 'en-US,en;q=0.9'
-                            }
+                            headers: { 'Accept-Language': 'en-US,en;q=0.9' }
                         });
                         const data = await response.json();
                         if (data && data.length > 0) {
@@ -102,9 +146,7 @@ const Map = ({ activities = [], destination }) => {
 
                     const query = `${activity.location}, ${destination || ''}`;
                     const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`, {
-                        headers: {
-                            'Accept-Language': 'en-US,en;q=0.9'
-                        }
+                        headers: { 'Accept-Language': 'en-US,en;q=0.9' }
                     });
 
                     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -156,14 +198,30 @@ const Map = ({ activities = [], destination }) => {
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
                 {markers.map((marker, idx) => (
-                    <Marker key={`${marker.id}-${idx}`} position={marker.position}>
-                        <Popup>
-                            <div className="font-semibold text-slate-800">{marker.title}</div>
-                            <div className="text-xs text-slate-500 capitalize">{marker.type}</div>
+                    <Marker
+                        key={`${marker.id}-${idx}`}
+                        position={marker.position}
+                        icon={getMarkerIcon(marker.type)}
+                    >
+                        <Popup className="custom-popup">
+                            <div className="p-1">
+                                <div className="font-bold text-sm text-slate-800 mb-1">{marker.title}</div>
+                                <div className="text-xs text-slate-500 capitalize bg-slate-100 px-2 py-0.5 rounded-full inline-block">
+                                    {marker.type || 'Activity'}
+                                </div>
+                            </div>
                         </Popup>
                     </Marker>
                 ))}
             </MapContainer>
+
+            {/* Styles for removing default divIcon background if needed */}
+            <style jsx global>{`
+                .leaflet-div-icon {
+                    background: transparent;
+                    border: none;
+                }
+            `}</style>
         </div>
     );
 };

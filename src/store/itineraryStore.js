@@ -1,231 +1,261 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { nanoid } from 'nanoid';
+import { supabase } from '../lib/supabase';
 
-const useItineraryStore = create(
-    persist(
-        (set, get) => ({
-            trips: [],
-            currentTrip: null,
+const useItineraryStore = create((set, get) => ({
+    trips: [],
+    currentTrip: null,
+    isLoading: false,
+    error: null,
 
-            // Actions
-            togglePinTrip: (tripId) => {
+    // Actions
+    fetchTrips: async () => {
+        set({ isLoading: true, error: null });
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { data, error } = await supabase
+                .from('trips')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            set({ trips: data, isLoading: false });
+        } catch (error) {
+            console.error('Error fetching trips:', error);
+            set({ error: error.message, isLoading: false });
+        }
+    },
+
+    createTrip: async (tripData) => {
+        set({ isLoading: true, error: null });
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('User not authenticated');
+
+            // Handle multi-segment logic
+            let tripDays = [];
+            let currentDayCount = 0;
+            const segments = tripData.segments || [
+                { location: tripData.destination, days: tripData.duration }
+            ];
+
+            segments.forEach(segment => {
+                for (let i = 0; i < segment.days; i++) {
+                    currentDayCount++;
+                    tripDays.push({
+                        id: `day-${currentDayCount}`,
+                        dayNumber: currentDayCount,
+                        location: segment.location,
+                        activities: []
+                    });
+                }
+            });
+
+            const newTrip = {
+                user_id: user.id,
+                title: tripData.title,
+                destination: segments[0].location,
+                start_date: tripData.startDate,
+                end_date: tripData.endDate,
+                budget: tripData.budget || 0,
+                currency: tripData.currency || 'USD',
+                travelers: tripData.travelers || 1,
+                pinned: false,
+                segments: segments,
+                days: tripDays,
+            };
+
+            const { data, error } = await supabase
+                .from('trips')
+                .insert([newTrip])
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            set((state) => ({
+                trips: [data, ...state.trips],
+                currentTrip: data,
+                isLoading: false
+            }));
+            return data.id;
+        } catch (error) {
+            console.error('Error creating trip:', error);
+            set({ error: error.message, isLoading: false });
+            throw error;
+        }
+    },
+
+    deleteTrip: async (tripId) => {
+        set({ isLoading: true, error: null });
+        try {
+            const { error } = await supabase
+                .from('trips')
+                .delete()
+                .eq('id', tripId);
+
+            if (error) throw error;
+
+            set((state) => ({
+                trips: state.trips.filter(trip => trip.id !== tripId),
+                currentTrip: state.currentTrip?.id === tripId ? null : state.currentTrip,
+                isLoading: false
+            }));
+        } catch (error) {
+            console.error('Error deleting trip:', error);
+            set({ error: error.message, isLoading: false });
+        }
+    },
+
+    togglePinTrip: async (tripId) => {
+        const trip = get().trips.find(t => t.id === tripId);
+        if (!trip) return;
+
+        const newPinnedStatus = !trip.pinned;
+
+        // Optimistic update
+        set((state) => ({
+            trips: state.trips.map(t =>
+                t.id === tripId ? { ...t, pinned: newPinnedStatus } : t
+            )
+        }));
+
+        try {
+            const { error } = await supabase
+                .from('trips')
+                .update({ pinned: newPinnedStatus })
+                .eq('id', tripId);
+
+            if (error) {
+                // Revert on error
                 set((state) => ({
-                    trips: state.trips.map(trip =>
-                        trip.id === tripId ? { ...trip, pinned: !trip.pinned } : trip
+                    trips: state.trips.map(t =>
+                        t.id === tripId ? { ...t, pinned: !newPinnedStatus } : t
                     )
                 }));
-            },
-
-            createTrip: (tripData) => {
-                // Handle multi-segment logic
-                let tripDays = [];
-                let currentDayCount = 0;
-
-                // Segments: [{ location: 'Paris', days: 3 }, { location: 'London', days: 2 }]
-                // If legacy call (no segments), create 1 segment
-                const segments = tripData.segments || [
-                    { location: tripData.destination, days: tripData.duration }
-                ];
-
-                segments.forEach(segment => {
-                    for (let i = 0; i < segment.days; i++) {
-                        currentDayCount++;
-                        tripDays.push({
-                            id: `day-${currentDayCount}`,
-                            dayNumber: currentDayCount,
-                            location: segment.location, // Track location per day
-                            activities: []
-                        });
-                    }
-                });
-
-                const newTrip = {
-                    id: nanoid(),
-                    title: tripData.title,
-                    destination: segments[0].location, // Primary destination is the first one
-                    segments: segments, // Store segments for reference
-                    startDate: tripData.startDate,
-                    endDate: tripData.endDate,
-                    budget: tripData.budget || 0,
-                    currency: tripData.currency || 'USD',
-                    travelers: tripData.travelers || 1,
-                    days: tripDays,
-                    pinned: false,
-                    createdAt: Date.now(),
-                };
-
-                set((state) => ({
-                    trips: [newTrip, ...state.trips],
-                    currentTrip: newTrip
-                }));
-                return newTrip.id;
-            },
-
-            updateTrip: (tripId, updates) => {
-                set((state) => ({
-                    trips: state.trips.map(trip =>
-                        trip.id === tripId ? { ...trip, ...updates } : trip
-                    ),
-                    currentTrip: state.currentTrip?.id === tripId
-                        ? { ...state.currentTrip, ...updates }
-                        : state.currentTrip
-                }));
-            },
-
-            deleteTrip: (tripId) => {
-                set((state) => ({
-                    trips: state.trips.filter(trip => trip.id !== tripId),
-                    currentTrip: state.currentTrip?.id === tripId ? null : state.currentTrip
-                }));
-            },
-
-            setCurrentTrip: (tripId) => {
-                const trip = get().trips.find(t => t.id === tripId);
-                set({ currentTrip: trip || null });
-            },
-
-            addActivity: (tripId, dayId, activity) => {
-                set((state) => {
-                    const tripIndex = state.trips.findIndex(t => t.id === tripId);
-                    if (tripIndex === -1) return state;
-
-                    const updatedTrip = { ...state.trips[tripIndex] };
-                    const dayIndex = updatedTrip.days.findIndex(d => d.id === dayId);
-
-                    if (dayIndex === -1) return state;
-
-                    const newActivity = {
-                        id: nanoid(),
-                        ...activity,
-                        // Ensure activity inherits day's location if not specified
-                        location: activity.location || updatedTrip.days[dayIndex].location,
-                        time: activity.time || '09:00',
-                        type: activity.type || 'sightseeing',
-                        isCompleted: false,
-                        rating: 0
-                    };
-
-                    updatedTrip.days[dayIndex] = {
-                        ...updatedTrip.days[dayIndex],
-                        activities: [...updatedTrip.days[dayIndex].activities, newActivity]
-                    };
-
-                    const newTrips = [...state.trips];
-                    newTrips[tripIndex] = updatedTrip;
-
-                    return {
-                        trips: newTrips,
-                        currentTrip: state.currentTrip?.id === tripId ? updatedTrip : state.currentTrip
-                    };
-                });
-            },
-
-            deleteActivity: (tripId, dayId, activityId) => {
-                set((state) => {
-                    const tripIndex = state.trips.findIndex(t => t.id === tripId);
-                    if (tripIndex === -1) return state;
-
-                    const updatedTrip = { ...state.trips[tripIndex] };
-                    const dayIndex = updatedTrip.days.findIndex(d => d.id === dayId);
-
-                    if (dayIndex === -1) return state;
-
-                    updatedTrip.days[dayIndex] = {
-                        ...updatedTrip.days[dayIndex],
-                        activities: updatedTrip.days[dayIndex].activities.filter(a => a.id !== activityId)
-                    };
-
-                    const newTrips = [...state.trips];
-                    newTrips[tripIndex] = updatedTrip;
-
-                    return {
-                        trips: newTrips,
-                        currentTrip: state.currentTrip?.id === tripId ? updatedTrip : state.currentTrip
-                    };
-                });
-            },
-
-            toggleActivityComplete: (tripId, dayId, activityId) => {
-                set((state) => {
-                    const tripIndex = state.trips.findIndex(t => t.id === tripId);
-                    if (tripIndex === -1) return state;
-
-                    const updatedTrip = { ...state.trips[tripIndex] };
-                    updatedTrip.days = updatedTrip.days.map(day => {
-                        if (day.id !== dayId) return day;
-                        return {
-                            ...day,
-                            activities: day.activities.map(activity =>
-                                activity.id === activityId
-                                    ? { ...activity, isCompleted: !activity.isCompleted }
-                                    : activity
-                            )
-                        };
-                    });
-
-                    const newTrips = [...state.trips];
-                    newTrips[tripIndex] = updatedTrip;
-
-                    return {
-                        trips: newTrips,
-                        currentTrip: state.currentTrip?.id === tripId ? updatedTrip : state.currentTrip
-                    };
-                });
-            },
-
-            rateActivity: (tripId, dayId, activityId, rating) => {
-                set((state) => {
-                    const tripIndex = state.trips.findIndex(t => t.id === tripId);
-                    if (tripIndex === -1) return state;
-
-                    const updatedTrip = { ...state.trips[tripIndex] };
-                    updatedTrip.days = updatedTrip.days.map(day => {
-                        if (day.id !== dayId) return day;
-                        return {
-                            ...day,
-                            activities: day.activities.map(activity =>
-                                activity.id === activityId
-                                    ? { ...activity, rating: rating }
-                                    : activity
-                            )
-                        };
-                    });
-
-                    const newTrips = [...state.trips];
-                    newTrips[tripIndex] = updatedTrip;
-
-                    return {
-                        trips: newTrips,
-                        currentTrip: state.currentTrip?.id === tripId ? updatedTrip : state.currentTrip
-                    };
-                });
-            },
-
-            reorderActivities: (tripId, dayId, newActivities) => {
-                set((state) => {
-                    const tripIndex = state.trips.findIndex(t => t.id === tripId);
-                    if (tripIndex === -1) return state;
-
-                    const updatedTrip = { ...state.trips[tripIndex] };
-                    updatedTrip.days = updatedTrip.days.map(day =>
-                        day.id === dayId ? { ...day, activities: newActivities } : day
-                    );
-
-                    const newTrips = [...state.trips];
-                    newTrips[tripIndex] = updatedTrip;
-
-                    return {
-                        trips: newTrips,
-                        currentTrip: state.currentTrip?.id === tripId ? updatedTrip : state.currentTrip
-                    };
-                });
-            },
-        }),
-        {
-            name: 'travel-itinerary-storage',
+                throw error;
+            }
+        } catch (error) {
+            console.error('Error pinning trip:', error);
         }
-    )
-);
+    },
+
+    setCurrentTrip: (tripId) => {
+        const trip = get().trips.find(t => t.id === tripId);
+        set({ currentTrip: trip || null });
+    },
+
+    // Complex JSONB updates for activities
+    // Since JSONB updates are tricky with partial nested updates, 
+    // we'll update the local state first, then push the entire 'days' array to Supabase.
+    updateTripDays: async (tripId, newDays) => {
+        // Optimistic update
+        set((state) => ({
+            trips: state.trips.map(t => t.id === tripId ? { ...t, days: newDays } : t),
+            currentTrip: state.currentTrip?.id === tripId ? { ...state.currentTrip, days: newDays } : state.currentTrip
+        }));
+
+        try {
+            const { error } = await supabase
+                .from('trips')
+                .update({ days: newDays })
+                .eq('id', tripId);
+
+            if (error) throw error;
+        } catch (error) {
+            console.error('Error updating trip days:', error);
+            // Ideally revert here, but for now we just log
+        }
+    },
+
+    addActivity: async (tripId, dayId, activity) => {
+        const store = get();
+        const trip = store.trips.find(t => t.id === tripId);
+        if (!trip) return;
+
+        const updatedDays = trip.days.map(day => {
+            if (day.id !== dayId) return day;
+            return {
+                ...day,
+                activities: [...(day.activities || []), {
+                    id: crypto.randomUUID(),
+                    ...activity,
+                    location: activity.location || day.location,
+                    time: activity.time || '09:00',
+                    type: activity.type || 'sightseeing',
+                    isCompleted: false,
+                    rating: 0
+                }]
+            };
+        });
+
+        await store.updateTripDays(tripId, updatedDays);
+    },
+
+    deleteActivity: async (tripId, dayId, activityId) => {
+        const store = get();
+        const trip = store.trips.find(t => t.id === tripId);
+        if (!trip) return;
+
+        const updatedDays = trip.days.map(day => {
+            if (day.id !== dayId) return day;
+            return {
+                ...day,
+                activities: day.activities.filter(a => a.id !== activityId)
+            };
+        });
+
+        await store.updateTripDays(tripId, updatedDays);
+    },
+
+    toggleActivityComplete: async (tripId, dayId, activityId) => {
+        const store = get();
+        const trip = store.trips.find(t => t.id === tripId);
+        if (!trip) return;
+
+        const updatedDays = trip.days.map(day => {
+            if (day.id !== dayId) return day;
+            return {
+                ...day,
+                activities: day.activities.map(a =>
+                    a.id === activityId ? { ...a, isCompleted: !a.isCompleted } : a
+                )
+            };
+        });
+
+        await store.updateTripDays(tripId, updatedDays);
+    },
+
+    reorderActivities: async (tripId, dayId, newActivities) => {
+        const store = get();
+        const trip = store.trips.find(t => t.id === tripId);
+        if (!trip) return;
+
+        const updatedDays = trip.days.map(day =>
+            day.id === dayId ? { ...day, activities: newActivities } : day
+        );
+
+        await store.updateTripDays(tripId, updatedDays);
+    },
+
+    rateActivity: async (tripId, dayId, activityId, rating) => {
+        const store = get();
+        const trip = store.trips.find(t => t.id === tripId);
+        if (!trip) return;
+
+        const updatedDays = trip.days.map(day => {
+            if (day.id !== dayId) return day;
+            return {
+                ...day,
+                activities: day.activities.map(a =>
+                    a.id === activityId ? { ...a, rating: rating } : a
+                )
+            };
+        });
+
+        await store.updateTripDays(tripId, updatedDays);
+    }
+}));
 
 export default useItineraryStore;

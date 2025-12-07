@@ -1,10 +1,14 @@
-import { motion } from 'framer-motion';
-import { Plus, Map, Calendar, Wallet, Globe, ArrowRight } from 'lucide-react';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Map, Calendar, Wallet, Globe, ArrowRight, Star, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
+import BudgetSelectionModal from '../ui/BudgetSelectionModal';
 
 const UserDashboard = () => {
     const { user } = useAuthStore();
+    const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
+    const [selectedDestination, setSelectedDestination] = useState(null);
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -17,6 +21,29 @@ const UserDashboard = () => {
     const itemVariants = {
         hidden: { y: 20, opacity: 0 },
         visible: { y: 0, opacity: 1 }
+    };
+
+    const exploreDestinations = [
+        {
+            name: "Paris, France",
+            image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&h=600&fit=crop",
+            tag: "Art & Romance"
+        },
+        {
+            name: "Tokyo, Japan",
+            image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&h=600&fit=crop",
+            tag: "Future City"
+        },
+        {
+            name: "Bali, Indonesia",
+            image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&h=600&fit=crop",
+            tag: "Tropical Paradise"
+        }
+    ];
+
+    const handleExploreClick = (dest) => {
+        setSelectedDestination(dest);
+        setIsBudgetModalOpen(true);
     };
 
     return (
@@ -106,45 +133,40 @@ const UserDashboard = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div className="group relative overflow-hidden rounded-2xl aspect-video cursor-pointer">
-                            <img
-                                src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&h=600&fit=crop"
-                                alt="Paris"
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                            <div className="absolute bottom-4 left-4 text-white">
-                                <h3 className="font-bold text-lg">Paris, France</h3>
-                                <p className="text-sm opacity-90">Art & Romance</p>
-                            </div>
-                        </div>
-                        <div className="group relative overflow-hidden rounded-2xl aspect-video cursor-pointer">
-                            <img
-                                src="https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&h=600&fit=crop"
-                                alt="Tokyo"
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                            <div className="absolute bottom-4 left-4 text-white">
-                                <h3 className="font-bold text-lg">Tokyo, Japan</h3>
-                                <p className="text-sm opacity-90">Future City</p>
-                            </div>
-                        </div>
-                        <div className="group relative overflow-hidden rounded-2xl aspect-video cursor-pointer">
-                            <img
-                                src="https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&h=600&fit=crop"
-                                alt="Bali"
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                            <div className="absolute bottom-4 left-4 text-white">
-                                <h3 className="font-bold text-lg">Bali, Indonesia</h3>
-                                <p className="text-sm opacity-90">Tropical Paradise</p>
-                            </div>
-                        </div>
+                        {exploreDestinations.map((dest, index) => (
+                            <motion.div
+                                key={index}
+                                whileHover={{ y: -5 }}
+                                onClick={() => handleExploreClick(dest)}
+                                className="group relative overflow-hidden rounded-2xl aspect-video cursor-pointer shadow-md hover:shadow-xl transition-all"
+                            >
+                                <img
+                                    src={dest.image}
+                                    alt={dest.name}
+                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                                <div className="absolute bottom-4 left-4 text-white">
+                                    <h3 className="font-bold text-lg">{dest.name}</h3>
+                                    <p className="text-sm opacity-90">{dest.tag}</p>
+                                </div>
+                                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <span className="bg-white/20 backdrop-blur-md text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                                        <Plus className="w-3 h-3" /> Plan Trip
+                                    </span>
+                                </div>
+                            </motion.div>
+                        ))}
                     </div>
                 </motion.div>
             </div>
+
+            {/* Budget Selection Modal */}
+            <BudgetSelectionModal
+                isOpen={isBudgetModalOpen}
+                onClose={() => setIsBudgetModalOpen(false)}
+                destination={selectedDestination}
+            />
         </div>
     );
 };

@@ -1,25 +1,42 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Mail, Phone, Save, CreditCard, Calendar, Plane, Hotel, Train, Moon, Sun, Bell, Shield, ChevronRight } from 'lucide-react';
+import { User, Mail, Phone, Save, CreditCard, Calendar, Plane, Hotel, Train, Moon, Sun, Bell, Shield, ChevronRight, MapPin, FileText, Globe, Loader, Trash2, AlertTriangle } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import useItineraryStore from '../store/itineraryStore';
-import useBookingStore from '../store/bookingStore'; // [NEW]
-import ThemeToggle from '../components/ui/ThemeToggle'; // We might need to extract the toggle logic if button is custom
+import useBookingStore from '../store/bookingStore';
+import ThemeToggle from '../components/ui/ThemeToggle';
 
 const Settings = () => {
-    const { user } = useAuthStore();
+    const { user, profile: authProfile, updateProfile, deleteAccount, isLoading } = useAuthStore();
     const { trips } = useItineraryStore();
-    const { getStats } = useBookingStore(); // [NEW]
-    const bookingStats = getStats(); // [NEW] Get real stats
+    const { getStats } = useBookingStore();
+    const bookingStats = getStats();
 
     // Profile State
     const [profile, setProfile] = useState({
-        name: user?.name || '',
+        name: user?.user_metadata?.full_name || authProfile?.full_name || user?.email?.split('@')[0] || '',
         email: user?.email || '',
-        mobile: '+1 (555) 123-4567', // Mock mobile for now
+        mobile: authProfile?.mobile || '',
+        location: authProfile?.location || '',
+        bio: authProfile?.bio || '',
+        website: authProfile?.website || '',
     });
 
     const [isEditing, setIsEditing] = useState(false);
+
+    // Sync profile state when authProfile changes
+    useEffect(() => {
+        if (authProfile) {
+            setProfile(prev => ({
+                ...prev,
+                name: authProfile.full_name || prev.name,
+                mobile: authProfile.mobile || prev.mobile,
+                location: authProfile.location || prev.location,
+                bio: authProfile.bio || prev.bio,
+                website: authProfile.website || prev.website,
+            }));
+        }
+    }, [authProfile]);
 
     // Stats Calculation
     // Combine Trip Budget + Actual Bookings
@@ -34,10 +51,31 @@ const Settings = () => {
         trains: bookingStats.trains
     };
 
-    const handleSaveProfile = (e) => {
+    const handleSaveProfile = async (e) => {
         e.preventDefault();
-        setIsEditing(false);
-        // In a real app, we'd call an update action in authStore here
+        try {
+            await updateProfile({
+                full_name: profile.name,
+                mobile: profile.mobile,
+                location: profile.location,
+                bio: profile.bio,
+                website: profile.website,
+            });
+            setIsEditing(false);
+        } catch (error) {
+            console.error("Failed to update profile", error);
+        }
+    };
+
+    const handleDeleteAccount = async () => {
+        if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+            try {
+                await deleteAccount();
+                // Redirect handled by auth state change in App.jsx (isAuthenticated -> false)
+            } catch (error) {
+                alert('Failed to delete account: ' + error.message);
+            }
+        }
     };
 
     return (
@@ -156,6 +194,48 @@ const Settings = () => {
                                             />
                                         </div>
                                     </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Location</label>
+                                        <div className="relative">
+                                            <MapPin className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
+                                            <input
+                                                type="text"
+                                                disabled={!isEditing}
+                                                value={profile.location}
+                                                onChange={(e) => setProfile({ ...profile, location: e.target.value })}
+                                                className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none disabled:opacity-70 disabled:cursor-not-allowed transition-all"
+                                                placeholder="New York, USA"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Website</label>
+                                        <div className="relative">
+                                            <Globe className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
+                                            <input
+                                                type="text"
+                                                disabled={!isEditing}
+                                                value={profile.website}
+                                                onChange={(e) => setProfile({ ...profile, website: e.target.value })}
+                                                className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none disabled:opacity-70 disabled:cursor-not-allowed transition-all"
+                                                placeholder="https://example.com"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2 md:col-span-2">
+                                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Bio</label>
+                                        <div className="relative">
+                                            <FileText className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
+                                            <textarea
+                                                disabled={!isEditing}
+                                                value={profile.bio}
+                                                onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                                                rows={3}
+                                                className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none disabled:opacity-70 disabled:cursor-not-allowed transition-all resize-none"
+                                                placeholder="Tell us about your travel dreams..."
+                                            />
+                                        </div>
+                                    </div>
                                     <div className="space-y-2 md:col-span-2">
                                         <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Email Address</label>
                                         <div className="relative">
@@ -175,9 +255,10 @@ const Settings = () => {
                                     <div className="flex justify-end pt-4">
                                         <button
                                             type="submit"
-                                            className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-xl shadow-lg shadow-primary-500/30 transition-all flex items-center gap-2"
+                                            disabled={isLoading}
+                                            className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-xl shadow-lg shadow-primary-500/30 transition-all flex items-center gap-2 disabled:opacity-70"
                                         >
-                                            <Save className="w-4 h-4" />
+                                            {isLoading ? <Loader className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                                             Save Changes
                                         </button>
                                     </div>
@@ -268,6 +349,34 @@ const Settings = () => {
                                     </div>
                                     <ChevronRight className="w-5 h-5 text-slate-400" />
                                 </div>
+                            </div>
+                        </motion.div>
+
+                        {/* Danger Zone */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.4 }}
+                            className="bg-red-50 dark:bg-red-900/10 rounded-3xl p-8 shadow-sm border border-red-100 dark:border-red-900/30"
+                        >
+                            <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-4 flex items-center gap-2">
+                                <AlertTriangle className="w-5 h-5" />
+                                Danger Zone
+                            </h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
+                                Once you delete your account, there is no going back. Please be certain.
+                            </p>
+                            <div className="flex items-center justify-between">
+                                <div className="text-sm text-slate-500 dark:text-slate-400">
+                                    Permanently delete your account and all data
+                                </div>
+                                <button
+                                    onClick={handleDeleteAccount}
+                                    className="px-6 py-3 bg-white dark:bg-red-950 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 font-medium rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex items-center gap-2"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    Delete Account
+                                </button>
                             </div>
                         </motion.div>
 

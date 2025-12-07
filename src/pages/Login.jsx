@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, ArrowRight, Loader } from 'lucide-react';
@@ -7,8 +7,14 @@ import useAuthStore from '../store/authStore';
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const { login, isLoading, error, clearError } = useAuthStore();
+    const { login, loginWithGoogle, isLoading, error, clearError, isAuthenticated } = useAuthStore();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/');
+        }
+    }, [isAuthenticated, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -39,6 +45,24 @@ const Login = () => {
                             {error}
                         </motion.div>
                     )}
+
+                    <div className="space-y-4 mb-6">
+                        <button
+                            onClick={() => loginWithGoogle()}
+                            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors font-medium text-slate-700 dark:text-slate-200"
+                        >
+                            <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
+                            Continue with Google
+                        </button>
+                        <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t border-slate-200 dark:border-slate-700"></span>
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-white dark:bg-slate-800 px-2 text-slate-500">Or continue with email</span>
+                            </div>
+                        </div>
+                    </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div>

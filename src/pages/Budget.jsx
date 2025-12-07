@@ -15,7 +15,7 @@ const CATEGORIES = [
 ];
 
 const Budget = () => {
-    const { expenses, budgets, addExpense, deleteExpense, currency: globalCurrency } = useBudgetStore();
+    const { expenses, addExpense, deleteExpense, currency: globalCurrency } = useBudgetStore();
     const { trips } = useItineraryStore();
 
     const [selectedTripId, setSelectedTripId] = useState(trips[0]?.id || '');
@@ -31,8 +31,8 @@ const Budget = () => {
 
     // Use trip-specific currency if available, otherwise fallback to global
     const currency = currentTrip?.currency || globalCurrency || 'USD';
-    const tripExpenses = expenses.filter(e => e.tripId === selectedTripId);
-    const totalBudget = currentTrip ? (currentTrip.budget || budgets[selectedTripId] || 0) : 0;
+    const tripExpenses = expenses.filter(e => e.trip_id === selectedTripId);
+    const totalBudget = currentTrip?.budget || 0;
     const totalSpent = tripExpenses.reduce((sum, e) => sum + e.amount, 0);
     const remaining = totalBudget - totalSpent;
     const percentageUsed = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
