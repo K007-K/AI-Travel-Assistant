@@ -83,7 +83,7 @@ const UserDashboard = () => {
                                     Start a chat with the AI assistant to create a personalized itinerary for your next journey.
                                 </p>
                             </div>
-                            <Link to="/chat" className="inline-flex items-center text-blue-600 font-semibold text-sm hover:text-blue-700 transition-colors group-hover:translate-x-1 duration-300">
+                            <Link to="/ai/chat" className="inline-flex items-center text-blue-600 font-semibold text-sm hover:text-blue-700 transition-colors group-hover:translate-x-1 duration-300">
                                 Start Planning <ArrowRight className="w-4 h-4 ml-1.5" />
                             </Link>
                         </motion.div>
@@ -104,7 +104,7 @@ const UserDashboard = () => {
                                     Access and manage your saved trips and itineraries.
                                 </p>
                             </div>
-                            <Link to="/trips" className="inline-flex items-center text-purple-600 font-semibold text-sm hover:text-purple-700 transition-colors group-hover:translate-x-1 duration-300">
+                            <Link to="/my-trips" className="inline-flex items-center text-purple-600 font-semibold text-sm hover:text-purple-700 transition-colors group-hover:translate-x-1 duration-300">
                                 View Trips <ArrowRight className="w-4 h-4 ml-1.5" />
                             </Link>
                         </motion.div>

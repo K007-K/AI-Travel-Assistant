@@ -4,12 +4,12 @@ services:
   # Development Service
   web-dev:
     build:
-      context: .
+      context: ./frontend
       dockerfile: Dockerfile.dev
     ports:
       - "5173:5173"
     volumes:
-      - .:/app
+      - ./frontend:/app
       - /app/node_modules
     environment:
       - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
@@ -19,7 +19,7 @@ services:
   # Production Preview Service (Optional)
   web-prod:
     build:
-      context: .
+      context: ./frontend
       dockerfile: Dockerfile
     ports:
       - "8080:80"

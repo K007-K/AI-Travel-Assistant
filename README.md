@@ -41,18 +41,19 @@
    cd Hogwarts-The-Globetrotters
    ```
 
-2. **Install dependencies:**
+4. **Install dependencies:**
    ```bash
+   cd frontend
    npm install
    ```
 
-3. **Set up environment variables:**
-   Create a `.env` file in the root directory (copy from `.env.example` if available) and add your API keys:
+5. **Set up environment variables:**
+   Create a `.env` file in the `frontend` directory (copy from `.env.example` if available) and add your API keys:
    ```env
    VITE_GROQ_API_KEY=your_groq_api_key_here
    ```
 
-4. **Start the development server:**
+6. **Start the development server:**
    ```bash
    npm run dev
    ```
@@ -82,17 +83,14 @@
 ## 🗂 Project Structure
 
 ```
-src/
-├── api/                # API integration (Groq, etc.)
-├── assets/             # Static assets
-├── components/         # Reusable UI components
-│   ├── features/       # Feature-specific components (ItineraryBuilder, etc.)
-│   ├── layout/         # Layout components (Header, Footer)
-│   └── ui/             # Generic UI elements (Buttons, Inputs)
-├── pages/              # Main application pages
-├── store/              # Zustand global store definitions
-├── utils/              # Helper functions and context
-└── main.jsx            # Entry point
+.
+├── frontend/           # Client-side application
+│   ├── src/            # React Code (components, pages, api wrappers)
+│   ├── public/         # Static assets
+│   └── package.json    # Frontend dependencies
+├── backend/            # Server-side logic
+│   └── supabase/       # Edge Functions & Migrations
+└── docker-compose.yml  # Container orchestration
 ```
 
 ## 🤝 Contributing

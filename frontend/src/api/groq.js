@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase';
 
 // Helper for generic chat completion via Edge Function
-const makeGroqRequest = async (messages, jsonMode = false) => {
+export const makeGroqRequest = async (messages, jsonMode = false) => {
     try {
         const { data, error } = await supabase.functions.invoke('chat-completion', {
             body: { messages }

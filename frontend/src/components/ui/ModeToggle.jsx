@@ -1,6 +1,6 @@
 import { Moon, Sun } from "lucide-react"
 import { Button } from "./Button"
-import { useTheme } from "../ThemeProvider"
+import { useTheme } from "../../providers/ThemeProvider"
 import { motion, AnimatePresence } from "framer-motion"
 
 export function ModeToggle() {

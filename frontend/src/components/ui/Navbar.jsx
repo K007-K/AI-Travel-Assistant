@@ -98,13 +98,13 @@ const Navbar = () => {
 
                     {/* AI Pill - Special styling */}
                     <Link
-                        to="/chat"
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm ${isActive('/chat')
+                        to="/ai"
+                        className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm ${isActive('/ai') || isActive('/chat')
                             ? 'bg-gradient-to-r from-purple-50 to-blue-50 text-blue-700 ring-1 ring-blue-100/50'
                             : 'bg-white/80 text-slate-600 hover:bg-white hover:shadow-md ring-1 ring-slate-200/50'
                             }`}
                     >
-                        <Sparkles className={`w-4 h-4 ${isActive('/chat') ? 'text-blue-600' : 'text-slate-400'}`} />
+                        <Sparkles className={`w-4 h-4 ${isActive('/ai') || isActive('/chat') ? 'text-blue-600' : 'text-slate-400'}`} />
                         AI
                     </Link>
 
@@ -113,7 +113,7 @@ const Navbar = () => {
                     <NavLink to="/my-trips" icon={<Map className={`w-4 h-4 ${isActive('/my-trips') ? 'text-blue-500' : 'text-slate-400 group-hover:text-blue-500'}`} />} label="My Trips" active={isActive('/trips') || isActive('/my-trips')} />
                     <NavLink to="/bookings" icon={<CreditCard className={`w-4 h-4 ${isActive('/bookings') ? 'text-emerald-500' : 'text-slate-400 group-hover:text-emerald-500'}`} />} label="Bookings" active={isActive('/bookings')} />
                     <NavLink to="/budget" icon={<Wallet className={`w-4 h-4 ${isActive('/budget') ? 'text-orange-500' : 'text-slate-400 group-hover:text-orange-500'}`} />} label="Budget" active={isActive('/budget')} />
-                    <NavLink to="/translate" icon={<Globe className={`w-4 h-4 ${isActive('/translate') ? 'text-indigo-500' : 'text-slate-400 group-hover:text-indigo-500'}`} />} label="Translate" active={isActive('/translate')} />
+                    <NavLink to="/ai/translate" icon={<Globe className={`w-4 h-4 ${isActive('/ai/translate') ? 'text-indigo-500' : 'text-slate-400 group-hover:text-indigo-500'}`} />} label="Translate" active={isActive('/ai/translate')} />
                 </div>
 
                 {/* Right Actions */}

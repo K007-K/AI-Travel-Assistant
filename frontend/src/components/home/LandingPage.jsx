@@ -2,11 +2,15 @@ import { motion } from 'framer-motion';
 import {
     Sparkles, MapPin, Wallet, MessageCircle, Calendar, ArrowRight, Shield, Globe
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { LogoLoop } from '../ui/LogoLoop';
 import { Button } from '../ui/Button';
+import useAuthStore from '../../store/authStore';
 
 const LandingPage = () => {
+    const navigate = useNavigate();
+    const { isAuthenticated } = useAuthStore();
+
     const destinations = [
         {
             name: 'Araku Valley',
@@ -131,11 +135,13 @@ const LandingPage = () => {
                     </motion.p>
 
                     <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Link to="/chat">
-                            <Button size="lg" className="text-lg px-8 h-12 w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-500/20 rounded-xl transition-all hover:scale-105 hover:-translate-y-0.5 active:scale-95 duration-300">
-                                Start Planning <ArrowRight className="ml-2 w-5 h-5" />
-                            </Button>
-                        </Link>
+                        <Button
+                            onClick={() => isAuthenticated ? navigate('/ai/chat') : navigate('/login')}
+                            size="lg"
+                            className="text-lg px-8 h-12 w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-500/20 rounded-xl transition-all hover:scale-105 hover:-translate-y-0.5 active:scale-95 duration-300"
+                        >
+                            Start Planning <ArrowRight className="ml-2 w-5 h-5" />
+                        </Button>
                         <a href="#destinations">
                             <Button variant="outline" size="lg" className="text-lg px-8 h-12 w-full sm:w-auto border-slate-200 text-slate-600 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 rounded-xl transition-all hover:scale-105 duration-300">
                                 Explore Destinations
@@ -233,7 +239,7 @@ const LandingPage = () => {
                                 transition={{ type: "tween", duration: 0.1, ease: "easeOut" }}
                                 className="group relative overflow-hidden rounded-2xl w-[260px] sm:w-[280px] h-[380px] sm:h-[400px] mx-2 cursor-pointer shadow-lg hover:shadow-2xl bg-slate-800"
                             >
-                                <Link to="/login" className="block w-full h-full relative">
+                                <div onClick={() => isAuthenticated ? navigate('/ai/chat') : navigate('/login')} className="block w-full h-full relative">
                                     <img
                                         src={destination.image}
                                         alt={destination.name}
@@ -261,7 +267,7 @@ const LandingPage = () => {
                                             <ArrowRight className="w-4 h-4" />
                                         </div>
                                     </div>
-                                </Link>
+                                </div>
                             </motion.div>
                         ))}
                     />
@@ -300,11 +306,13 @@ const LandingPage = () => {
                             <p className="text-xl text-blue-50 mb-10 font-light drop-shadow-md">
                                 Join thousands of travelers getting honest, vibe-based recommendations.
                             </p>
-                            <Link to="/signup">
-                                <Button size="lg" className="bg-white/95 backdrop-blur-sm text-blue-600 hover:bg-white hover:shadow-2xl hover:shadow-white/50 text-lg px-10 h-14 shadow-xl mb-6 rounded-xl font-bold transition-all hover:scale-105 border border-white/50">
-                                    Plan My First Trip
-                                </Button>
-                            </Link>
+                            <Button
+                                onClick={() => isAuthenticated ? navigate('/ai/chat') : navigate('/signup')}
+                                size="lg"
+                                className="bg-white/95 backdrop-blur-sm text-blue-600 hover:bg-white hover:shadow-2xl hover:shadow-white/50 text-lg px-10 h-14 shadow-xl mb-6 rounded-xl font-bold transition-all hover:scale-105 border border-white/50"
+                            >
+                                Plan My First Trip
+                            </Button>
                             <p className="text-sm text-blue-100 font-medium mt-4 drop-shadow">
                                 Free to try • No credit card • No commitment
                             </p>

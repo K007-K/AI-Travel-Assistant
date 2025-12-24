@@ -12,7 +12,7 @@ import useItineraryStore from '../../store/itineraryStore';
 import { generateTripPlan, getHiddenGems, validateTripBudget } from '../../api/groq';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import Map from '../Map';
+import Map from '../ui/Map';
 import { Button } from '../ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 
