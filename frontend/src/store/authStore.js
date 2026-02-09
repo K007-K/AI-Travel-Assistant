@@ -11,14 +11,14 @@ const useAuthStore = create((set, get) => ({
     // Initialize Auth Listener
     initializeAuth: async () => {
         set({ isLoading: true });
-        console.log('AuthStore: initializing...');
+        if (import.meta.env.DEV) console.log('AuthStore: initializing...');
 
         try {
             // Get initial session
             const { data: { session }, error } = await supabase.auth.getSession();
             if (error) console.error('AuthStore: Error getting session', error);
 
-            console.log('AuthStore: Initial session:', session?.user?.email || 'No session');
+            if (import.meta.env.DEV) console.log('AuthStore: Initial session:', session?.user?.email || 'No session');
 
             if (session?.user) {
                 await get().fetchProfile(session.user.id);
@@ -29,7 +29,7 @@ const useAuthStore = create((set, get) => ({
 
             // Listen for changes
             const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-                console.log(`AuthStore: Auth event ${event}`, session?.user?.email);
+                if (import.meta.env.DEV) console.log(`AuthStore: Auth event ${event}`, session?.user?.email);
 
                 if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
                     if (session?.user) {

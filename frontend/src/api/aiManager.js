@@ -52,7 +52,7 @@ export const aiManager = {
                 model = MODEL_REGISTRY.FAST;
         }
 
-        console.log(`[AI Manager] Running Agent: ${agentId} on Model: ${model}`);
+        if (import.meta.env.DEV) console.log(`[AI Manager] Running Agent: ${agentId} on Model: ${model}`);
 
         // 2. Construct Messages
         const messages = [
