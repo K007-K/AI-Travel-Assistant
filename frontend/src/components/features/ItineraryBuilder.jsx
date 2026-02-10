@@ -31,6 +31,8 @@ const ItineraryBuilder = () => {
     const navigate = useNavigate();
     const {
         trips,
+        fetchTrips,
+        isLoading,
         updateTrip,
         addActivity,
         reorderActivities,
@@ -56,6 +58,7 @@ const ItineraryBuilder = () => {
     const [hiddenGems, setHiddenGems] = useState([]);
     const [isLoadingGems, setIsLoadingGems] = useState(false);
     const [toast, setToast] = useState(null);
+    const [hasFetched, setHasFetched] = useState(false);
 
     // Budget Analysis State
     const [budgetInput, setBudgetInput] = useState('');
@@ -63,6 +66,15 @@ const ItineraryBuilder = () => {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisReport, setAnalysisReport] = useState(null);
     const [sessionBudgetChecked, setSessionBudgetChecked] = useState(false); // Ref to prevent loop
+
+    // Fetch trips from Supabase on mount (needed for page refresh)
+    useEffect(() => {
+        if (trips.length === 0 && !hasFetched) {
+            fetchTrips().then(() => setHasFetched(true));
+        } else {
+            setHasFetched(true);
+        }
+    }, [trips.length, fetchTrips, hasFetched]);
 
     useEffect(() => {
         const foundTrip = trips.find(t => t.id === id);
@@ -84,15 +96,16 @@ const ItineraryBuilder = () => {
                 setSessionBudgetChecked(true); // Mark as checked so we don't force it again
             }
 
-            // Auto-detect currency: use saved trip currency, else detect from destination
+            // Auto-detect currency from destination (always prefer destination-based)
             if (!currencyInput || currencyInput === '') {
-                const detectedCurrency = foundTrip.currency || getCurrencyForDestination(foundTrip.destination);
+                const detectedCurrency = getCurrencyForDestination(foundTrip.destination);
                 setCurrencyInput(detectedCurrency);
             }
-        } else {
+        } else if (hasFetched && !isLoading) {
+            // Only navigate away if we've already fetched and trip truly doesn't exist
             navigate('/itinerary');
         }
-    }, [id, trips, navigate, selectedDay, hiddenGems.length, isLoadingGems, sessionBudgetChecked]);
+    }, [id, trips, navigate, selectedDay, hiddenGems.length, isLoadingGems, sessionBudgetChecked, hasFetched, isLoading]);
 
     const showToast = (message) => {
         setToast(message);
