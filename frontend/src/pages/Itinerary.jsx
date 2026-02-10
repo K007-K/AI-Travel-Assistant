@@ -5,6 +5,7 @@ import useItineraryStore from '../store/itineraryStore';
 import { Link } from 'react-router-dom';
 import LocationInput from '../components/ui/LocationInput';
 import { getFallbackImage, loadDestinationImage } from '../utils/destinationImages';
+import { getCurrencyForDestination } from '../utils/currencyMap';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
 
@@ -85,6 +86,12 @@ const Itinerary = () => {
         const newSegments = [...segments];
         newSegments[index][field] = field === 'days' ? parseInt(value) || 1 : value;
         setSegments(newSegments);
+
+        // Auto-detect currency from the first destination
+        if (field === 'location' && index === 0 && value) {
+            const detectedCurrency = getCurrencyForDestination(value);
+            setTripMeta(prev => ({ ...prev, currency: detectedCurrency }));
+        }
     };
 
     const finalizeCreation = () => {

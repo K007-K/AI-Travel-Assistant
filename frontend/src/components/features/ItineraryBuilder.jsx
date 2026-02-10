@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import useItineraryStore from '../../store/itineraryStore';
 import { generateTripPlan, getHiddenGems, validateTripBudget } from '../../api/groq';
+import { getCurrencyForDestination, getCurrencySymbol } from '../../utils/currencyMap';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import Map from '../ui/Map';
@@ -58,7 +59,7 @@ const ItineraryBuilder = () => {
 
     // Budget Analysis State
     const [budgetInput, setBudgetInput] = useState('');
-    const [currencyInput, setCurrencyInput] = useState('USD');
+    const [currencyInput, setCurrencyInput] = useState(''); // Will be auto-detected
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisReport, setAnalysisReport] = useState(null);
     const [sessionBudgetChecked, setSessionBudgetChecked] = useState(false); // Ref to prevent loop
@@ -81,7 +82,12 @@ const ItineraryBuilder = () => {
             if (!sessionBudgetChecked && (foundTrip.budget === 0 || foundTrip.budget === null) && !foundTrip.budget_skipped) {
                 setActiveTab('budget');
                 setSessionBudgetChecked(true); // Mark as checked so we don't force it again
-                if (foundTrip.currency) setCurrencyInput(foundTrip.currency);
+            }
+
+            // Auto-detect currency: use saved trip currency, else detect from destination
+            if (!currencyInput || currencyInput === '') {
+                const detectedCurrency = foundTrip.currency || getCurrencyForDestination(foundTrip.destination);
+                setCurrencyInput(detectedCurrency);
             }
         } else {
             navigate('/itinerary');
@@ -257,7 +263,7 @@ const ItineraryBuilder = () => {
                                         <span className="flex items-center gap-1 bg-card px-3 py-1 rounded-full border border-border shadow-sm"><MapPin className="w-3 h-3" /> {trip.destination}</span>
                                         <span className="flex items-center gap-1 bg-card px-3 py-1 rounded-full border border-border shadow-sm"><Calendar className="w-3 h-3" /> {new Date(trip.start_date || trip.startDate).toLocaleDateString()}</span>
                                         <span className="flex items-center gap-1 bg-card px-3 py-1 rounded-full border border-border shadow-sm font-medium text-foreground">
-                                            {trip.currency === 'INR' ? '₹' : trip.currency === 'EUR' ? '€' : trip.currency === 'GBP' ? '£' : trip.currency === 'JPY' ? '¥' : '$'}
+                                            {getCurrencySymbol(trip.currency || getCurrencyForDestination(trip.destination))}
                                             {trip.budget}
                                         </span>
                                     </div>
