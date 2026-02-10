@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plane, Hotel, Train, Calendar, MapPin, Search, Download, Clock } from 'lucide-react';
 import useBookingStore from '../store/bookingStore';
 import { jsPDF } from 'jspdf';
+import DemoBanner from '../components/ui/DemoBanner';
 
 const MyBookings = () => {
     const { bookings, fetchBookings, isLoading } = useBookingStore();
@@ -184,6 +185,8 @@ const MyBookings = () => {
                         <p className="text-slate-500">Manage your trips and download tickets</p>
                     </div>
                 </div>
+
+                <DemoBanner message="Demo Mode – Bookings and PNR numbers shown here are simulated." />
 
                 {/* Tabs */}
                 <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-none">

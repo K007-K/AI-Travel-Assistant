@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, CreditCard, User, Shield, Coffee, ArrowLeft, Loader2 } from 'lucide-react';
 import useBookingStore from '../store/bookingStore';
+import DemoBanner from '../components/ui/DemoBanner';
 
 const BookingReview = () => {
     const location = useLocation();
@@ -80,6 +81,7 @@ const BookingReview = () => {
     return (
         <div className="min-h-screen pt-24 pb-12 bg-slate-50 dark:bg-slate-900 px-4">
             <div className="max-w-3xl mx-auto">
+                <DemoBanner message="Demo Mode – No real payments are processed. Card details are not stored." />
                 {/* Stepper */}
                 <div className="flex items-center justify-between mb-8 max-w-xl mx-auto">
                     {[1, 2, 3].map((s) => (
