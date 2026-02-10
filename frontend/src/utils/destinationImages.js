@@ -76,6 +76,54 @@ const LANDMARK_QUERIES = {
     'kodaikanal': 'Kodaikanal lake',
     'leh': 'Pangong Lake Ladakh',
     'andaman': 'Radhanagar Beach Andaman',
+    // Additional popular destinations
+    'banff': 'Banff National Park',
+    'toronto': 'CN Tower Toronto',
+    'vancouver': 'Stanley Park Vancouver',
+    'santorini': 'Santorini Greece',
+    'mykonos': 'Mykonos Greece',
+    'phuket': 'Phi Phi Islands',
+    'hanoi': 'Ha Long Bay',
+    'ho chi minh': 'Ho Chi Minh City',
+    'cairo': 'Pyramids of Giza',
+    'marrakech': 'Jemaa el-Fnaa Marrakech',
+    'cape town': 'Table Mountain Cape Town',
+    'nairobi': 'Nairobi National Park',
+    'rio de janeiro': 'Christ the Redeemer Rio',
+    'buenos aires': 'La Boca Buenos Aires',
+    'cusco': 'Machu Picchu',
+    'cancun': 'Chichen Itza',
+    'havana': 'Old Havana Cuba',
+    'reykjavik': 'Hallgrimskirkja Reykjavik',
+    'edinburgh': 'Edinburgh Castle',
+    'dublin': 'Temple Bar Dublin',
+    'florence': 'Florence Cathedral',
+    'milan': 'Milan Cathedral',
+    'salzburg': 'Salzburg Austria',
+    'budapest': 'Hungarian Parliament Building',
+    'copenhagen': 'The Little Mermaid Copenhagen',
+    'stockholm': 'Stockholm Old Town',
+    'oslo': 'Oslo Opera House',
+    'helsinki': 'Helsinki Cathedral',
+    'warsaw': 'Warsaw Old Town',
+    'krakow': 'Wawel Castle Krakow',
+    'petra': 'Petra Jordan',
+    'jerusalem': 'Western Wall Jerusalem',
+    'maui': 'Haleakala National Park Maui',
+    'hawaii': 'Waikiki Beach Hawaii',
+    'fiji': 'Fiji beach resort',
+    'tahiti': 'Bora Bora',
+    'new zealand': 'Milford Sound New Zealand',
+    'queenstown': 'Queenstown New Zealand',
+    'medellin': 'Medellin Colombia',
+    'cartagena': 'Cartagena Colombia',
+    'zanzibar': 'Zanzibar beach',
+    'kathmandu': 'Swayambhunath Kathmandu',
+    'colombo': 'Colombo Sri Lanka',
+    'dhaka': 'Lalbagh Fort Dhaka',
+    'beijing': 'Great Wall of China',
+    'shanghai': 'Shanghai skyline',
+    'chiang mai': 'Doi Suthep Chiang Mai',
 };
 
 function getCache() {
@@ -225,7 +273,15 @@ export async function loadDestinationImage(destination, setUrl) {
         }
     }
 
-    // 3. Try "Tourism in {destination}"
+    // 3. Try plain destination name on Wikipedia  
+    const plainUrl = await fetchFromWikipedia(destination);
+    if (plainUrl) {
+        setCache(key, plainUrl);
+        setUrl(plainUrl);
+        return;
+    }
+
+    // 4. Try "Tourism in {destination}"
     const tourismUrl = await fetchFromWikipedia(`Tourism in ${destination}`);
     if (tourismUrl) {
         setCache(key, tourismUrl);
@@ -233,19 +289,11 @@ export async function loadDestinationImage(destination, setUrl) {
         return;
     }
 
-    // 4. Search Wikimedia Commons
+    // 5. Search Wikimedia Commons
     const commonsUrl = await fetchFromWikimediaCommons(destination);
     if (commonsUrl) {
         setCache(key, commonsUrl);
         setUrl(commonsUrl);
-        return;
-    }
-
-    // 5. Try plain destination on Wikipedia
-    const plainUrl = await fetchFromWikipedia(destination);
-    if (plainUrl) {
-        setCache(key, plainUrl);
-        setUrl(plainUrl);
         return;
     }
 

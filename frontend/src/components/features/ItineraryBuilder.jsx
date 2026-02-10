@@ -65,24 +65,25 @@ const ItineraryBuilder = () => {
     const [currencyInput, setCurrencyInput] = useState(''); // Will be auto-detected
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisReport, setAnalysisReport] = useState(null);
-    const [sessionBudgetChecked, setSessionBudgetChecked] = useState(false); // Ref to prevent loop
+    const [sessionBudgetChecked, setSessionBudgetChecked] = useState(false);
 
     // Fetch trips from Supabase on mount (needed for page refresh)
     useEffect(() => {
         if (trips.length === 0 && !hasFetched) {
-            fetchTrips().then(() => setHasFetched(true));
-        } else {
+            fetchTrips().finally(() => setHasFetched(true));
+        } else if (trips.length > 0) {
             setHasFetched(true);
         }
     }, [trips.length, fetchTrips, hasFetched]);
 
+    // Sync trip from store whenever trips change
     useEffect(() => {
         const foundTrip = trips.find(t => t.id === id);
         if (foundTrip) {
             setTrip(foundTrip);
             if (!selectedDay) setSelectedDay(foundTrip.days[0]?.id);
 
-            // Load gems
+            // Load gems once
             if (hiddenGems.length === 0 && !isLoadingGems) {
                 setIsLoadingGems(true);
                 getHiddenGems(foundTrip.destination)
@@ -93,19 +94,19 @@ const ItineraryBuilder = () => {
             // AUTO-SWITCH TO BUDGET TAB if missing (Only once per session)
             if (!sessionBudgetChecked && (foundTrip.budget === 0 || foundTrip.budget === null) && !foundTrip.budget_skipped) {
                 setActiveTab('budget');
-                setSessionBudgetChecked(true); // Mark as checked so we don't force it again
+                setSessionBudgetChecked(true);
             }
 
-            // Auto-detect currency from destination (always prefer destination-based)
+            // Auto-detect currency
             if (!currencyInput || currencyInput === '') {
                 const detectedCurrency = getCurrencyForDestination(foundTrip.destination);
                 setCurrencyInput(detectedCurrency);
             }
-        } else if (hasFetched && !isLoading) {
-            // Only navigate away if we've already fetched and trip truly doesn't exist
+        } else if (hasFetched) {
+            // Only navigate away AFTER fetch has completed and trip truly doesn't exist
             navigate('/itinerary');
         }
-    }, [id, trips, navigate, selectedDay, hiddenGems.length, isLoadingGems, sessionBudgetChecked, hasFetched, isLoading]);
+    }, [id, trips, hasFetched]);
 
     const showToast = (message) => {
         setToast(message);
@@ -212,13 +213,14 @@ const ItineraryBuilder = () => {
 
     const handleSaveBudget = async () => {
         if (!budgetInput) return;
+        const budgetVal = parseFloat(budgetInput);
+        // Optimistically update local trip state immediately
+        setTrip(prev => ({ ...prev, budget: budgetVal, currency: currencyInput, budget_skipped: false }));
+        // Persist to Supabase + zustand store
         await updateTrip(trip.id, {
-            budget: parseFloat(budgetInput), currency: currencyInput, budget_skipped: false
+            budget: budgetVal, currency: currencyInput, budget_skipped: false
         });
-        // Force re-read of trip so header badge updates
-        const refreshed = trips.find(t => t.id === trip.id);
-        if (refreshed) setTrip({ ...refreshed, budget: parseFloat(budgetInput), currency: currencyInput });
-        showToast("✅ Budget updated!");
+        showToast("✅ Budget saved!");
     };
 
     if (!trip) return null;
