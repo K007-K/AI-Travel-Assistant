@@ -4,12 +4,30 @@ import { Plus, Calendar, MapPin, ArrowRight, Trash2, Clock, CheckCircle2, Pin, X
 import useItineraryStore from '../store/itineraryStore';
 import { Link } from 'react-router-dom';
 import LocationInput from '../components/ui/LocationInput';
-import { getDestinationImage } from '../utils/destinationImages';
+import { getFallbackImage, loadDestinationImage } from '../utils/destinationImages';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
 
+/** Dynamic image component that fetches real photos from Wikipedia */
+const TripCardImage = ({ destination, className }) => {
+    const [imgUrl, setImgUrl] = useState(() => getFallbackImage(destination));
+
+    useEffect(() => {
+        loadDestinationImage(destination, setImgUrl);
+    }, [destination]);
+
+    return (
+        <img
+            src={imgUrl}
+            alt={destination}
+            className={className}
+            loading="lazy"
+        />
+    );
+};
+
 const Itinerary = () => {
-    const { trips, createTrip, deleteTrip, togglePinTrip, setCurrentTrip, fetchTrips } = useItineraryStore();
+    const { trips, createTrip, deleteTrip, togglePinTrip, setCurrentTrip, fetchTrips, isLoading } = useItineraryStore();
 
     useEffect(() => {
         fetchTrips();
@@ -148,7 +166,19 @@ const Itinerary = () => {
                     </div>
                 </div>
 
-                {sortedTrips.length === 0 ? (
+                {isLoading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="bg-card rounded-2xl border border-border overflow-hidden animate-pulse">
+                                <div className="h-48 bg-muted" />
+                                <div className="p-6 space-y-3">
+                                    <div className="h-4 bg-muted rounded w-2/3" />
+                                    <div className="h-3 bg-muted rounded w-1/3" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : sortedTrips.length === 0 ? (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -185,11 +215,9 @@ const Itinerary = () => {
                                 >
                                     <Card className={`group relative h-full overflow-hidden hover:shadow-xl transition-all duration-300 ${trip.pinned ? 'border-primary ring-1 ring-primary' : ''}`}>
                                         <div className="h-48 relative overflow-hidden group-hover:h-52 transition-all duration-300">
-                                            <img
-                                                src={getDestinationImage(trip.destination)}
-                                                alt={trip.destination}
+                                            <TripCardImage
+                                                destination={trip.destination}
                                                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                                loading="lazy"
                                             />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
