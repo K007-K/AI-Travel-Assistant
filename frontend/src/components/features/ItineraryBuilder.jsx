@@ -65,7 +65,6 @@ const ItineraryBuilder = () => {
     const [currencyInput, setCurrencyInput] = useState(''); // Will be auto-detected
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisReport, setAnalysisReport] = useState(null);
-    const [sessionBudgetChecked, setSessionBudgetChecked] = useState(false);
 
     // Fetch trips from Supabase on mount (needed for page refresh)
     useEffect(() => {
@@ -91,10 +90,11 @@ const ItineraryBuilder = () => {
                     .finally(() => setIsLoadingGems(false));
             }
 
-            // AUTO-SWITCH TO BUDGET TAB if missing (Only once per session)
-            if (!sessionBudgetChecked && (foundTrip.budget === 0 || foundTrip.budget === null) && !foundTrip.budget_skipped) {
+            // AUTO-SWITCH TO BUDGET TAB if missing (Only once per browser session per trip)
+            const budgetCheckedKey = `budget_checked_${foundTrip.id}`;
+            if (!sessionStorage.getItem(budgetCheckedKey) && (foundTrip.budget === 0 || foundTrip.budget === null) && !foundTrip.budget_skipped) {
                 setActiveTab('budget');
-                setSessionBudgetChecked(true);
+                sessionStorage.setItem(budgetCheckedKey, 'true');
             }
 
             // Auto-detect currency
