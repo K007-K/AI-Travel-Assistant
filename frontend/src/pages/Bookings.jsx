@@ -14,22 +14,28 @@ const Bookings = () => {
     const [results, setResults] = useState([]);
     const [showConfetti, setShowConfetti] = useState(false);
 
-    // Currency State
-    const [currency, setCurrency] = useState({ code: 'USD', symbol: '$', rate: 1 });
-
-    useEffect(() => {
-        // Detect User Location for Currency
+    // Currency State — persisted in localStorage
+    const [currency, setCurrencyState] = useState(() => {
+        try {
+            const saved = localStorage.getItem('preferred_currency');
+            if (saved) return JSON.parse(saved);
+        } catch { /* ignore */ }
+        // Fallback: detect from timezone
         try {
             const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
             if (timeZone.includes('Asia/Kolkata') || timeZone.includes('India')) {
-                setCurrency({ code: 'INR', symbol: '₹', rate: 84 });
-            } else {
-                setCurrency({ code: 'USD', symbol: '$', rate: 1 });
+                return { code: 'INR', symbol: '₹', rate: 84 };
             }
-        } catch (e) {
-            console.error("Failed to detect location", e);
-        }
-    }, []);
+        } catch { /* ignore */ }
+        return { code: 'USD', symbol: '$', rate: 1 };
+    });
+
+    const setCurrency = (newCurrency) => {
+        setCurrencyState(newCurrency);
+        try {
+            localStorage.setItem('preferred_currency', JSON.stringify(newCurrency));
+        } catch { /* ignore */ }
+    };
 
     const formatPrice = (amount) => {
         const value = Math.round(amount * currency.rate);

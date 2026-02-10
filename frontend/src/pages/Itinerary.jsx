@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Calendar, MapPin, ArrowRight, Trash2, Clock, CheckCircle2, Pin, X } from 'lucide-react';
 import useItineraryStore from '../store/itineraryStore';
@@ -8,7 +8,11 @@ import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
 
 const Itinerary = () => {
-    const { trips, createTrip, deleteTrip, togglePinTrip, setCurrentTrip } = useItineraryStore();
+    const { trips, createTrip, deleteTrip, togglePinTrip, setCurrentTrip, fetchTrips } = useItineraryStore();
+
+    useEffect(() => {
+        fetchTrips();
+    }, [fetchTrips]);
     const [isCreating, setIsCreating] = useState(false);
     const [tripToDelete, setTripToDelete] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
@@ -181,7 +185,7 @@ const Itinerary = () => {
                                     <Card className={`group relative h-full overflow-hidden hover:shadow-xl transition-all duration-300 ${trip.pinned ? 'border-primary ring-1 ring-primary' : ''}`}>
                                         <div className="h-48 relative overflow-hidden group-hover:h-52 transition-all duration-300">
                                             <img
-                                                src={`https://image.pollinations.ai/prompt/famous%20landmark%20view%20of%20${encodeURIComponent(trip.destination)}?width=800&height=600&nologo=true&seed=${trip.id}`}
+                                                src={`https://source.unsplash.com/800x600/?${encodeURIComponent(trip.destination)}+travel+landmark&sig=${trip.id}`}
                                                 alt={trip.destination}
                                                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                                 loading="lazy"
