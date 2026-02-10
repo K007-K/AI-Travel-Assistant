@@ -4,6 +4,7 @@ import { Plus, Calendar, MapPin, ArrowRight, Trash2, Clock, CheckCircle2, Pin, X
 import useItineraryStore from '../store/itineraryStore';
 import { Link } from 'react-router-dom';
 import LocationInput from '../components/ui/LocationInput';
+import { getDestinationImage } from '../utils/destinationImages';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
 
@@ -185,7 +186,7 @@ const Itinerary = () => {
                                     <Card className={`group relative h-full overflow-hidden hover:shadow-xl transition-all duration-300 ${trip.pinned ? 'border-primary ring-1 ring-primary' : ''}`}>
                                         <div className="h-48 relative overflow-hidden group-hover:h-52 transition-all duration-300">
                                             <img
-                                                src={`https://source.unsplash.com/800x600/?${encodeURIComponent(trip.destination)}+travel+landmark&sig=${trip.id}`}
+                                                src={getDestinationImage(trip.destination)}
                                                 alt={trip.destination}
                                                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                                 loading="lazy"
