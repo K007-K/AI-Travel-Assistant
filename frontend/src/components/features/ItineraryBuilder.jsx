@@ -4,7 +4,7 @@ import { motion, Reorder, AnimatePresence } from 'framer-motion';
 import {
     Calendar, MapPin, Clock, Plus, ArrowLeft,
     GripVertical, Trash2, Save, Share2,
-    Coffee, Camera, Utensils, Bed,
+    Coffee, Camera, Utensils, Bed, Wallet,
     Landmark, Music, Sun, Sparkles, Map as MapIcon, Loader2,
     CheckCircle2, Circle, Star, AlertCircle
 } from 'lucide-react';
@@ -134,6 +134,10 @@ const ItineraryBuilder = () => {
         }
     };
 
+    // Compute active currency symbol
+    const activeCurrency = getCurrencyForDestination(trip?.destination);
+    const activeCurrencySymbol = getCurrencySymbol(trip?.currency || activeCurrency);
+
     const handleGenerateItinerary = async () => {
         if (!trip) return;
         setIsGenerating(true);
@@ -143,7 +147,7 @@ const ItineraryBuilder = () => {
                 trip.days.length,
                 trip.budget || 2000,
                 trip.travelers || 1,
-                trip.currency || 'USD',
+                trip.currency || activeCurrency,
                 trip.days,
                 trip.budgetTier || 'mid-range'
             );
@@ -158,6 +162,7 @@ const ItineraryBuilder = () => {
                                 type: activity.type || 'sightseeing',
                                 location: activity.location,
                                 notes: activity.notes,
+                                estimated_cost: parseFloat(activity.estimated_cost) || 0,
                                 safety_warning: activity.safety_warning
                             });
                         });
@@ -210,6 +215,9 @@ const ItineraryBuilder = () => {
         await updateTrip(trip.id, {
             budget: parseFloat(budgetInput), currency: currencyInput, budget_skipped: false
         });
+        // Force re-read of trip so header badge updates
+        const refreshed = trips.find(t => t.id === trip.id);
+        if (refreshed) setTrip({ ...refreshed, budget: parseFloat(budgetInput), currency: currencyInput });
         showToast("✅ Budget updated!");
     };
 
@@ -276,8 +284,9 @@ const ItineraryBuilder = () => {
                                         <span className="flex items-center gap-1 bg-card px-3 py-1 rounded-full border border-border shadow-sm"><MapPin className="w-3 h-3" /> {trip.destination}</span>
                                         <span className="flex items-center gap-1 bg-card px-3 py-1 rounded-full border border-border shadow-sm"><Calendar className="w-3 h-3" /> {new Date(trip.start_date || trip.startDate).toLocaleDateString()}</span>
                                         <span className="flex items-center gap-1 bg-card px-3 py-1 rounded-full border border-border shadow-sm font-medium text-foreground">
-                                            {getCurrencySymbol(trip.currency || getCurrencyForDestination(trip.destination))}
-                                            {trip.budget}
+                                            <Wallet className="w-3 h-3" />
+                                            {activeCurrencySymbol}{(trip.budget || 0).toLocaleString()}
+                                            <span className="text-muted-foreground text-xs">/person</span>
                                         </span>
                                     </div>
                                 </div>
@@ -337,40 +346,79 @@ const ItineraryBuilder = () => {
                                             </CardContent>
                                         </Card>
                                     ) : (
-                                        <Reorder.Group axis="y" values={activeDay?.activities || []} onReorder={(newOrder) => reorderActivities(trip.id, activeDay.id, newOrder)} className="space-y-4">
-                                            {activeDay?.activities.map((activity) => {
-                                                const typeInfo = ACTIVITY_TYPES.find(t => t.value === activity.type) || ACTIVITY_TYPES[0];
-                                                const Icon = typeInfo.icon;
-                                                return (
-                                                    <Reorder.Item key={activity.id} value={activity} className="relative">
-                                                        <Card className={`border hover:border-primary/50 transition-colors ${activity.safety_warning ? 'border-l-4 border-l-destructive' : ''}`}>
-                                                            <div className="p-5 flex items-start gap-4">
-                                                                <div className="mt-2 text-muted-foreground/50 cursor-grab hover:text-foreground"><GripVertical className="w-5 h-5" /></div>
-                                                                <button onClick={() => toggleActivityComplete(trip.id, activeDay.id, activity.id)} className={activity.isCompleted ? 'text-green-500 mt-2' : 'text-muted-foreground/50 mt-2 hover:text-muted-foreground transition-colors'}>
-                                                                    {activity.isCompleted ? <CheckCircle2 className="w-6 h-6" /> : <Circle className="w-6 h-6" />}
-                                                                </button>
-                                                                <div className={`p-3 rounded-xl ${typeInfo.color}`}><Icon className="w-5 h-5" /></div>
-                                                                <div className="flex-grow">
-                                                                    <div className="flex justify-between items-center mb-1">
-                                                                        <h3 className={`font-semibold text-lg ${activity.isCompleted ? 'text-muted-foreground line-through' : 'text-foreground'}`}>{activity.title}</h3>
-                                                                        <div className="flex gap-2">
-                                                                            <button onClick={() => deleteActivity(trip.id, activeDay.id, activity.id)} className="p-2 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                        <>
+                                            <Reorder.Group axis="y" values={activeDay?.activities || []} onReorder={(newOrder) => reorderActivities(trip.id, activeDay.id, newOrder)} className="space-y-4">
+                                                {activeDay?.activities.map((activity) => {
+                                                    const typeInfo = ACTIVITY_TYPES.find(t => t.value === activity.type) || ACTIVITY_TYPES[0];
+                                                    const Icon = typeInfo.icon;
+                                                    return (
+                                                        <Reorder.Item key={activity.id} value={activity} className="relative">
+                                                            <Card className={`border hover:border-primary/50 transition-colors ${activity.safety_warning ? 'border-l-4 border-l-destructive' : ''}`}>
+                                                                <div className="p-5 flex items-start gap-4">
+                                                                    <div className="mt-2 text-muted-foreground/50 cursor-grab hover:text-foreground"><GripVertical className="w-5 h-5" /></div>
+                                                                    <button onClick={() => toggleActivityComplete(trip.id, activeDay.id, activity.id)} className={activity.isCompleted ? 'text-green-500 mt-2' : 'text-muted-foreground/50 mt-2 hover:text-muted-foreground transition-colors'}>
+                                                                        {activity.isCompleted ? <CheckCircle2 className="w-6 h-6" /> : <Circle className="w-6 h-6" />}
+                                                                    </button>
+                                                                    <div className={`p-3 rounded-xl ${typeInfo.color}`}><Icon className="w-5 h-5" /></div>
+                                                                    <div className="flex-grow">
+                                                                        <div className="flex justify-between items-center mb-1">
+                                                                            <h3 className={`font-semibold text-lg ${activity.isCompleted ? 'text-muted-foreground line-through' : 'text-foreground'}`}>{activity.title}</h3>
+                                                                            <div className="flex items-center gap-3">
+                                                                                {activity.estimated_cost > 0 && (
+                                                                                    <span className="text-sm font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-lg">
+                                                                                        {activeCurrencySymbol}{activity.estimated_cost.toLocaleString()}
+                                                                                    </span>
+                                                                                )}
+                                                                                <button onClick={() => deleteActivity(trip.id, activeDay.id, activity.id)} className="p-2 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                                                            </div>
                                                                         </div>
+                                                                        {activity.safety_warning && <p className="text-xs font-medium text-destructive bg-destructive/10 p-2.5 rounded-lg mb-3 flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {activity.safety_warning}</p>}
+                                                                        <div className="flex gap-4 text-sm text-muted-foreground">
+                                                                            <span className="flex gap-1 items-center bg-muted px-2 py-1 rounded text-xs"><Clock className="w-3 h-3" /> {activity.time}</span>
+                                                                            {activity.location && <span className="flex gap-1 items-center"><MapPin className="w-3 h-3" /> {activity.location}</span>}
+                                                                            <span className="px-2 py-1 rounded bg-muted text-xs font-medium uppercase">{typeInfo.label}</span>
+                                                                        </div>
+                                                                        {activity.notes && <p className="mt-3 text-sm text-muted-foreground bg-muted/50 p-3 rounded-xl">{activity.notes}</p>}
                                                                     </div>
-                                                                    {activity.safety_warning && <p className="text-xs font-medium text-destructive bg-destructive/10 p-2.5 rounded-lg mb-3 flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {activity.safety_warning}</p>}
-                                                                    <div className="flex gap-4 text-sm text-muted-foreground">
-                                                                        <span className="flex gap-1 items-center bg-muted px-2 py-1 rounded text-xs"><Clock className="w-3 h-3" /> {activity.time}</span>
-                                                                        {activity.location && <span className="flex gap-1 items-center"><MapPin className="w-3 h-3" /> {activity.location}</span>}
-                                                                        <span className="px-2 py-1 rounded bg-muted text-xs font-medium uppercase">{typeInfo.label}</span>
-                                                                    </div>
-                                                                    {activity.notes && <p className="mt-3 text-sm text-muted-foreground bg-muted/50 p-3 rounded-xl">{activity.notes}</p>}
+                                                                </div>
+                                                            </Card>
+                                                        </Reorder.Item>
+                                                    );
+                                                })}
+                                            </Reorder.Group>
+
+                                            {/* Daily Expense Summary */}
+                                            {(() => {
+                                                const dayTotal = activeDay?.activities.reduce((sum, a) => sum + (a.estimated_cost || 0), 0) || 0;
+                                                const dailyBudget = trip.budget && trip.days.length ? Math.round(trip.budget / trip.days.length) : 0;
+                                                if (dayTotal === 0 && dailyBudget === 0) return null;
+                                                return (
+                                                    <Card className="mt-6 border-primary/20 bg-primary/5">
+                                                        <div className="p-5 flex items-center justify-between">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="p-2 rounded-xl bg-primary/10">
+                                                                    <Wallet className="w-5 h-5 text-primary" />
+                                                                </div>
+                                                                <div>
+                                                                    <h4 className="font-semibold text-foreground">Day {activeDay?.dayNumber} Expenses</h4>
+                                                                    <p className="text-xs text-muted-foreground">Estimated total for this day (per person)</p>
                                                                 </div>
                                                             </div>
-                                                        </Card>
-                                                    </Reorder.Item>
+                                                            <div className="text-right">
+                                                                <div className={`text-2xl font-bold ${dayTotal > dailyBudget && dailyBudget > 0 ? 'text-destructive' : 'text-primary'}`}>
+                                                                    {activeCurrencySymbol}{dayTotal.toLocaleString()}
+                                                                </div>
+                                                                {dailyBudget > 0 && (
+                                                                    <p className="text-xs text-muted-foreground">
+                                                                        of {activeCurrencySymbol}{dailyBudget.toLocaleString()} daily budget
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </Card>
                                                 );
-                                            })}
-                                        </Reorder.Group>
+                                            })()}
+                                        </>
                                     )}
                                 </div>
 
@@ -414,13 +462,14 @@ const ItineraryBuilder = () => {
                                     <div className="p-8 border-b border-border bg-muted/30">
                                         <h2 className="text-3xl font-bold text-foreground mb-2">Trip Budget Planner</h2>
                                         <p className="text-muted-foreground">Plan, track, and optimize your expenses for {trip.destination}.</p>
+                                        <p className="text-xs text-muted-foreground/70 mt-1">💡 Budget is calculated <strong>per person</strong>. The AI will plan your full itinerary within this budget.</p>
                                     </div>
 
                                     <CardContent className="p-8">
                                         {/* Inputs */}
                                         <div className="flex flex-col md:flex-row gap-6 mb-8 items-end">
                                             <div className="flex-grow">
-                                                <label className="block text-sm font-medium text-foreground mb-2">Total Budget (Per Person)</label>
+                                                <label className="block text-sm font-medium text-foreground mb-2">Total Budget <span className="text-muted-foreground font-normal">(Per Person)</span></label>
                                                 <div className="relative">
                                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">{currencyInput}</span>
                                                     <input

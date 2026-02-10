@@ -109,9 +109,12 @@ serve(async (req) => {
         }
         // --- RAG RETRIEVAL END ---
 
+        const dailyBudget = Math.round((budget || 2000) / (days || 1));
+
         const prompt = `
-    Generate a comprehensive, fully detailed ${days}-day itinerary for ${travelers} travelers.
-    Total budget: ${budget} ${currency}.
+    Generate a comprehensive, fully detailed ${days}-day itinerary for ${travelers} traveler(s).
+    Total budget: ${budget} ${currency} (per person).
+    Daily budget per person: ~${dailyBudget} ${currency}.
     ${scheduleContext}
 
     ${budgetGuidance}
@@ -121,10 +124,13 @@ serve(async (req) => {
 
     ⚠️ ABSOLUTE REQUIREMENT: Your recommendations MUST strictly adhere to the ${tierKey.toUpperCase()} tier guidelines above.
     
+    CRITICAL BUDGET RULE: The sum of ALL estimated_cost values across ALL days MUST NOT EXCEED ${budget} ${currency}.
+    Each day's total should be approximately ${dailyBudget} ${currency}.
+    
     CRITICAL: You must provide a FULL day's schedule for EVERY day. 
     Each day MUST include at least 5-6 activities covering Morning, Afternoon, and Evening.
     
-    PRICING: Include realistic estimated costs in ${currency} for EVERY activity.
+    PRICING: Include realistic estimated costs in ${currency} for EVERY activity as a NUMBER in the "estimated_cost" field.
     
     Return ONLY valid JSON in the following format:
     {
@@ -137,8 +143,9 @@ serve(async (req) => {
               "time": "09:00",
               "location": "Specific location name",
               "type": "sightseeing",
+              "estimated_cost": 500,
               "safety_warning": "Warning text or null",
-              "notes": "Detailed description. Cost: [amount]"
+              "notes": "Detailed description including what to expect"
             }
           ]
         }
