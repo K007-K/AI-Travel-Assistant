@@ -399,7 +399,7 @@ const Bookings = () => {
                                     onChange={(e) => setSortBy(e.target.value)}
                                     className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold outline-none focus:ring-2 focus:ring-primary-500"
                                 >
-                                    <option value="recommended">Empferhlung (Recom)</option>
+                                    <option value="recommended">Recommended</option>
                                     <option value="price_low">Price: Low to High</option>
                                     <option value="price_high">Price: High to Low</option>
                                     <option value="rating">Top Rated</option>
