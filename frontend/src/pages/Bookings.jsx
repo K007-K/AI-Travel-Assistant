@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plane, Hotel, Train, Search, Calendar, MapPin, User, CheckCircle, ArrowRight, Star, Clock, Briefcase, Coffee, Wifi, Ban } from 'lucide-react';
+import { Plane, Hotel, Train, Search, Calendar, MapPin, User, CheckCircle, ArrowRight, Star, Clock, Briefcase, Coffee, Wifi, Ban, Award } from 'lucide-react';
 import useBookingStore from '../store/bookingStore';
 import { useNavigate } from 'react-router-dom';
 import LocationInput from '../components/ui/LocationInput';
 import DemoBanner from '../components/ui/DemoBanner';
+import { generateFlightResults, generateHotelResults, generateTrainResults, sortResults } from '../utils/bookingScorer';
 
 const Bookings = () => {
     const navigate = useNavigate();
@@ -68,86 +69,24 @@ const Bookings = () => {
         setSearchState('searching');
         setResults([]);
 
-        // Simulate API delay
+        // Simulate network delay, then generate scored results
         setTimeout(() => {
-            generateMockResults();
-            setSearchState('results');
-        }, 1500);
-    };
-
-    const generateMockResults = () => {
-        const count = Math.floor(Math.random() * 5) + 3; // 3-7 results
-        const newResults = [];
-
-        for (let i = 0; i < count; i++) {
+            const rate = currency.rate || 1;
+            let newResults;
             if (activeTab === 'flights') {
-                const depHour = Math.floor(Math.random() * 24);
-                const durationH = Math.floor(Math.random() * 5) + 1; // 1-6 hours
-                const arrHour = (depHour + durationH) % 24;
-
-                // Smart Pricing: $50 base + $40 per hour of flight
-                const basePrice = 50 + (durationH * 40);
-
-                newResults.push({
-                    id: i,
-                    type: 'flight',
-                    airline: ['IndiGo', 'Air India', 'Vistara', 'Emirates'][Math.floor(Math.random() * 4)],
-                    logo: ['✈️', '🦅', '🦁', '🌍'][Math.floor(Math.random() * 4)],
-                    flightNumber: `${['6E', 'AI', 'UK', 'EK'][Math.floor(Math.random() * 4)]}-${Math.floor(Math.random() * 900) + 100}`,
-                    depTime: `${depHour.toString().padStart(2, '0')}:${Math.random() > 0.5 ? '00' : '30'}`,
-                    arrTime: `${arrHour.toString().padStart(2, '0')}:${Math.random() > 0.5 ? '15' : '45'}`,
-                    duration: `${durationH}h ${Math.floor(Math.random() * 50)}m`,
-                    stops: Math.random() > 0.7 ? '1 Stop' : 'Non-stop',
-                    price: basePrice + Math.floor(Math.random() * 20), // Add small variation
-                });
+                newResults = generateFlightResults(formData, rate);
             } else if (activeTab === 'hotels') {
-                const rating = (Math.random() * 1.5 + 3.5).toFixed(1); // 3.5 to 5.0
-                // Smart Pricing: Base $50 + ($50 * (rating - 3))
-                const basePrice = 50 + (50 * (rating - 3));
-
-                newResults.push({
-                    id: i,
-                    type: 'hotel',
-                    name: `${['Grand', 'Royal', 'Cozy', 'Urban', 'Seaside'][Math.floor(Math.random() * 5)]} ${['Hotel', 'Inn', 'Stay', 'Resort', 'Suites'][Math.floor(Math.random() * 5)]}`,
-                    rating: rating,
-                    reviews: Math.floor(Math.random() * 500) + 50,
-                    location: formData.destination || 'City Center',
-                    price: Math.floor(basePrice),
-                    image: `https://source.unsplash.com/800x600/?hotel,room&sig=${i}`,
-                    amenities: ['Wifi', 'Pool', 'Breakfast'].slice(0, Math.floor(Math.random() * 3) + 1)
-                });
+                newResults = generateHotelResults(formData, rate);
             } else {
-                const depHour = Math.floor(Math.random() * 24);
-                const durationH = Math.floor(Math.random() * 10) + 4;
-                const arrHour = (depHour + durationH) % 24;
-
-                // Smart Pricing: $10 base + $5 per hour
-                const basePrice = 10 + (durationH * 5);
-
-                newResults.push({
-                    id: i,
-                    type: 'train',
-                    name: ['Rajdhani Exp', 'Shatabdi Exp', 'Duronto Exp', 'Intercity Exp'][Math.floor(Math.random() * 4)],
-                    number: Math.floor(Math.random() * 80000) + 10000,
-                    depTime: `${depHour.toString().padStart(2, '0')}:${Math.random() > 0.5 ? '00' : '30'}`,
-                    arrTime: `${arrHour.toString().padStart(2, '0')}:${Math.random() > 0.5 ? '15' : '45'}`,
-                    duration: `${durationH}h ${Math.floor(Math.random() * 50)}m`,
-                    price: Math.floor(basePrice),
-                    seats: Math.floor(Math.random() * 50) + 1,
-                    class: formData.trainClass || 'SL'
-                });
+                newResults = generateTrainResults(formData, rate);
             }
-        }
-        setResults(newResults);
+            setResults(newResults);
+            setSearchState('results');
+        }, 1200);
     };
 
-    // Sort Results
-    const sortedResults = [...results].sort((a, b) => {
-        if (sortBy === 'price_low') return a.price - b.price;
-        if (sortBy === 'price_high') return b.price - a.price;
-        if (sortBy === 'rating' && a.rating) return b.rating - a.rating;
-        return 0; // recommended
-    });
+    // Sort Results (recommended = by composite score)
+    const sortedResults = sortResults(results, sortBy);
 
     const handleBook = (item) => {
         // Navigate to detailed review page instead of instant booking
@@ -418,8 +357,14 @@ const Bookings = () => {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: index * 0.1 }}
-                                    className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden hover:shadow-lg transition-all group"
+                                    className={`bg-white dark:bg-slate-800 rounded-2xl shadow-sm border overflow-hidden hover:shadow-lg transition-all group ${item.isBest ? 'border-emerald-400 ring-2 ring-emerald-100 dark:ring-emerald-900/30' : 'border-slate-200 dark:border-slate-700'}`}
                                 >
+                                    {/* Best Pick Badge */}
+                                    {item.isBest && (
+                                        <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold px-4 py-1.5 flex items-center gap-1.5">
+                                            <Award className="w-3.5 h-3.5" /> Best Pick — Score {item.score}/100
+                                        </div>
+                                    )}
                                     {/* Flight Card */}
                                     {activeTab === 'flights' && (
                                         <div className="p-6 flex flex-col md:flex-row items-center gap-6">
