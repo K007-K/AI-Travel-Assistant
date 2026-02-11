@@ -97,10 +97,15 @@ const ItineraryBuilder = () => {
                 sessionStorage.setItem(budgetCheckedKey, 'true');
             }
 
-            // Auto-detect currency
+            // Auto-detect currency or use saved trip currency
             if (!currencyInput || currencyInput === '') {
-                const detectedCurrency = getCurrencyForDestination(foundTrip.destination);
-                setCurrencyInput(detectedCurrency);
+                const savedCurrency = foundTrip.currency && foundTrip.currency !== 'USD' ? foundTrip.currency : getCurrencyForDestination(foundTrip.destination);
+                setCurrencyInput(savedCurrency);
+            }
+
+            // Populate budget input from saved trip data
+            if (!budgetInput && foundTrip.budget && foundTrip.budget > 0) {
+                setBudgetInput(String(foundTrip.budget));
             }
         } else if (hasFetched) {
             // Only navigate away AFTER fetch has completed and trip truly doesn't exist
@@ -216,11 +221,18 @@ const ItineraryBuilder = () => {
         const budgetVal = parseFloat(budgetInput);
         // Optimistically update local trip state immediately
         setTrip(prev => ({ ...prev, budget: budgetVal, currency: currencyInput, budget_skipped: false }));
-        // Persist to Supabase + zustand store
-        await updateTrip(trip.id, {
-            budget: budgetVal, currency: currencyInput, budget_skipped: false
-        });
-        showToast("✅ Budget saved!");
+        try {
+            // Persist to Supabase + zustand store
+            await updateTrip(trip.id, {
+                budget: budgetVal, currency: currencyInput, budget_skipped: false
+            });
+            // Re-fetch to confirm persistence
+            await fetchTrips();
+            showToast("✅ Budget saved!");
+        } catch (err) {
+            console.error('Budget save failed:', err);
+            showToast("❌ Budget save failed. Check console.");
+        }
     };
 
     if (!trip) return null;

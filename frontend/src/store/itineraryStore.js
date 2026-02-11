@@ -170,25 +170,30 @@ const useItineraryStore = create((set, get) => ({
     },
 
     updateTrip: async (tripId, updates) => {
-        set({ isLoading: true, error: null });
+        // Don't set isLoading here — it triggers full-page skeleton for minor updates
         try {
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from('trips')
                 .update(updates)
-                .eq('id', tripId);
+                .eq('id', tripId)
+                .select();
 
-            if (error) throw error;
+            if (error) {
+                console.error('Supabase updateTrip error:', error.message, error.details, error.hint);
+                throw error;
+            }
+
+            console.log('Trip updated successfully:', tripId, updates);
 
             set((state) => ({
                 trips: state.trips.map(t =>
                     t.id === tripId ? { ...t, ...updates } : t
                 ),
                 currentTrip: state.currentTrip?.id === tripId ? { ...state.currentTrip, ...updates } : state.currentTrip,
-                isLoading: false
             }));
         } catch (error) {
             console.error('Error updating trip:', error);
-            set({ error: error.message, isLoading: false });
+            set({ error: error.message });
         }
     },
 
