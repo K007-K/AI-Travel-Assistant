@@ -98,7 +98,11 @@ const ItineraryBuilder = () => {
             // Load gems once
             if (hiddenGems.length === 0 && !isLoadingGems) {
                 setIsLoadingGems(true);
-                getHiddenGems(foundTrip.destination)
+                getHiddenGems(foundTrip.destination, {
+                    budgetTier: foundTrip.accommodation_preference || 'mid-range',
+                    travelStyle: foundTrip.travel_style || '',
+                    currency: foundTrip.currency || 'USD',
+                })
                     .then(gems => setHiddenGems(gems || []))
                     .finally(() => setIsLoadingGems(false));
             }
@@ -556,32 +560,64 @@ const ItineraryBuilder = () => {
                                                 })}
                                             </Reorder.Group>
 
-                                            {/* Daily Expense Summary */}
+                                            {/* Daily Expense Summary — Categorized Breakdown */}
                                             {(() => {
-                                                const dayTotal = activeDay?.activities.reduce((sum, a) => sum + (a.estimated_cost || 0), 0) || 0;
+                                                const acts = activeDay?.activities || [];
+                                                const activityCost = acts.filter(a => !a.isLogistics).reduce((s, a) => s + (a.estimated_cost || 0), 0);
+                                                const transportCost = acts.filter(a => a.segmentType === 'outbound_travel' || a.segmentType === 'return_travel' || a.segmentType === 'local_transport').reduce((s, a) => s + (a.estimated_cost || 0), 0);
+                                                const accomCost = acts.filter(a => a.segmentType === 'accommodation').reduce((s, a) => s + (a.estimated_cost || 0), 0);
+                                                const dayTotal = activityCost + transportCost + accomCost;
                                                 const dailyBudget = trip.budget && trip.days.length ? Math.round(trip.budget / trip.days.length) : 0;
                                                 if (dayTotal === 0 && dailyBudget === 0) return null;
+                                                const pct = dailyBudget > 0 ? Math.min(100, Math.round((dayTotal / dailyBudget) * 100)) : 0;
+                                                const isOver = dayTotal > dailyBudget && dailyBudget > 0;
                                                 return (
                                                     <Card className="mt-6 border-primary/20 bg-primary/5">
-                                                        <div className="p-5 flex items-center justify-between">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="p-2 rounded-xl bg-primary/10">
-                                                                    <Wallet className="w-5 h-5 text-primary" />
+                                                        <div className="p-5">
+                                                            <div className="flex items-center justify-between mb-4">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="p-2 rounded-xl bg-primary/10">
+                                                                        <Wallet className="w-5 h-5 text-primary" />
+                                                                    </div>
+                                                                    <div>
+                                                                        <h4 className="font-semibold text-foreground">Day {activeDay?.dayNumber} Expenses</h4>
+                                                                        <p className="text-xs text-muted-foreground">Estimated total (per person)</p>
+                                                                    </div>
                                                                 </div>
-                                                                <div>
-                                                                    <h4 className="font-semibold text-foreground">Day {activeDay?.dayNumber} Expenses</h4>
-                                                                    <p className="text-xs text-muted-foreground">Estimated total for this day (per person)</p>
+                                                                <div className="text-right">
+                                                                    <div className={`text-2xl font-bold ${isOver ? 'text-destructive' : 'text-primary'}`}>
+                                                                        {activeCurrencySymbol}{dayTotal.toLocaleString()}
+                                                                    </div>
+                                                                    {dailyBudget > 0 && (
+                                                                        <p className="text-xs text-muted-foreground">
+                                                                            of {activeCurrencySymbol}{dailyBudget.toLocaleString()} daily budget
+                                                                        </p>
+                                                                    )}
                                                                 </div>
                                                             </div>
-                                                            <div className="text-right">
-                                                                <div className={`text-2xl font-bold ${dayTotal > dailyBudget && dailyBudget > 0 ? 'text-destructive' : 'text-primary'}`}>
-                                                                    {activeCurrencySymbol}{dayTotal.toLocaleString()}
+                                                            {/* Progress bar */}
+                                                            {dailyBudget > 0 && (
+                                                                <div className="h-2 bg-muted rounded-full mb-4 overflow-hidden">
+                                                                    <div
+                                                                        className={`h-full rounded-full transition-all ${isOver ? 'bg-destructive' : 'bg-primary'}`}
+                                                                        style={{ width: `${Math.min(pct, 100)}%` }}
+                                                                    />
                                                                 </div>
-                                                                {dailyBudget > 0 && (
-                                                                    <p className="text-xs text-muted-foreground">
-                                                                        of {activeCurrencySymbol}{dailyBudget.toLocaleString()} daily budget
-                                                                    </p>
-                                                                )}
+                                                            )}
+                                                            {/* Category breakdown */}
+                                                            <div className="grid grid-cols-3 gap-3 text-center">
+                                                                <div className="bg-background rounded-xl p-2.5">
+                                                                    <p className="text-xs text-muted-foreground mb-0.5">Activities</p>
+                                                                    <p className="text-sm font-semibold text-foreground">{activeCurrencySymbol}{activityCost.toLocaleString()}</p>
+                                                                </div>
+                                                                <div className="bg-background rounded-xl p-2.5">
+                                                                    <p className="text-xs text-muted-foreground mb-0.5">Transport</p>
+                                                                    <p className="text-sm font-semibold text-teal-600">{activeCurrencySymbol}{transportCost.toLocaleString()}</p>
+                                                                </div>
+                                                                <div className="bg-background rounded-xl p-2.5">
+                                                                    <p className="text-xs text-muted-foreground mb-0.5">Stay</p>
+                                                                    <p className="text-sm font-semibold text-indigo-600">{activeCurrencySymbol}{accomCost.toLocaleString()}</p>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </Card>
@@ -598,7 +634,7 @@ const ItineraryBuilder = () => {
                                             <Map activities={allActivities} destination={trip.destination} />
                                         </Card>
 
-                                        {/* Scrollable Hidden Gems */}
+                                        {/* Scrollable Hidden Gems — Enhanced */}
                                         <Card className="rounded-3xl border-border flex flex-col max-h-[calc(100vh-25rem)]">
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2 text-lg">
@@ -606,15 +642,34 @@ const ItineraryBuilder = () => {
                                                 </CardTitle>
                                             </CardHeader>
                                             <CardContent className="space-y-3 overflow-y-auto pr-2 custom-scrollbar">
+                                                {isLoadingGems && (
+                                                    <div className="text-center py-4 text-muted-foreground text-sm">Loading gems…</div>
+                                                )}
                                                 {hiddenGems.map((gem, i) => (
-                                                    <div key={i} className="flex justify-between items-start p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors shrink-0">
-                                                        <div>
+                                                    <div key={i} className="p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors shrink-0">
+                                                        <div className="flex justify-between items-start mb-1.5">
                                                             <h4 className="text-sm font-medium text-foreground">{gem.title}</h4>
-                                                            <p className="text-xs text-muted-foreground line-clamp-2">{gem.description}</p>
+                                                            <button onClick={() => handleAddGem(gem)} className="text-primary hover:scale-110 transition-transform p-1">
+                                                                <Plus className="w-4 h-4" />
+                                                            </button>
                                                         </div>
-                                                        <button onClick={() => handleAddGem(gem)} className="text-primary hover:scale-110 transition-transform p-1">
-                                                            <Plus className="w-4 h-4" />
-                                                        </button>
+                                                        <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{gem.description}</p>
+                                                        <div className="flex gap-2 flex-wrap">
+                                                            {gem.category && (
+                                                                <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">{gem.category}</span>
+                                                            )}
+                                                            {gem.best_time && (
+                                                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">{gem.best_time}</span>
+                                                            )}
+                                                            {gem.estimated_cost > 0 && (
+                                                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                                                                    {activeCurrencySymbol}{gem.estimated_cost}
+                                                                </span>
+                                                            )}
+                                                            {gem.estimated_cost === 0 && (
+                                                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Free</span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </CardContent>

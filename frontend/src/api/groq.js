@@ -81,11 +81,35 @@ export const generateTripPlan = async (destination, days, budget, travelers, cur
     }
 };
 
-export const getHiddenGems = async (destination) => {
+export const getHiddenGems = async (destination, tripContext = {}) => {
+    const { budgetTier = 'mid-range', travelStyle = '', currency = 'USD' } = tripContext;
+
+    const budgetHint = budgetTier === 'budget'
+        ? 'Focus on free or very cheap experiences.'
+        : budgetTier === 'luxury'
+            ? 'Include exclusive, premium hidden experiences.'
+            : 'Mix of free and moderately priced experiences.';
+
+    const styleHint = travelStyle
+        ? `Prioritize gems that suit a "${travelStyle}" travel style.`
+        : '';
+
     const prompt = `
     Suggest 5 "hidden gem" activities or unique spots in ${destination} that most tourists miss.
+    ${budgetHint}
+    ${styleHint}
+
     Return ONLY valid JSON in the following format:
-    { "gems": [ { "title": "Spot Name", "description": "Why it's unique" } ] }
+    { "gems": [
+        {
+            "title": "Spot Name",
+            "description": "Why it's unique (1-2 sentences)",
+            "category": "culture|food|nature|adventure|nightlife",
+            "estimated_cost": 0,
+            "best_time": "Morning|Afternoon|Evening|Anytime"
+        }
+    ] }
+    All estimated_cost values must be in ${currency}.
     `;
 
     try {
