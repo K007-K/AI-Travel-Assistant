@@ -36,11 +36,12 @@ const ItineraryBuilder = () => {
         fetchTrips,
         isLoading,
         updateTrip,
-        updateTripDays,
         addActivity,
+        batchAddActivities,
         reorderActivities,
         deleteActivity,
         toggleActivityComplete,
+        ensureSegments,
     } = useItineraryStore();
     const { syncAiEstimates, fetchBudgetSummary, budgetSummary, setTripBudget, deleteCostEventForActivity } = useBudgetStore();
 
@@ -85,6 +86,8 @@ const ItineraryBuilder = () => {
         const foundTrip = trips.find(t => t.id === id);
         if (foundTrip) {
             setTrip(foundTrip);
+            // Auto-migrate legacy JSONB days to trip_segments
+            ensureSegments(foundTrip.id);
             if (!selectedDay) setSelectedDay(foundTrip.days[0]?.id);
 
             // Load gems once
@@ -170,30 +173,23 @@ const ItineraryBuilder = () => {
                 trip.budgetTier || 'mid-range'
             );
             if (plan && plan.days) {
-                // Clear old activities before adding new ones
-                const clearedDays = trip.days.map(day => ({ ...day, activities: [] }));
-                await updateTripDays(trip.id, clearedDays);
-
-                plan.days.forEach((genDay, index) => {
-                    const storeDayId = trip.days[index]?.id;
-                    if (storeDayId && genDay.activities) {
-                        genDay.activities.forEach(activity => {
-                            addActivity(trip.id, storeDayId, {
-                                title: activity.title,
-                                time: activity.time || '09:00',
-                                type: activity.type || 'sightseeing',
-                                location: activity.location,
-                                notes: activity.notes,
-                                estimated_cost: parseFloat(activity.estimated_cost) || 0,
-                                safety_warning: activity.safety_warning
-                            });
-                        });
-                    }
-                });
+                // Batch-insert all AI-generated activities into trip_segments
+                const activitiesByDay = plan.days.map(genDay =>
+                    (genDay.activities || []).map(activity => ({
+                        title: activity.title,
+                        time: activity.time || '09:00',
+                        type: activity.type || 'sightseeing',
+                        location: activity.location,
+                        notes: activity.notes,
+                        estimated_cost: parseFloat(activity.estimated_cost) || 0,
+                        safety_warning: activity.safety_warning,
+                    }))
+                );
+                await batchAddActivities(trip.id, activitiesByDay);
                 showToast("✨ Itinerary generated successfully!");
 
                 // Sync AI estimated costs to cost_events table
-                // Re-read the trip from store to get the updated days with activity IDs
+                // Re-read the trip from store to get the updated days with segment IDs
                 setTimeout(async () => {
                     const updatedTrips = useItineraryStore.getState().trips;
                     const updatedTrip = updatedTrips.find(t => t.id === trip.id);
