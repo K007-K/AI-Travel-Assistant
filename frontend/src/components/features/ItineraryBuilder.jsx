@@ -16,7 +16,7 @@ import BudgetHealthBadge from '../ui/BudgetHealthBadge';
 import { generateTripPlan, getHiddenGems, validateTripBudget } from '../../api/groq';
 import { getCurrencyForDestination, getCurrencySymbol } from '../../utils/currencyMap';
 // ReactMarkdown removed — Budget Analyzer now uses structured JSON
-import Map from '../ui/Map';
+import MapContainer from '../map/MapContainer';
 import { Button } from '../ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 
@@ -630,8 +630,8 @@ const ItineraryBuilder = () => {
                                 {/* Sidebar */}
                                 <div className="lg:col-span-1">
                                     <div className="sticky top-6 space-y-6">
-                                        <Card className="rounded-3xl overflow-hidden h-64 border-border">
-                                            <Map activities={allActivities} destination={trip.destination} />
+                                        <Card className="rounded-3xl overflow-hidden h-72 border-border">
+                                            <MapContainer trip={trip} destination={trip.destination} />
                                         </Card>
 
                                         {/* Scrollable Hidden Gems — Enhanced */}

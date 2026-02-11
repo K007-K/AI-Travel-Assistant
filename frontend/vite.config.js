@@ -25,7 +25,7 @@ export default defineConfig({
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-supabase': ['@supabase/supabase-js'],
           'vendor-ui': ['framer-motion', 'lucide-react'],
-          'vendor-maps': ['leaflet', 'react-leaflet'],
+          'vendor-maps': ['maplibre-gl'],
         },
       },
     },
