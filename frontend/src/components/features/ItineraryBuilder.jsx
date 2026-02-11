@@ -7,7 +7,8 @@ import {
     Coffee, Camera, Utensils, Bed, Wallet,
     Landmark, Music, Sun, Sparkles, Map as MapIcon, Loader2,
     CheckCircle2, Circle, AlertCircle, TrendingUp,
-    ShieldCheck, BarChart3, AlertTriangle, DollarSign, Lightbulb
+    ShieldCheck, BarChart3, AlertTriangle, DollarSign, Lightbulb,
+    Plane, Train, Bus, Car, Bike, Hotel
 } from 'lucide-react';
 import useItineraryStore from '../../store/itineraryStore';
 import useBudgetStore from '../../store/budgetStore';
@@ -25,7 +26,11 @@ const ACTIVITY_TYPES = [
     { value: 'relax', label: 'Relaxation', icon: Coffee, color: 'text-green-500 bg-green-50 dark:bg-green-900/20' },
     { value: 'culture', label: 'Culture', icon: Landmark, color: 'text-purple-500 bg-purple-50 dark:bg-purple-900/20' },
     { value: 'activity', label: 'Activity', icon: Sun, color: 'text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' },
-    { value: 'accommodation', label: 'Stay', icon: Bed, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' },
+    { value: 'accommodation', label: 'Stay', icon: Hotel, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' },
+    // Logistics types (injected by Transport Engine)
+    { value: 'outbound_travel', label: 'Travel', icon: Plane, color: 'text-teal-500 bg-teal-50 dark:bg-teal-900/20' },
+    { value: 'return_travel', label: 'Return', icon: Plane, color: 'text-teal-500 bg-teal-50 dark:bg-teal-900/20' },
+    { value: 'local_transport', label: 'Local Transport', icon: Bus, color: 'text-cyan-500 bg-cyan-50 dark:bg-cyan-900/20' },
 ];
 
 const ItineraryBuilder = () => {
@@ -510,14 +515,17 @@ const ItineraryBuilder = () => {
                                                 {activeDay?.activities.map((activity) => {
                                                     const typeInfo = ACTIVITY_TYPES.find(t => t.value === activity.type) || ACTIVITY_TYPES[0];
                                                     const Icon = typeInfo.icon;
+                                                    const isLogistics = activity.isLogistics;
                                                     return (
-                                                        <Reorder.Item key={activity.id} value={activity} className="relative">
-                                                            <Card className={`border hover:border-primary/50 transition-colors ${activity.safety_warning ? 'border-l-4 border-l-destructive' : ''}`}>
+                                                        <Reorder.Item key={activity.id} value={activity} className="relative" dragListener={!isLogistics}>
+                                                            <Card className={`border hover:border-primary/50 transition-colors ${activity.safety_warning ? 'border-l-4 border-l-destructive' : ''} ${isLogistics ? 'border-l-4 border-l-teal-500 bg-teal-50/30 dark:bg-teal-900/10' : ''}`}>
                                                                 <div className="p-5 flex items-start gap-4">
-                                                                    <div className="mt-2 text-muted-foreground/50 cursor-grab hover:text-foreground"><GripVertical className="w-5 h-5" /></div>
-                                                                    <button onClick={() => toggleActivityComplete(trip.id, activeDay.id, activity.id)} className={activity.isCompleted ? 'text-green-500 mt-2' : 'text-muted-foreground/50 mt-2 hover:text-muted-foreground transition-colors'}>
-                                                                        {activity.isCompleted ? <CheckCircle2 className="w-6 h-6" /> : <Circle className="w-6 h-6" />}
-                                                                    </button>
+                                                                    {!isLogistics && <div className="mt-2 text-muted-foreground/50 cursor-grab hover:text-foreground"><GripVertical className="w-5 h-5" /></div>}
+                                                                    {!isLogistics && (
+                                                                        <button onClick={() => toggleActivityComplete(trip.id, activeDay.id, activity.id)} className={activity.isCompleted ? 'text-green-500 mt-2' : 'text-muted-foreground/50 mt-2 hover:text-muted-foreground transition-colors'}>
+                                                                            {activity.isCompleted ? <CheckCircle2 className="w-6 h-6" /> : <Circle className="w-6 h-6" />}
+                                                                        </button>
+                                                                    )}
                                                                     <div className={`p-3 rounded-xl ${typeInfo.color}`}><Icon className="w-5 h-5" /></div>
                                                                     <div className="flex-grow">
                                                                         <div className="flex justify-between items-center mb-1">
@@ -528,12 +536,14 @@ const ItineraryBuilder = () => {
                                                                                         {activeCurrencySymbol}{activity.estimated_cost.toLocaleString()}
                                                                                     </span>
                                                                                 )}
-                                                                                <button onClick={() => handleDeleteActivity(trip.id, activeDay.id, activity.id)} className="p-2 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                                                                {!isLogistics && (
+                                                                                    <button onClick={() => handleDeleteActivity(trip.id, activeDay.id, activity.id)} className="p-2 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                                                                )}
                                                                             </div>
                                                                         </div>
                                                                         {activity.safety_warning && <p className="text-xs font-medium text-destructive bg-destructive/10 p-2.5 rounded-lg mb-3 flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {activity.safety_warning}</p>}
                                                                         <div className="flex gap-4 text-sm text-muted-foreground">
-                                                                            <span className="flex gap-1 items-center bg-muted px-2 py-1 rounded text-xs"><Clock className="w-3 h-3" /> {activity.time}</span>
+                                                                            {!isLogistics && <span className="flex gap-1 items-center bg-muted px-2 py-1 rounded text-xs"><Clock className="w-3 h-3" /> {activity.time}</span>}
                                                                             {activity.location && <span className="flex gap-1 items-center"><MapPin className="w-3 h-3" /> {activity.location}</span>}
                                                                             <span className="px-2 py-1 rounded bg-muted text-xs font-medium uppercase">{typeInfo.label}</span>
                                                                         </div>

@@ -1,7 +1,15 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
+import { generateTransportSegments } from '../utils/transportEngine';
 
 // ── Helpers ──────────────────────────────────────────────────────────
+
+/** Map a trip_segment row's type to a UI-friendly activity type string */
+function segmentTypeToActivityType(seg) {
+    if (seg.type === 'activity') return seg.metadata?.activityType || 'sightseeing';
+    // Logistics types pass through directly (outbound_travel, return_travel, etc.)
+    return seg.type;
+}
 
 /**
  * Reconstruct the virtual `days` array that ItineraryBuilder expects
@@ -43,13 +51,17 @@ function buildDaysFromSegments(segments, trip) {
                 id: seg.id,                          // UUID from trip_segments — real PK
                 title: seg.title,
                 time: seg.start_time ? new Date(seg.start_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : (seg.metadata?.time || '09:00'),
-                type: seg.type === 'activity' ? (seg.metadata?.activityType || 'sightseeing') : seg.type,
+                type: segmentTypeToActivityType(seg),
                 location: seg.location || dayLocation,
                 notes: seg.metadata?.notes || '',
                 estimated_cost: parseFloat(seg.estimated_cost) || 0,
                 safety_warning: seg.metadata?.safety_warning || null,
                 isCompleted: seg.metadata?.isCompleted || false,
                 rating: seg.metadata?.rating || 0,
+                // Logistics metadata
+                segmentType: seg.type,
+                transportMode: seg.metadata?.transport_mode || null,
+                isLogistics: ['outbound_travel', 'return_travel', 'local_transport', 'accommodation'].includes(seg.type),
             }))
         };
     });
@@ -576,8 +588,23 @@ const useItineraryStore = create((set, get) => ({
             return;
         }
 
-        // Rebuild virtual days
-        const rebuiltDays = buildDaysFromSegments(inserted, trip);
+        // Now generate and insert transport + accommodation segments
+        const transportSegs = generateTransportSegments(trip);
+        let allInserted = inserted || [];
+
+        if (transportSegs.length > 0) {
+            const { data: transportInserted, error: tErr } = await supabase
+                .from('trip_segments')
+                .insert(transportSegs)
+                .select();
+
+            if (!tErr && transportInserted) {
+                allInserted = [...allInserted, ...transportInserted];
+            }
+        }
+
+        // Rebuild virtual days from ALL segments
+        const rebuiltDays = buildDaysFromSegments(allInserted, trip);
         set(state => ({
             trips: state.trips.map(t =>
                 t.id === tripId ? { ...t, days: rebuiltDays, _hasSegments: true } : t
