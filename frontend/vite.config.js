@@ -18,4 +18,16 @@ export default defineConfig({
     port: 6006,
     open: true,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+          'vendor-ui': ['framer-motion', 'lucide-react'],
+          'vendor-maps': ['leaflet', 'react-leaflet'],
+        },
+      },
+    },
+  },
 })

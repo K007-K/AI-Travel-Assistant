@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plane, Hotel, Train, Calendar, MapPin, Search, Download, Clock } from 'lucide-react';
 import useBookingStore from '../store/bookingStore';
-import { jsPDF } from 'jspdf';
 import DemoBanner from '../components/ui/DemoBanner';
 
 const MyBookings = () => {
@@ -24,8 +23,9 @@ const MyBookings = () => {
         });
     };
 
-    const handleDownload = (booking) => {
+    const handleDownload = async (booking) => {
         try {
+            const { jsPDF } = await import('jspdf');
             const doc = new jsPDF();
             const d = booking.details || {};
             const traveler = d.traveler || {};

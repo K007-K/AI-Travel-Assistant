@@ -12,90 +12,121 @@ serve(async (req) => {
     }
 
     try {
-        const { destination, days, travelers, budget, currency } = await req.json();
-
-        // Initialize Supabase Client for DB operations
-        const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-        // Create client with simple fetch auth if needed, or stick to REST if imports fail.
-        // For Deno Edge Functions, standard import is best.
-        // We will do a direct REST call if client import is tricky, but let's try standard import first.
-        // Actually, budget-validator already had imports removed. 
-        // Let's use direct `fetch` to Supabase REST API to avoid import hell again.
-
-        const DB_URL = `${supabaseUrl}/rest/v1/budget_cache`;
-        const AUTH_HEADER = {
-            'apikey': supabaseKey,
-            'Authorization': `Bearer ${supabaseKey}`,
-            'Content-Type': 'application/json'
-        };
-
-        // 1. Check Cache
-        const cacheQuery = new URLSearchParams({
-            destination: `eq.${destination}`,
-            days: `eq.${days}`,
-            travelers: `eq.${travelers}`,
-            budget: `eq.${budget}`,
-            currency: `eq.${currency}`,
-            select: 'report'
-        });
-
-        const cacheRes = await fetch(`${DB_URL}?${cacheQuery.toString()}`, { headers: AUTH_HEADER });
-        if (cacheRes.ok) {
-            const cacheData = await cacheRes.json();
-            if (cacheData.length > 0) {
-                console.log("Cache Hit!");
-                return new Response(JSON.stringify({ report: cacheData[0].report }), {
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                });
-            }
-        }
+        const {
+            destination,
+            days,
+            travelers,
+            budget,
+            currency,
+            // Structured financial data from RPC
+            total_budget,
+            actual_spent,
+            ai_estimated_total,
+            forecast_total,
+            forecast_percent,
+            remaining_forecast,
+            category_breakdown
+        } = await req.json();
 
         const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY');
         if (!GROQ_API_KEY) {
             throw new Error('GROQ_API_KEY is not set');
         }
 
-        const systemPrompt = `You are a savvy, friendly, and expert Travel Budget Consultant.
-Your goal is to provide a clear, helpful, and "human" analysis of the user's travel budget.
+        const systemPrompt = `You are a Financial Travel Budget Analyst.
 
-CONTEXT:
-- Destination: ${destination}
-- Duration: ${days} days
-- Travelers: ${travelers} people
-- Budget (Per Person): ${budget} ${currency}
+Your role is to analyze structured financial data for a trip and produce
+a professional, data-grounded financial assessment.
 
-YOUR ANALYSIS STYLE:
-1.  **Friendly & Direct:** Start with a warm, personalized opening.
-2.  **Visual:** Use emojis to make sections pop.
-3.  **Honest:** If the budget is low, say it gently but clearly. If it's great, cheer them on!
-4.  **Structured:** Use clear headings (#, ##, ###) that map to the frontend design.
+You must operate under strict rules:
 
-STRICT OUTPUT FORMAT (Markdown):
+--------------------------------------------------
+DATA RULES
+--------------------------------------------------
 
-# 📊 Trip Budget Breakdown for ${destination}
+- You must ONLY use numerical values provided in the input.
+- You must NOT invent or estimate missing numbers.
+- You must NOT modify or suggest changes to itinerary content.
+- You must NOT introduce tourist attractions or hidden gems.
+- You must NOT hallucinate costs or percentages.
+- You must NOT compute totals — assume all calculations are pre-computed.
 
-### 💰 Your Budget Snapshot
-*   **Budget per person:** ${currency} ${budget}
-*   **Total for ${travelers} traveler(s):** **${currency} ${budget * travelers}**
-*   **Status:** [✅ SUFFICIENT / ⚠️ TIGHT / ❌ INSUFFICIENT]
+--------------------------------------------------
+BEHAVIOR RULES
+--------------------------------------------------
 
-### 📝 Estimated Costs (Per Person)
-*   **Accommodations (${days - 1} nights):** ${currency} [Cost]
-*   **Food & Dining:** ${currency} [Cost]
-*   **Transports:** ${currency} [Cost]
-*   **Activities:** ${currency} [Cost]
-*   **Buffer:** ${currency} [Cost]
+- Focus strictly on financial health.
+- Distinguish between actual spend and projected (AI estimated) spend.
+- Interpret risk level from provided forecast_percent.
+- Provide clear, structured analysis.
+- Keep output under 200 words.
+- Provide maximum 5 recommendations.
 
-**👉 Estimated Total:** **${currency} [Total]**
+--------------------------------------------------
+RISK INTERPRETATION GUIDE
+--------------------------------------------------
 
-### 💡 AI Verdict & Tips
-[Write a warm, human paragraph here. Explain clearly WHY the budget works or doesn't. Give 1-2 specific actionable money-saving tips for ${destination} if the budget is tight, or suggestion for a splurge if the budget is high.]
+If forecast_percent < 60:
+    Risk = LOW
 
-### 🌟 Hidden Gems to Visit
-*   [Gem 1]
-*   [Gem 2]
-`;
+If 60 <= forecast_percent < 80:
+    Risk = MODERATE
+
+If 80 <= forecast_percent < 100:
+    Risk = HIGH
+
+If forecast_percent >= 100:
+    Risk = CRITICAL
+
+--------------------------------------------------
+OUTPUT FORMAT (MANDATORY JSON)
+--------------------------------------------------
+
+You MUST respond with ONLY a valid JSON object. No markdown, no code fences, no explanation outside the JSON.
+
+{
+  "summary": "Short financial overview.",
+  "risk_analysis": "Clear statement about sustainability of forecast.",
+  "category_insights": [
+    "Insight 1",
+    "Insight 2"
+  ],
+  "recommendations": [
+    "Recommendation 1",
+    "Recommendation 2"
+  ]
+}
+
+--------------------------------------------------
+TONE
+--------------------------------------------------
+
+Professional.
+Analytical.
+Concise.
+Financially grounded.
+No hype.
+No emotional language.`;
+
+        const userMessage = `Analyze the financial data for this trip:
+
+Destination: ${destination}
+Duration: ${days} days
+Travelers: ${travelers}
+Currency: ${currency}
+
+Financial Summary:
+- Total Budget: ${currency} ${total_budget || budget}
+- Actual Spent (Manual + Bookings): ${currency} ${actual_spent || 0}
+- AI Estimated Remaining Costs: ${currency} ${ai_estimated_total || 0}
+- Forecast Total: ${currency} ${forecast_total || 0}
+- Forecast Utilization: ${forecast_percent || 0}%
+- Remaining (Forecast): ${currency} ${remaining_forecast || 0}
+
+Category Breakdown:
+${JSON.stringify(category_breakdown || [], null, 2)}
+
+Provide your financial assessment as a JSON object.`;
 
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
@@ -104,12 +135,13 @@ STRICT OUTPUT FORMAT (Markdown):
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile', // Updated to match chat-completion
+                model: 'llama-3.3-70b-versatile',
                 messages: [
                     { role: 'system', content: systemPrompt },
-                    { role: 'user', content: `Analyze budget for a trip to ${destination} for ${days} days for ${travelers} people with a budget of ${budget} ${currency} per person.` }
+                    { role: 'user', content: userMessage }
                 ],
                 temperature: 0.1,
+                response_format: { type: "json_object" },
             }),
         });
 
@@ -119,37 +151,44 @@ STRICT OUTPUT FORMAT (Markdown):
             throw new Error(`Groq API Error: ${data.error?.message || response.statusText}`);
         }
 
-        const result = data.choices[0]?.message?.content;
+        const rawContent = data.choices[0]?.message?.content;
 
-        // 2. Save to Cache asynchronously (don't block response)
-        // We use a promise without await to let it run in background, 
-        // but Edge Functions might kill it early. Ideally we await it or use `EdgeRuntime.waitUntil`.
-        // For safety in this environment, we will await it but with a short timeout or just await it fast.
+        // Parse the JSON response from the AI
+        let insights;
         try {
-            await fetch(DB_URL, {
-                method: 'POST',
-                headers: AUTH_HEADER,
-                body: JSON.stringify({
-                    destination,
-                    days,
-                    travelers,
-                    budget,
-                    currency,
-                    report: result
-                })
-            });
-        } catch (cacheErr) {
-            console.error("Cache Insert Failed:", cacheErr);
+            insights = JSON.parse(rawContent);
+        } catch (_parseErr) {
+            // If JSON parsing fails, wrap the raw text
+            insights = {
+                summary: rawContent || "Analysis could not be parsed.",
+                risk_analysis: "Unable to determine risk from AI response.",
+                category_insights: [],
+                recommendations: []
+            };
         }
 
-        return new Response(JSON.stringify({ report: result }), {
+        // Ensure max 5 recommendations
+        if (insights.recommendations && insights.recommendations.length > 5) {
+            insights.recommendations = insights.recommendations.slice(0, 5);
+        }
+        if (insights.category_insights && insights.category_insights.length > 5) {
+            insights.category_insights = insights.category_insights.slice(0, 5);
+        }
+
+        return new Response(JSON.stringify({ insights }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
 
     } catch (error) {
-        // Return 200 even on error to bypass Supabase SDK generic error throwing
-        // ensuring the UI sees the actual error message.
-        return new Response(JSON.stringify({ error: error.message }), {
+        return new Response(JSON.stringify({
+            error: error.message,
+            insights: {
+                summary: `Analysis failed: ${error.message}`,
+                risk_analysis: "Unable to assess risk due to an error.",
+                category_insights: [],
+                recommendations: ["Please verify your GROQ_API_KEY is set in Supabase Secrets."]
+            }
+        }), {
             status: 200,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });

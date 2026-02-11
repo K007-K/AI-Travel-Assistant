@@ -119,30 +119,51 @@ export const translateText = async (text, sourceLang, targetLang) => {
     }
 };
 
-export const validateTripBudget = async (tripDetails) => {
+export const validateTripBudget = async (tripDetails, budgetSummary) => {
     try {
+        // Compute forecast values from RPC data
+        const totalBudget = budgetSummary?.total_budget || tripDetails.budget || 0;
+        const actualSpent = budgetSummary?.total_spent || 0;
+        const aiEstimatedTotal = budgetSummary?.ai_estimated_total || 0;
+        const forecastTotal = actualSpent + aiEstimatedTotal;
+        const forecastPercent = totalBudget > 0 ? Math.round((forecastTotal / totalBudget) * 100 * 10) / 10 : 0;
+        const remainingForecast = totalBudget - forecastTotal;
+
         const { data, error } = await supabase.functions.invoke('budget-validator', {
             body: {
                 destination: tripDetails.destination,
                 days: tripDetails.days,
                 travelers: tripDetails.travelers,
                 budget: tripDetails.budget,
-                currency: tripDetails.currency
+                currency: tripDetails.currency,
+                // Structured financial data
+                total_budget: totalBudget,
+                actual_spent: actualSpent,
+                ai_estimated_total: aiEstimatedTotal,
+                forecast_total: forecastTotal,
+                forecast_percent: forecastPercent,
+                remaining_forecast: remainingForecast,
+                category_breakdown: budgetSummary?.category_breakdown || []
             }
         });
 
         if (error) throw new Error(error.message);
 
         // Check for "soft error" returned as 200 OK from the function
-        if (data.error) {
+        if (data.error && !data.insights) {
             throw new Error(data.error);
         }
 
-        return data; // Returns { report: "Markdown String" }
+        return data; // Returns { insights: { summary, risk_analysis, category_insights, recommendations } }
     } catch (error) {
         console.error("Budget Validation Error:", error);
         return {
-            report: `### ❌ Analysis Error\n\n**Reason:** ${error.message || "Unknown error occurred"}\n\n**Action:** Please check if the \`GROQ_API_KEY\` is set in your Supabase Secrets.`
+            insights: {
+                summary: `Analysis failed: ${error.message || "Unknown error occurred"}`,
+                risk_analysis: "Unable to assess risk due to an error.",
+                category_insights: [],
+                recommendations: ["Please check if the GROQ_API_KEY is set in your Supabase Secrets."]
+            }
         };
     }
 };

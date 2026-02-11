@@ -6,15 +6,15 @@ import {
     GripVertical, Trash2, Save, Share2,
     Coffee, Camera, Utensils, Bed, Wallet,
     Landmark, Music, Sun, Sparkles, Map as MapIcon, Loader2,
-    CheckCircle2, Circle, Star, AlertCircle, TrendingUp
+    CheckCircle2, Circle, AlertCircle, TrendingUp,
+    ShieldCheck, BarChart3, AlertTriangle, DollarSign, Lightbulb
 } from 'lucide-react';
 import useItineraryStore from '../../store/itineraryStore';
 import useBudgetStore from '../../store/budgetStore';
 import BudgetHealthBadge from '../ui/BudgetHealthBadge';
 import { generateTripPlan, getHiddenGems, validateTripBudget } from '../../api/groq';
 import { getCurrencyForDestination, getCurrencySymbol } from '../../utils/currencyMap';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+// ReactMarkdown removed — Budget Analyzer now uses structured JSON
 import Map from '../ui/Map';
 import { Button } from '../ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
@@ -68,8 +68,8 @@ const ItineraryBuilder = () => {
     const [budgetInput, setBudgetInput] = useState('');
     const [currencyInput, setCurrencyInput] = useState(''); // Will be auto-detected
     const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [analysisReport, setAnalysisReport] = useState(null);
-    const [aiCostSummary, setAiCostSummary] = useState(null); // after generation
+    const [aiInsights, setAiInsights] = useState(null); // Structured JSON from AI
+    const [aiCostSummary, setAiCostSummary] = useState(null); // Itinerary tab cost badge
 
     // Fetch trips from Supabase on mount (needed for page refresh)
     useEffect(() => {
@@ -256,10 +256,14 @@ const ItineraryBuilder = () => {
         if (!budgetInput) return;
         setIsAnalyzing(true);
         try {
-            const result = await validateTripBudget({
-                destination: trip.destination, days: trip.days.length, travelers: trip.travelers, budget: parseFloat(budgetInput), currency: currencyInput
-            });
-            setAnalysisReport(result.report);
+            // Refresh RPC data first
+            await fetchBudgetSummary(trip.id);
+            const freshSummary = useBudgetStore.getState().budgetSummary;
+            const result = await validateTripBudget(
+                { destination: trip.destination, days: trip.days.length, travelers: trip.travelers, budget: parseFloat(budgetInput), currency: currencyInput },
+                freshSummary
+            );
+            setAiInsights(result.insights);
         } catch (error) {
             showToast(`❌ Analysis failed: ${error.message}`);
         } finally {
@@ -663,309 +667,289 @@ const ItineraryBuilder = () => {
                                     </div>
                                 </Card>
 
-                                {/* Loading Skeleton */}
-                                <AnimatePresence>
-                                    {isAnalyzing && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: -10 }}
-                                            className="space-y-4"
-                                        >
-                                            {/* Skeleton cards */}
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                {[0, 1, 2].map(i => (
-                                                    <div key={i} className="rounded-2xl border border-border bg-card p-5 space-y-3" style={{ animationDelay: `${i * 150}ms` }}>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-8 h-8 rounded-lg bg-muted animate-pulse" />
-                                                            <div className="h-4 w-24 rounded bg-muted animate-pulse" />
+                                {/* ─── Financial Intelligence Panel ─── */}
+                                {(() => {
+                                    // Compute financial values from RPC data
+                                    const bs = budgetSummary || {};
+                                    const totalBudget = bs.total_budget || parseFloat(budgetInput) || 0;
+                                    const actualSpent = bs.total_spent || 0;
+                                    const aiEstimated = bs.ai_estimated_total || 0;
+                                    const forecastTotal = actualSpent + aiEstimated;
+                                    const forecastPercent = totalBudget > 0 ? Math.round((forecastTotal / totalBudget) * 100 * 10) / 10 : 0;
+                                    const remainingForecast = totalBudget - forecastTotal;
+                                    const categories = bs.category_breakdown || [];
+                                    const cur = currencyInput || bs.currency || 'USD';
+
+                                    // Risk level (deterministic)
+                                    const riskLevel = forecastPercent >= 100 ? 'CRITICAL' : forecastPercent >= 80 ? 'HIGH' : forecastPercent >= 60 ? 'MODERATE' : 'LOW';
+                                    const riskConfig = {
+                                        LOW: { color: 'text-emerald-600 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800', icon: <ShieldCheck className="w-5 h-5" />, label: 'Low Risk' },
+                                        MODERATE: { color: 'text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800', icon: <AlertCircle className="w-5 h-5" />, label: 'Moderate Risk' },
+                                        HIGH: { color: 'text-orange-600 bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-800', icon: <AlertTriangle className="w-5 h-5" />, label: 'High Risk' },
+                                        CRITICAL: { color: 'text-red-600 bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800', icon: <AlertTriangle className="w-5 h-5" />, label: 'Critical' },
+                                    };
+                                    const risk = riskConfig[riskLevel];
+
+                                    const hasData = totalBudget > 0;
+
+                                    return (
+                                        <>
+                                            {/* Loading Skeleton */}
+                                            <AnimatePresence>
+                                                {isAnalyzing && (
+                                                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                                            {[0, 1, 2, 3].map(i => (
+                                                                <div key={i} className="rounded-2xl border border-border bg-card p-5 space-y-3" style={{ animationDelay: `${i * 150}ms` }}>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="w-8 h-8 rounded-lg bg-muted animate-pulse" />
+                                                                        <div className="h-4 w-24 rounded bg-muted animate-pulse" />
+                                                                    </div>
+                                                                    <div className="h-7 w-32 rounded bg-muted animate-pulse" />
+                                                                    <div className="h-2 w-full rounded-full bg-muted animate-pulse" />
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                        <div className="h-7 w-32 rounded bg-muted animate-pulse" />
-                                                        <div className="h-2 w-full rounded-full bg-muted animate-pulse" />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <div className="rounded-2xl border border-border bg-card p-6 space-y-3">
-                                                <div className="h-5 w-40 rounded bg-muted animate-pulse" />
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    {[0, 1, 2, 3].map(i => (
-                                                        <div key={i} className="h-12 rounded-xl bg-muted animate-pulse" style={{ animationDelay: `${i * 100}ms` }} />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <div className="rounded-2xl border border-border bg-card p-6 space-y-3">
-                                                <div className="h-5 w-32 rounded bg-muted animate-pulse" />
-                                                <div className="space-y-2">
-                                                    {[0, 1, 2].map(i => (
-                                                        <div key={i} className="h-4 w-full rounded bg-muted animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <p className="text-center text-sm text-muted-foreground animate-pulse">✨ AI is analyzing your budget for {trip.destination}...</p>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-
-                                {/* Analysis Results */}
-                                <AnimatePresence>
-                                    {!isAnalyzing && analysisReport && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 16 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ duration: 0.5 }}
-                                            className="space-y-5"
-                                        >
-                                            {/* Parse and render sections */}
-                                            {(() => {
-                                                // Parse the markdown into sections
-                                                const sections = analysisReport.split(/(?=^#{1,3}\s)/m).filter(Boolean);
-                                                const parsedSections = sections.map(section => {
-                                                    const titleMatch = section.match(/^#{1,3}\s+(.+)/m);
-                                                    return {
-                                                        title: titleMatch ? titleMatch[1].replace(/[🏦📝💡🌟✨👉⚠️✅❌🎯📊💰🗺️]/g, '').trim() : '',
-                                                        rawTitle: titleMatch ? titleMatch[1] : '',
-                                                        content: section.replace(/^#{1,3}\s+.+/m, '').trim()
-                                                    };
-                                                });
-
-                                                // Extract key info from budget snapshot
-                                                const budgetSection = parsedSections.find(s =>
-                                                    s.title.toLowerCase().includes('budget') && s.title.toLowerCase().includes('snapshot')
-                                                );
-                                                const costSection = parsedSections.find(s =>
-                                                    s.title.toLowerCase().includes('estimated') && s.title.toLowerCase().includes('cost')
-                                                );
-                                                const verdictSection = parsedSections.find(s =>
-                                                    s.title.toLowerCase().includes('verdict') || s.title.toLowerCase().includes('tip')
-                                                );
-                                                const gemsSection = parsedSections.find(s =>
-                                                    s.title.toLowerCase().includes('gem') || s.title.toLowerCase().includes('hidden')
-                                                );
-                                                const totalSection = parsedSections.find(s =>
-                                                    s.title.toLowerCase().includes('estimated total')
-                                                );
-
-                                                // Extract budget values
-                                                const extractAmount = (text) => {
-                                                    const match = text?.match(/[\d,]+/);
-                                                    return match ? parseInt(match[0].replace(/,/g, '')) : 0;
-                                                };
-
-                                                const budgetVal = parseFloat(budgetInput) || 0;
-
-                                                // Parse cost items
-                                                const costItems = [];
-                                                if (costSection) {
-                                                    const lines = costSection.content.split('\n').filter(l => l.trim().startsWith('*') || l.trim().startsWith('-'));
-                                                    lines.forEach(line => {
-                                                        const cleanLine = line.replace(/^[\*\-\s•]+/, '').trim();
-                                                        const parts = cleanLine.split(/[:：]/);
-                                                        if (parts.length >= 2) {
-                                                            const label = parts[0].replace(/\*\*/g, '').trim();
-                                                            // Skip the "Estimated Total" line — it's not a cost category
-                                                            if (label.toLowerCase().includes('total')) return;
-                                                            const amount = extractAmount(parts.slice(1).join(':'));
-                                                            if (amount > 0) {
-                                                                costItems.push({ label, amount });
-                                                            }
-                                                        }
-                                                    });
-                                                }
-
-                                                // Also try to extract total from bold text in the entire report (e.g., **👉 Estimated Total:** **USD 2200**)
-                                                let boldTotal = 0;
-                                                const boldTotalMatch = analysisReport.match(/\*\*.*?Estimated Total.*?\*\*.*?(\d[\d,]*)/i);
-                                                if (boldTotalMatch) {
-                                                    boldTotal = parseInt(boldTotalMatch[1].replace(/,/g, ''));
-                                                }
-
-                                                const totalEstimated = costItems.reduce((s, c) => s + c.amount, 0) || extractAmount(totalSection?.rawTitle || '') || boldTotal || extractAmount(totalSection?.content || '');
-                                                const isWithinBudget = totalEstimated <= budgetVal;
-                                                const usagePercent = budgetVal > 0 ? Math.min((totalEstimated / budgetVal) * 100, 100) : 0;
-
-                                                // Parse tips
-                                                const tipLines = [];
-                                                if (verdictSection) {
-                                                    // First try bullet points
-                                                    const bullets = verdictSection.content.split('\n').filter(l => l.trim().startsWith('*') || l.trim().startsWith('-') || l.trim().startsWith('•'));
-                                                    if (bullets.length > 0) {
-                                                        bullets.forEach(line => {
-                                                            const tip = line.replace(/^[\*\-\s•]+/, '').replace(/\*\*/g, '').trim();
-                                                            if (tip.length > 10) tipLines.push(tip);
-                                                        });
-                                                    } else {
-                                                        // Fallback: split paragraph text into sentences
-                                                        const paragraphs = verdictSection.content.split('\n').filter(l => l.trim().length > 15);
-                                                        paragraphs.forEach(para => {
-                                                            const sentences = para.split(/(?<=[.!])\s+/).filter(s => s.trim().length > 15);
-                                                            sentences.forEach(s => tipLines.push(s.trim()));
-                                                        });
-                                                    }
-                                                }
-
-                                                // Parse gems
-                                                const gemLines = [];
-                                                if (gemsSection) {
-                                                    gemsSection.content.split('\n').filter(l => l.trim().startsWith('*') || l.trim().startsWith('-') || l.trim().startsWith('•')).forEach(line => {
-                                                        const gem = line.replace(/^[\*\-\s•]+/, '').replace(/\*\*/g, '').trim();
-                                                        if (gem.length > 5) gemLines.push(gem);
-                                                    });
-                                                }
-
-                                                // Status
-                                                const statusText = analysisReport.toLowerCase().includes('sufficient') ? 'SUFFICIENT' :
-                                                    analysisReport.toLowerCase().includes('tight') ? 'TIGHT' :
-                                                        analysisReport.toLowerCase().includes('over') ? 'OVER BUDGET' : 'REVIEWED';
-                                                const statusColor = statusText === 'SUFFICIENT' ? 'text-emerald-600 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800' :
-                                                    statusText === 'TIGHT' ? 'text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800' :
-                                                        statusText === 'OVER BUDGET' ? 'text-red-600 bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800' :
-                                                            'text-blue-600 bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800';
-                                                const statusIcon = statusText === 'SUFFICIENT' ? '✅' : statusText === 'TIGHT' ? '⚠️' : statusText === 'OVER BUDGET' ? '❌' : '📊';
-
-                                                return (
-                                                    <>
-                                                        {/* Summary Cards Row */}
-                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                            {/* Budget Card */}
-                                                            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-2xl border border-border bg-card p-5">
-                                                                <div className="flex items-center gap-2 mb-2">
-                                                                    <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30"><Wallet className="w-4 h-4 text-blue-600 dark:text-blue-400" /></div>
-                                                                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Your Budget</span>
+                                                        <div className="rounded-2xl border border-border bg-card p-6 space-y-3">
+                                                            <div className="h-5 w-44 rounded bg-muted animate-pulse" />
+                                                            {[0, 1, 2, 3, 4, 5].map(i => (
+                                                                <div key={i} className="flex justify-between items-center py-2">
+                                                                    <div className="h-4 w-36 rounded bg-muted animate-pulse" />
+                                                                    <div className="h-4 w-24 rounded bg-muted animate-pulse" />
                                                                 </div>
-                                                                <div className="text-2xl font-bold text-foreground">{currencyInput} {budgetVal.toLocaleString()}</div>
-                                                                <p className="text-xs text-muted-foreground mt-1">per person · {trip.days?.length || 0} days</p>
-                                                            </motion.div>
-
-                                                            {/* Estimated Total Card */}
-                                                            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="rounded-2xl border border-border bg-card p-5">
-                                                                <div className="flex items-center gap-2 mb-2">
-                                                                    <div className="p-1.5 rounded-lg bg-violet-100 dark:bg-violet-900/30"><TrendingUp className="w-4 h-4 text-violet-600 dark:text-violet-400" /></div>
-                                                                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Estimated Total</span>
-                                                                </div>
-                                                                <div className={`text-2xl font-bold ${isWithinBudget ? 'text-foreground' : 'text-red-500'}`}>{currencyInput} {totalEstimated.toLocaleString()}</div>
-                                                                <div className="w-full bg-muted h-1.5 rounded-full mt-2 overflow-hidden">
-                                                                    <motion.div
-                                                                        initial={{ width: 0 }}
-                                                                        animate={{ width: `${usagePercent}%` }}
-                                                                        transition={{ duration: 1, ease: "easeOut" }}
-                                                                        className={`h-full rounded-full ${usagePercent > 90 ? 'bg-red-500' : usagePercent > 70 ? 'bg-amber-500' : 'bg-emerald-500'}`}
-                                                                    />
-                                                                </div>
-                                                            </motion.div>
-
-                                                            {/* Status Card */}
-                                                            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className={`rounded-2xl border p-5 ${statusColor}`}>
-                                                                <div className="flex items-center gap-2 mb-2">
-                                                                    <span className="text-lg">{statusIcon}</span>
-                                                                    <span className="text-xs font-medium uppercase tracking-wide">Status</span>
-                                                                </div>
-                                                                <div className="text-2xl font-bold">{statusText}</div>
-                                                                <p className="text-xs mt-1 opacity-80">{Math.round(usagePercent)}% of budget used</p>
-                                                            </motion.div>
+                                                            ))}
                                                         </div>
-
-                                                        {/* Cost Breakdown */}
-                                                        {costItems.length > 0 && (
-                                                            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="rounded-2xl border border-border bg-card p-6">
-                                                                <h3 className="text-base font-bold text-foreground mb-4 flex items-center gap-2">
-                                                                    <span className="text-lg">📝</span> Estimated Cost Breakdown
-                                                                </h3>
-                                                                <div className="space-y-3">
-                                                                    {costItems.map((item, i) => {
-                                                                        const itemPercent = budgetVal > 0 ? (item.amount / budgetVal) * 100 : 0;
-                                                                        const colors = ['bg-blue-500', 'bg-violet-500', 'bg-amber-500', 'bg-emerald-500', 'bg-rose-500', 'bg-cyan-500'];
-                                                                        return (
-                                                                            <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 + i * 0.08 }} className="flex items-center gap-4">
-                                                                                <div className="w-40 flex-shrink-0">
-                                                                                    <span className="text-sm font-medium text-foreground">{item.label}</span>
-                                                                                </div>
-                                                                                <div className="flex-1 bg-muted rounded-full h-3 overflow-hidden">
-                                                                                    <motion.div
-                                                                                        initial={{ width: 0 }}
-                                                                                        animate={{ width: `${Math.min(itemPercent, 100)}%` }}
-                                                                                        transition={{ duration: 0.8, delay: 0.6 + i * 0.08, ease: "easeOut" }}
-                                                                                        className={`h-full rounded-full ${colors[i % colors.length]}`}
-                                                                                    />
-                                                                                </div>
-                                                                                <div className="w-28 text-right">
-                                                                                    <span className="text-sm font-bold text-foreground">{currencyInput} {item.amount.toLocaleString()}</span>
-                                                                                    <span className="text-xs text-muted-foreground ml-1">({Math.round(itemPercent)}%)</span>
-                                                                                </div>
-                                                                            </motion.div>
-                                                                        );
-                                                                    })}
+                                                        <div className="rounded-2xl border border-border bg-card p-6 space-y-3">
+                                                            <div className="h-5 w-52 rounded bg-muted animate-pulse" />
+                                                            {[0, 1, 2].map(i => (
+                                                                <div key={i} className="space-y-1.5">
+                                                                    <div className="h-4 w-28 rounded bg-muted animate-pulse" />
+                                                                    <div className="h-4 w-full rounded-full bg-muted animate-pulse" />
                                                                 </div>
-                                                            </motion.div>
-                                                        )}
+                                                            ))}
+                                                        </div>
+                                                        <p className="text-center text-sm text-muted-foreground animate-pulse">✨ AI is analyzing your financials for {trip.destination}...</p>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
 
-                                                        {/* AI Verdict & Tips */}
-                                                        {tipLines.length > 0 && (
-                                                            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="rounded-2xl border border-border bg-card p-6">
-                                                                <h3 className="text-base font-bold text-foreground mb-4 flex items-center gap-2">
-                                                                    <span className="text-lg">💡</span> AI Tips & Recommendations
-                                                                </h3>
-                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                    {tipLines.map((tip, i) => (
-                                                                        <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 + i * 0.06 }} className="flex items-start gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
-                                                                            <div className="mt-0.5 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                                                                <CheckCircle2 className="w-3 h-3 text-primary" />
-                                                                            </div>
-                                                                            <p className="text-sm text-muted-foreground leading-relaxed">{tip}</p>
-                                                                        </motion.div>
-                                                                    ))}
-                                                                </div>
-                                                            </motion.div>
-                                                        )}
-
-                                                        {/* Hidden Gems */}
-                                                        {gemLines.length > 0 && (
-                                                            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }} className="rounded-2xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-900/10 p-6">
-                                                                <h3 className="text-base font-bold text-foreground mb-4 flex items-center gap-2">
-                                                                    <span className="text-lg">🌟</span> Hidden Gems & Budget Hacks
-                                                                </h3>
-                                                                <div className="space-y-2">
-                                                                    {gemLines.map((gem, i) => (
-                                                                        <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 + i * 0.05 }} className="flex items-start gap-2.5 text-sm text-muted-foreground">
-                                                                            <Star className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                                                                            <span>{gem}</span>
-                                                                        </motion.div>
-                                                                    ))}
-                                                                </div>
-                                                            </motion.div>
-                                                        )}
-
-                                                        {/* Fallback: if parsing extracted nothing useful, show raw markdown */}
-                                                        {costItems.length === 0 && tipLines.length === 0 && (
-                                                            <div className="rounded-2xl border border-border bg-card p-6">
-                                                                <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
-                                                                    h1: ({ node, ...props }) => <h3 className="text-xl font-bold text-primary mb-4 pb-2 border-b border-border" {...props} />,
-                                                                    h2: ({ node, ...props }) => <h4 className="text-lg font-semibold text-foreground mt-6 mb-3" {...props} />,
-                                                                    h3: ({ node, ...props }) => <h4 className="text-md font-semibold text-foreground/80 mt-4 mb-2" {...props} />,
-                                                                    ul: ({ node, ...props }) => <ul className="space-y-2 mb-4 list-none pl-0" {...props} />,
-                                                                    li: ({ node, ...props }) => <li className="flex items-start gap-2 text-muted-foreground text-sm" {...props}><span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" /><span className="flex-1">{props.children}</span></li>,
-                                                                    strong: ({ node, ...props }) => <strong className="font-semibold text-foreground" {...props} />
-                                                                }}>
-                                                                    {analysisReport}
-                                                                </ReactMarkdown>
+                                            {/* ── SECTION 1: Top Summary Cards (from RPC) ── */}
+                                            {!isAnalyzing && hasData && (
+                                                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="space-y-5">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                                        {/* Trip Budget */}
+                                                        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-2xl border border-border bg-card p-5">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30"><Wallet className="w-4 h-4 text-blue-600 dark:text-blue-400" /></div>
+                                                                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Trip Budget</span>
                                                             </div>
-                                                        )}
-                                                    </>
-                                                );
-                                            })()}
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
+                                                            <div className="text-2xl font-bold text-foreground">{cur} {totalBudget.toLocaleString()}</div>
+                                                            <p className="text-xs text-muted-foreground mt-1">per person · {trip.days?.length || 0} days</p>
+                                                        </motion.div>
 
-                                {/* Empty State */}
-                                {!isAnalyzing && !analysisReport && (
-                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20">
-                                        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/5 flex items-center justify-center">
-                                            <Sparkles className="w-7 h-7 text-primary/40" />
-                                        </div>
-                                        <h3 className="text-lg font-semibold text-foreground mb-2">Ready to analyze</h3>
-                                        <p className="text-sm text-muted-foreground max-w-md mx-auto">Enter your budget above and click <strong>Analyze</strong> to get an AI-powered breakdown with cost estimates, tips, and hidden gems for {trip.destination}.</p>
-                                    </motion.div>
-                                )}
+                                                        {/* Actual Spent */}
+                                                        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="rounded-2xl border border-border bg-card p-5">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <div className="p-1.5 rounded-lg bg-violet-100 dark:bg-violet-900/30"><DollarSign className="w-4 h-4 text-violet-600 dark:text-violet-400" /></div>
+                                                                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Actual Spent</span>
+                                                            </div>
+                                                            <div className="text-2xl font-bold text-foreground">{cur} {actualSpent.toLocaleString()}</div>
+                                                            <p className="text-xs text-muted-foreground mt-1">Manual + Bookings</p>
+                                                        </motion.div>
+
+                                                        {/* Forecast */}
+                                                        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="rounded-2xl border border-border bg-card p-5">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <div className="p-1.5 rounded-lg bg-cyan-100 dark:bg-cyan-900/30"><TrendingUp className="w-4 h-4 text-cyan-600 dark:text-cyan-400" /></div>
+                                                                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Forecast</span>
+                                                            </div>
+                                                            <div className={`text-2xl font-bold ${forecastPercent >= 100 ? 'text-red-500' : 'text-foreground'}`}>{cur} {forecastTotal.toLocaleString()}</div>
+                                                            <div className="w-full bg-muted h-1.5 rounded-full mt-2 overflow-hidden">
+                                                                <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(forecastPercent, 100)}%` }} transition={{ duration: 1, ease: "easeOut" }}
+                                                                    className={`h-full rounded-full ${forecastPercent >= 100 ? 'bg-red-500' : forecastPercent >= 80 ? 'bg-orange-500' : forecastPercent >= 60 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                                                                />
+                                                            </div>
+                                                            <p className="text-xs text-muted-foreground mt-1">{forecastPercent}% of budget</p>
+                                                        </motion.div>
+
+                                                        {/* Risk Level */}
+                                                        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className={`rounded-2xl border p-5 ${risk.color}`}>
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                {risk.icon}
+                                                                <span className="text-xs font-medium uppercase tracking-wide">Risk Level</span>
+                                                            </div>
+                                                            <div className="text-2xl font-bold">{riskLevel}</div>
+                                                            <p className="text-xs mt-1 opacity-80">{risk.label}</p>
+                                                        </motion.div>
+                                                    </div>
+
+                                                    {/* ── SECTION 2: Financial Summary Panel ── */}
+                                                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="rounded-2xl border border-border bg-card p-6">
+                                                        <h3 className="text-base font-bold text-foreground mb-4 flex items-center gap-2">
+                                                            <BarChart3 className="w-5 h-5 text-primary" /> Financial Summary
+                                                        </h3>
+                                                        <div className="divide-y divide-border">
+                                                            {[
+                                                                { label: 'Total Budget', value: `${cur} ${totalBudget.toLocaleString()}`, accent: false },
+                                                                { label: 'Actual Spent (Manual + Bookings)', value: `${cur} ${actualSpent.toLocaleString()}`, accent: false },
+                                                                { label: 'AI Estimated Spend', value: `${cur} ${aiEstimated.toLocaleString()}`, accent: false },
+                                                                { label: 'Forecast Total', value: `${cur} ${forecastTotal.toLocaleString()}`, accent: forecastPercent >= 100 },
+                                                                { label: 'Remaining (Forecast)', value: `${cur} ${remainingForecast.toLocaleString()}`, accent: remainingForecast < 0 },
+                                                                { label: 'Forecast Utilization', value: `${forecastPercent}%`, accent: forecastPercent >= 80 },
+                                                            ].map((row, i) => (
+                                                                <div key={i} className="flex justify-between items-center py-3">
+                                                                    <span className="text-sm text-muted-foreground">{row.label}</span>
+                                                                    <span className={`text-sm font-semibold ${row.accent ? 'text-red-500' : 'text-foreground'}`}>{row.value}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </motion.div>
+
+                                                    {/* ── SECTION 3: Projected Cost Allocation ── */}
+                                                    {categories.length > 0 && (
+                                                        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="rounded-2xl border border-border bg-card p-6">
+                                                            <h3 className="text-base font-bold text-foreground mb-4 flex items-center gap-2">
+                                                                <span className="text-lg">📊</span> Projected Cost Allocation
+                                                            </h3>
+                                                            {/* Legend */}
+                                                            <div className="flex gap-4 mb-4 text-xs text-muted-foreground">
+                                                                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-blue-500" /> Manual</span>
+                                                                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-violet-500" /> Booking</span>
+                                                                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-cyan-400" /> AI Estimate</span>
+                                                            </div>
+                                                            <div className="space-y-4">
+                                                                {categories.map((cat, i) => {
+                                                                    const catTotal = parseFloat(cat.total) || 0;
+                                                                    const manual = parseFloat(cat.by_source?.manual) || 0;
+                                                                    const booking = parseFloat(cat.by_source?.booking) || 0;
+                                                                    const aiEst = parseFloat(cat.by_source?.ai_estimate) || 0;
+                                                                    const catPercent = totalBudget > 0 ? Math.round((catTotal / totalBudget) * 100) : 0;
+                                                                    const manualPct = catTotal > 0 ? (manual / catTotal) * 100 : 0;
+                                                                    const bookingPct = catTotal > 0 ? (booking / catTotal) * 100 : 0;
+                                                                    const aiPct = catTotal > 0 ? (aiEst / catTotal) * 100 : 0;
+
+                                                                    return (
+                                                                        <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 + i * 0.08 }}>
+                                                                            <div className="flex justify-between items-center mb-1">
+                                                                                <span className="text-sm font-medium text-foreground capitalize">{cat.category}</span>
+                                                                                <span className="text-sm text-muted-foreground">{cur} {catTotal.toLocaleString()} <span className="text-xs">({catPercent}%)</span></span>
+                                                                            </div>
+                                                                            {/* Stacked bar */}
+                                                                            <div className="w-full bg-muted rounded-full h-3 overflow-hidden flex">
+                                                                                {manual > 0 && (
+                                                                                    <motion.div initial={{ width: 0 }} animate={{ width: `${manualPct}%` }} transition={{ duration: 0.8, delay: 0.6 + i * 0.08 }}
+                                                                                        className="h-full bg-blue-500" title={`Manual: ${cur} ${manual.toLocaleString()}`} />
+                                                                                )}
+                                                                                {booking > 0 && (
+                                                                                    <motion.div initial={{ width: 0 }} animate={{ width: `${bookingPct}%` }} transition={{ duration: 0.8, delay: 0.7 + i * 0.08 }}
+                                                                                        className="h-full bg-violet-500" title={`Booking: ${cur} ${booking.toLocaleString()}`} />
+                                                                                )}
+                                                                                {aiEst > 0 && (
+                                                                                    <motion.div initial={{ width: 0 }} animate={{ width: `${aiPct}%` }} transition={{ duration: 0.8, delay: 0.8 + i * 0.08 }}
+                                                                                        className="h-full bg-cyan-400" title={`AI Estimate: ${cur} ${aiEst.toLocaleString()}`} />
+                                                                                )}
+                                                                            </div>
+                                                                        </motion.div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+
+                                                    {/* ── SECTION 4: Risk Assessment (Deterministic) ── */}
+                                                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+                                                        className={`rounded-2xl border p-5 ${risk.color}`}>
+                                                        <h3 className="text-base font-bold mb-2 flex items-center gap-2">
+                                                            {risk.icon} Risk Assessment
+                                                        </h3>
+                                                        <p className="text-sm leading-relaxed">
+                                                            {riskLevel === 'LOW' && `Forecast utilization is within safe range at ${forecastPercent}%. Your budget of ${cur} ${totalBudget.toLocaleString()} comfortably covers projected expenses.`}
+                                                            {riskLevel === 'MODERATE' && `Forecast utilization is at ${forecastPercent}%. Budget is being used efficiently but monitor spending closely. Remaining forecast: ${cur} ${remainingForecast.toLocaleString()}.`}
+                                                            {riskLevel === 'HIGH' && `Forecast utilization is elevated at ${forecastPercent}%. Projected expenses are approaching the budget limit. Only ${cur} ${Math.max(0, remainingForecast).toLocaleString()} remains.`}
+                                                            {riskLevel === 'CRITICAL' && `Projected expenses exceed budget by ${cur} ${Math.abs(remainingForecast).toLocaleString()} (${forecastPercent}% utilization). Immediate budget review recommended.`}
+                                                        </p>
+                                                    </motion.div>
+
+                                                    {/* ── SECTION 5: AI Financial Insights ── */}
+                                                    {aiInsights && (
+                                                        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="rounded-2xl border border-border bg-card p-6 space-y-5">
+                                                            <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                                                                <Sparkles className="w-5 h-5 text-primary" /> AI Financial Insights
+                                                            </h3>
+
+                                                            {/* Summary */}
+                                                            {aiInsights.summary && (
+                                                                <div className="p-4 rounded-xl bg-primary/5 border border-primary/10">
+                                                                    <p className="text-sm text-foreground leading-relaxed">{aiInsights.summary}</p>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Risk Analysis */}
+                                                            {aiInsights.risk_analysis && (
+                                                                <div className="p-4 rounded-xl bg-muted/50">
+                                                                    <h4 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-1.5">
+                                                                        <ShieldCheck className="w-4 h-4 text-muted-foreground" /> Risk Analysis
+                                                                    </h4>
+                                                                    <p className="text-sm text-muted-foreground leading-relaxed">{aiInsights.risk_analysis}</p>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Category Insights */}
+                                                            {aiInsights.category_insights && aiInsights.category_insights.length > 0 && (
+                                                                <div>
+                                                                    <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
+                                                                        <BarChart3 className="w-4 h-4 text-muted-foreground" /> Category Insights
+                                                                    </h4>
+                                                                    <div className="space-y-2">
+                                                                        {aiInsights.category_insights.map((insight, i) => (
+                                                                            <motion.div key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 + i * 0.06 }}
+                                                                                className="flex items-start gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                                                                                <div className="mt-0.5 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                                                                    <CheckCircle2 className="w-3 h-3 text-primary" />
+                                                                                </div>
+                                                                                <p className="text-sm text-muted-foreground leading-relaxed">{insight}</p>
+                                                                            </motion.div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Recommendations */}
+                                                            {aiInsights.recommendations && aiInsights.recommendations.length > 0 && (
+                                                                <div>
+                                                                    <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
+                                                                        <Lightbulb className="w-4 h-4 text-amber-500" /> Recommendations
+                                                                    </h4>
+                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                        {aiInsights.recommendations.map((rec, i) => (
+                                                                            <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 + i * 0.06 }}
+                                                                                className="flex items-start gap-3 p-3 rounded-xl bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors">
+                                                                                <span className="text-amber-500 font-bold text-sm mt-px">{i + 1}.</span>
+                                                                                <p className="text-sm text-muted-foreground leading-relaxed">{rec}</p>
+                                                                            </motion.div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </motion.div>
+                                                    )}
+                                                </motion.div>
+                                            )}
+
+                                            {/* Empty State */}
+                                            {!isAnalyzing && !hasData && !aiInsights && (
+                                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20">
+                                                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/5 flex items-center justify-center">
+                                                        <Sparkles className="w-7 h-7 text-primary/40" />
+                                                    </div>
+                                                    <h3 className="text-lg font-semibold text-foreground mb-2">Financial Intelligence Panel</h3>
+                                                    <p className="text-sm text-muted-foreground max-w-md mx-auto">Enter your budget above and click <strong>Save</strong> to see your financial summary. Then click <strong>Analyze</strong> to get AI-powered financial insights for {trip.destination}.</p>
+                                                </motion.div>
+                                            )}
+                                        </>
+                                    );
+                                })()}
+
 
                             </div>
                         </div>
