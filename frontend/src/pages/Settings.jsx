@@ -8,8 +8,16 @@ import useBookingStore from '../store/bookingStore';
 const Settings = () => {
     const { user, profile: authProfile, updateProfile, deleteAccount, isLoading } = useAuthStore();
     const { trips } = useItineraryStore();
-    const { getStats } = useBookingStore();
-    const bookingStats = getStats();
+    const { bookings } = useBookingStore();
+
+    // Compute booking stats inline (getStats was moved server-side)
+    const activeBookings = bookings.filter(b => b.status !== 'cancelled');
+    const bookingStats = {
+        totalSpent: activeBookings.reduce((acc, b) => acc + (parseFloat(b.price) || 0), 0),
+        flights: activeBookings.filter(b => b.type === 'flight').length,
+        hotels: activeBookings.filter(b => b.type === 'hotel').length,
+        trains: activeBookings.filter(b => b.type === 'train').length,
+    };
 
     // Profile State
     const [profile, setProfile] = useState({
@@ -38,7 +46,6 @@ const Settings = () => {
     }, [authProfile]);
 
     // Stats Calculation
-    // Combine Trip Budget + Actual Bookings
     const plannedBudget = trips.reduce((acc, trip) => acc + (parseFloat(trip.budget) || 0), 0);
     const totalSpent = plannedBudget + bookingStats.totalSpent;
 

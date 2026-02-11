@@ -35,22 +35,21 @@ const useBookingStore = create((set, get) => ({
             const newBooking = {
                 user_id: user.id,
                 type: booking.type,
-                // Use totalPrice if available (from wizard), else fallback to price
                 price: booking.totalPrice || booking.price,
                 date: booking.date,
                 status: booking.status || 'confirmed',
                 booked_at: new Date().toISOString(),
-                // Store all rich metadata in the JSONB column
+                trip_id: booking.tripId || null,  // Link to trip if provided
                 details: {
                     title: booking.title,
-                    subtitle: booking.details, // 'details' string from mock data
+                    subtitle: booking.details,
                     currency: booking.currency,
                     traveler: booking.traveler,
                     addons: booking.addons,
                     basePrice: booking.basePrice,
                     class: booking.trainClass || booking.class,
-                    pnr: Math.random().toString(36).substr(2, 6).toUpperCase(), // Generate Mock PNR
-                    ...booking // Include everything else just in case
+                    pnr: Math.random().toString(36).substr(2, 6).toUpperCase(),
+                    ...booking
                 }
             };
 
@@ -61,6 +60,23 @@ const useBookingStore = create((set, get) => ({
                 .single();
 
             if (error) throw error;
+
+            // Insert corresponding cost_event if trip is linked
+            if (data.trip_id) {
+                await supabase.from('cost_events').insert([{
+                    trip_id: data.trip_id,
+                    source: 'booking',
+                    category: data.type,
+                    amount: parseFloat(data.price) || 0,
+                    currency: booking.currency || 'USD',
+                    description: booking.title || `${data.type} booking`,
+                    metadata: {
+                        booking_id: data.id,
+                        booking_type: data.type,
+                        pnr: data.details?.pnr
+                    }
+                }]);
+            }
 
             set((state) => ({
                 bookings: [data, ...state.bookings],
@@ -78,12 +94,32 @@ const useBookingStore = create((set, get) => ({
     cancelBooking: async (bookingId) => {
         set({ isLoading: true, error: null });
         try {
+            // Get the booking before updating to capture details for audit
+            const originalBooking = get().bookings.find(b => b.id === bookingId);
+
             const { error } = await supabase
                 .from('bookings')
                 .update({ status: 'cancelled' })
                 .eq('id', bookingId);
 
             if (error) throw error;
+
+            // Insert negative cost_event for audit trail (if booking was linked to a trip)
+            if (originalBooking?.trip_id) {
+                await supabase.from('cost_events').insert([{
+                    trip_id: originalBooking.trip_id,
+                    source: 'booking',
+                    category: originalBooking.type,
+                    amount: -(parseFloat(originalBooking.price) || 0),
+                    currency: originalBooking.details?.currency || 'USD',
+                    description: 'Booking cancellation',
+                    metadata: {
+                        booking_id: bookingId,
+                        booking_type: originalBooking.type,
+                        type: 'cancellation'
+                    }
+                }]);
+            }
 
             set((state) => ({
                 bookings: state.bookings.map(b =>
@@ -95,20 +131,6 @@ const useBookingStore = create((set, get) => ({
             console.error('Error cancelling booking:', error);
             set({ error: error.message, isLoading: false });
         }
-    },
-
-    // Getters for Stats (Client-side calculation based on fetched data)
-    getStats: () => {
-        const bookings = get().bookings;
-        const activeBookings = bookings.filter(b => b.status !== 'cancelled');
-
-        return {
-            totalSpent: activeBookings.reduce((acc, b) => acc + (parseFloat(b.price) || 0), 0),
-            totalBookings: activeBookings.length,
-            flights: activeBookings.filter(b => b.type === 'flight').length,
-            hotels: activeBookings.filter(b => b.type === 'hotel').length,
-            trains: activeBookings.filter(b => b.type === 'train').length,
-        };
     },
 
     clearBookings: () => set({ bookings: [] }),

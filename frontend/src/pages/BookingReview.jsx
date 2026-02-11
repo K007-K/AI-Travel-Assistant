@@ -1,16 +1,39 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, CreditCard, User, Shield, Coffee, ArrowLeft, Loader2 } from 'lucide-react';
+import { CheckCircle, CreditCard, User, Shield, Coffee, ArrowLeft, Loader2, AlertTriangle } from 'lucide-react';
 import useBookingStore from '../store/bookingStore';
+import useItineraryStore from '../store/itineraryStore';
+import useBudgetStore from '../store/budgetStore';
 import DemoBanner from '../components/ui/DemoBanner';
 
 const BookingReview = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { addBooking } = useBookingStore();
+    const { trips } = useItineraryStore();
+    const { fetchBudgetSummary, budgetSummary } = useBudgetStore();
     const bookingData = location.state?.bookingData;
     const currency = location.state?.currency || { code: 'USD', symbol: '$', rate: 1 };
+
+    // Trip linking state
+    const [selectedTripId, setSelectedTripId] = useState('');
+
+    // Fetch budget summary when a trip is selected
+    useEffect(() => {
+        if (selectedTripId) {
+            fetchBudgetSummary(selectedTripId);
+        }
+    }, [selectedTripId, fetchBudgetSummary]);
+
+    // Compute budget impact
+    const bookingTotal = bookingData ? (bookingData.price || 0) : 0;
+    const tripBudget = budgetSummary?.total_budget || 0;
+    const tripSpent = budgetSummary?.total_spent || 0;
+    const afterBooking = tripSpent + bookingTotal;
+    const afterBookingPct = tripBudget > 0 ? Math.round((afterBooking / tripBudget) * 100 * 10) / 10 : 0;
+    const willOverspend = tripBudget > 0 && afterBooking > tripBudget;
+    const bookingPct = tripBudget > 0 ? Math.round((bookingTotal / tripBudget) * 100 * 10) / 10 : 0;
 
     // Redirect if no data
     if (!bookingData) {
@@ -71,7 +94,7 @@ const BookingReview = () => {
             status: 'confirmed'
         };
 
-        addBooking(finalBooking);
+        addBooking({ ...finalBooking, tripId: selectedTripId || null });
         setIsProcessing(false);
         setStep(4); // Success
     };
@@ -124,6 +147,46 @@ const BookingReview = () => {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Link to Trip */}
+                            {trips.length > 0 && (
+                                <div className="mb-6">
+                                    <h4 className="font-bold text-slate-700 dark:text-slate-300 mb-2">Link to Trip (optional)</h4>
+                                    <select
+                                        value={selectedTripId}
+                                        onChange={(e) => setSelectedTripId(e.target.value)}
+                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
+                                    >
+                                        <option value="">No trip linked</option>
+                                        {trips.map(t => (
+                                            <option key={t.id} value={t.id}>
+                                                {t.title} — {t.destination}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <p className="text-xs text-slate-400 mt-1">Link this booking to a trip to track it in your budget.</p>
+
+                                    {/* Budget Impact Indicator */}
+                                    {selectedTripId && budgetSummary && tripBudget > 0 && (
+                                        <div className={`mt-3 p-3 rounded-xl border text-sm ${willOverspend
+                                                ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                                                : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
+                                            }`}>
+                                            <p className="font-semibold text-slate-800 dark:text-slate-200">
+                                                This booking: {formatPrice(bookingTotal)} → uses <strong>{bookingPct}%</strong> of trip budget
+                                            </p>
+                                            <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-600 overflow-hidden flex mt-2">
+                                                <div className="h-full bg-blue-500" style={{ width: `${Math.min((tripSpent / tripBudget) * 100, 100)}%` }} />
+                                                <div className={`h-full ${willOverspend ? 'bg-red-500' : 'bg-amber-400'}`} style={{ width: `${Math.min(bookingPct, 100 - Math.min((tripSpent / tripBudget) * 100, 100))}%` }} />
+                                            </div>
+                                            <p className={`text-xs mt-1 ${willOverspend ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-slate-500'}`}>
+                                                {afterBookingPct}% used after this booking
+                                                {willOverspend && ' — exceeds budget!'}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             <div className="space-y-4 mb-8">
                                 <h4 className="font-bold text-slate-700 dark:text-slate-300">Add-ons</h4>
@@ -236,10 +299,26 @@ const BookingReview = () => {
                                 </div>
                             </div>
 
+                            {/* Overspend Warning */}
+                            {selectedTripId && willOverspend && (
+                                <div className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex items-center gap-3">
+                                    <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                                    <div>
+                                        <p className="font-semibold text-sm text-red-700 dark:text-red-400">This booking will exceed your trip budget</p>
+                                        <p className="text-xs text-red-500">Budget: {formatPrice(tripBudget)} · After booking: {formatPrice(afterBooking)}</p>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="flex gap-4">
                                 <button onClick={() => setStep(2)} className="btn btn-outline flex-1">Back</button>
-                                <button onClick={handleConfirm} disabled={isProcessing} className="btn btn-primary flex-1 flex items-center justify-center gap-2">
-                                    {isProcessing ? <Loader2 className="animate-spin" /> : 'Pay & Confirm'}
+                                <button onClick={handleConfirm} disabled={isProcessing} className={`btn flex-1 flex items-center justify-center gap-2 ${selectedTripId && willOverspend
+                                        ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                                        : 'btn-primary'
+                                    }`}>
+                                    {isProcessing ? <Loader2 className="animate-spin" /> : (
+                                        selectedTripId && willOverspend ? 'Confirm (Over Budget)' : 'Pay & Confirm'
+                                    )}
                                 </button>
                             </div>
                         </motion.div>

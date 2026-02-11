@@ -6,9 +6,11 @@ import {
     GripVertical, Trash2, Save, Share2,
     Coffee, Camera, Utensils, Bed, Wallet,
     Landmark, Music, Sun, Sparkles, Map as MapIcon, Loader2,
-    CheckCircle2, Circle, Star, AlertCircle
+    CheckCircle2, Circle, Star, AlertCircle, TrendingUp
 } from 'lucide-react';
 import useItineraryStore from '../../store/itineraryStore';
+import useBudgetStore from '../../store/budgetStore';
+import BudgetHealthBadge from '../ui/BudgetHealthBadge';
 import { generateTripPlan, getHiddenGems, validateTripBudget } from '../../api/groq';
 import { getCurrencyForDestination, getCurrencySymbol } from '../../utils/currencyMap';
 import ReactMarkdown from 'react-markdown';
@@ -34,11 +36,13 @@ const ItineraryBuilder = () => {
         fetchTrips,
         isLoading,
         updateTrip,
+        updateTripDays,
         addActivity,
         reorderActivities,
         deleteActivity,
         toggleActivityComplete,
     } = useItineraryStore();
+    const { syncAiEstimates, fetchBudgetSummary, budgetSummary, setTripBudget, deleteCostEventForActivity } = useBudgetStore();
 
     const [trip, setTrip] = useState(null);
     const [selectedDay, setSelectedDay] = useState(null);
@@ -65,6 +69,7 @@ const ItineraryBuilder = () => {
     const [currencyInput, setCurrencyInput] = useState(''); // Will be auto-detected
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisReport, setAnalysisReport] = useState(null);
+    const [aiCostSummary, setAiCostSummary] = useState(null); // after generation
 
     // Fetch trips from Supabase on mount (needed for page refresh)
     useEffect(() => {
@@ -113,6 +118,13 @@ const ItineraryBuilder = () => {
         }
     }, [id, trips, hasFetched]);
 
+    // Fetch budget health for the current trip
+    useEffect(() => {
+        if (trip?.id) {
+            fetchBudgetSummary(trip.id);
+        }
+    }, [trip?.id, fetchBudgetSummary]);
+
     const showToast = (message) => {
         setToast(message);
         setTimeout(() => setToast(null), 3000);
@@ -158,6 +170,10 @@ const ItineraryBuilder = () => {
                 trip.budgetTier || 'mid-range'
             );
             if (plan && plan.days) {
+                // Clear old activities before adding new ones
+                const clearedDays = trip.days.map(day => ({ ...day, activities: [] }));
+                await updateTripDays(trip.id, clearedDays);
+
                 plan.days.forEach((genDay, index) => {
                     const storeDayId = trip.days[index]?.id;
                     if (storeDayId && genDay.activities) {
@@ -175,6 +191,41 @@ const ItineraryBuilder = () => {
                     }
                 });
                 showToast("✨ Itinerary generated successfully!");
+
+                // Sync AI estimated costs to cost_events table
+                // Re-read the trip from store to get the updated days with activity IDs
+                setTimeout(async () => {
+                    const updatedTrips = useItineraryStore.getState().trips;
+                    const updatedTrip = updatedTrips.find(t => t.id === trip.id);
+                    if (updatedTrip?.days) {
+                        await syncAiEstimates(trip.id, updatedTrip.days, trip.currency || activeCurrency);
+                        // Re-fetch budget summary and show fit/exceed feedback
+                        await fetchBudgetSummary(trip.id);
+                        const summary = useBudgetStore.getState().budgetSummary;
+                        if (summary) {
+                            const forecast = (summary.total_spent || 0) + (summary.ai_estimated_total || 0);
+                            const budget = summary.total_budget || 0;
+                            setAiCostSummary({
+                                aiTotal: summary.ai_estimated_total || 0,
+                                forecast,
+                                budget,
+                                fits: budget > 0 ? forecast <= budget : true
+                            });
+                            if (budget > 0 && forecast > budget) {
+                                showToast(`⚠️ AI estimates exceed budget by ${activeCurrencySymbol}${(forecast - budget).toLocaleString()}`);
+                            } else {
+                                showToast('✅ Itinerary fits within budget');
+                            }
+                        }
+                        // Write generation snapshot
+                        await updateTrip(trip.id, {
+                            generated_with_budget: trip.budget,
+                            generated_with_currency: trip.currency || activeCurrency,
+                            itinerary_generated_at: new Date().toISOString(),
+                            itinerary_stale: false
+                        });
+                    }
+                }, 500);
             }
         } catch (error) {
             console.error("Generation failed", error);
@@ -222,16 +273,37 @@ const ItineraryBuilder = () => {
         // Optimistically update local trip state immediately
         setTrip(prev => ({ ...prev, budget: budgetVal, currency: currencyInput, budget_skipped: false }));
         try {
-            // Persist to Supabase + zustand store
-            await updateTrip(trip.id, {
-                budget: budgetVal, currency: currencyInput, budget_skipped: false
-            });
-            // Re-fetch to confirm persistence
+            // Use RPC-based budget update (atomic stale detection)
+            await setTripBudget(trip.id, budgetVal);
+            // Also persist currency + budget_skipped
+            await updateTrip(trip.id, { currency: currencyInput, budget_skipped: false });
+            // Re-fetch to pick up itinerary_stale flag
             await fetchTrips();
+            // Sync local trip state from store (important for itinerary_stale)
+            const refreshed = useItineraryStore.getState().trips.find(t => t.id === trip.id);
+            if (refreshed) setTrip(refreshed);
             showToast("✅ Budget saved!");
         } catch (err) {
             console.error('Budget save failed:', err);
             showToast("❌ Budget save failed. Check console.");
+        }
+    };
+
+    // Delete activity + its cost_event, then refresh budget
+    const handleDeleteActivity = async (tripId, dayId, activityId) => {
+        await deleteActivity(tripId, dayId, activityId);
+        await deleteCostEventForActivity(tripId, activityId);
+        // Update AI cost summary if it's visible
+        const summary = useBudgetStore.getState().budgetSummary;
+        if (summary && aiCostSummary) {
+            const forecast = (summary.total_spent || 0) + (summary.ai_estimated_total || 0);
+            const budget = summary.total_budget || 0;
+            setAiCostSummary({
+                aiTotal: summary.ai_estimated_total || 0,
+                forecast,
+                budget,
+                fits: budget > 0 ? forecast <= budget : true
+            });
         }
     };
 
@@ -302,6 +374,13 @@ const ItineraryBuilder = () => {
                                             {activeCurrencySymbol}{(trip.budget || 0).toLocaleString()}
                                             <span className="text-muted-foreground text-xs">/person</span>
                                         </span>
+                                        {budgetSummary && (
+                                            <BudgetHealthBadge
+                                                percentUsed={budgetSummary.percent_used || 0}
+                                                forecastPercent={trip.budget > 0 ? (((budgetSummary.total_spent || 0) + (budgetSummary.ai_estimated_total || 0)) / trip.budget * 100) : 0}
+                                                size="sm"
+                                            />
+                                        )}
                                     </div>
                                 </div>
                                 <div className="flex gap-3">
@@ -313,6 +392,72 @@ const ItineraryBuilder = () => {
                                     </Button>
                                 </div>
                             </div>
+
+                            {/* AI Cost Summary — shown after generation */}
+                            <AnimatePresence>
+                                {aiCostSummary && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        className={`mb-6 p-4 rounded-2xl border flex items-center justify-between ${aiCostSummary.fits
+                                            ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
+                                            : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                                            }`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <Sparkles className={`w-5 h-5 ${aiCostSummary.fits ? 'text-emerald-600' : 'text-red-500'}`} />
+                                            <div>
+                                                <p className="font-semibold text-sm text-foreground">AI Estimated Itinerary Cost: {activeCurrencySymbol}{aiCostSummary.aiTotal.toLocaleString()}</p>
+                                                <p className={`text-xs ${aiCostSummary.fits ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
+                                                    {aiCostSummary.fits
+                                                        ? `✅ Fits within budget (${activeCurrencySymbol}${aiCostSummary.budget.toLocaleString()})`
+                                                        : `⚠️ Exceeds budget by ${activeCurrencySymbol}${(aiCostSummary.forecast - aiCostSummary.budget).toLocaleString()}`
+                                                    }
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button onClick={() => setAiCostSummary(null)} className="text-slate-400 hover:text-slate-600 text-lg">×</button>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            {/* Stale Itinerary Warning */}
+                            {trip.itinerary_stale && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="mb-6 p-4 rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                                        <div>
+                                            <p className="font-semibold text-sm text-slate-900 dark:text-slate-100">Budget changed since last generation</p>
+                                            <p className="text-xs text-amber-700 dark:text-amber-400">
+                                                Itinerary was generated for {activeCurrencySymbol}{(trip.generated_with_budget || 0).toLocaleString()}.
+                                                Current budget: {activeCurrencySymbol}{(trip.budget || 0).toLocaleString()}
+                                                {budgetSummary && (budgetSummary.total_spent || 0) + (budgetSummary.ai_estimated_total || 0) > (trip.budget || 0)
+                                                    ? ` · Current plan exceeds new budget by ${activeCurrencySymbol}${(((budgetSummary.total_spent || 0) + (budgetSummary.ai_estimated_total || 0)) - (trip.budget || 0)).toLocaleString()}`
+                                                    : ''
+                                                }
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2 flex-shrink-0">
+                                        <Button variant="ghost" size="sm"
+                                            onClick={async () => {
+                                                await updateTrip(trip.id, { itinerary_stale: false });
+                                                await fetchTrips();
+                                            }}
+                                        >
+                                            Keep Plan
+                                        </Button>
+                                        <Button size="sm" onClick={handleGenerateItinerary}>
+                                            {isGenerating ? 'Generating...' : 'Regenerate'}
+                                        </Button>
+                                    </div>
+                                </motion.div>
+                            )}
 
                             {/* Day Selector */}
                             <div className="flex gap-2 overflow-x-auto mb-8 pb-2 no-scrollbar">
@@ -383,7 +528,7 @@ const ItineraryBuilder = () => {
                                                                                         {activeCurrencySymbol}{activity.estimated_cost.toLocaleString()}
                                                                                     </span>
                                                                                 )}
-                                                                                <button onClick={() => deleteActivity(trip.id, activeDay.id, activity.id)} className="p-2 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                                                                <button onClick={() => handleDeleteActivity(trip.id, activeDay.id, activity.id)} className="p-2 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
                                                                             </div>
                                                                         </div>
                                                                         {activity.safety_warning && <p className="text-xs font-medium text-destructive bg-destructive/10 p-2.5 rounded-lg mb-3 flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {activity.safety_warning}</p>}
@@ -471,63 +616,357 @@ const ItineraryBuilder = () => {
 
                         {/* 2. BUDGET TAB */}
                         <div className={`transition-opacity duration-300 ${activeTab === 'budget' ? 'block' : 'hidden'}`}>
-                            <div className="max-w-4xl mx-auto">
-                                <Card className="rounded-3xl overflow-hidden border-border">
-                                    <div className="p-8 border-b border-border bg-muted/30">
-                                        <h2 className="text-3xl font-bold text-foreground mb-2">Trip Budget Planner</h2>
-                                        <p className="text-muted-foreground">Plan, track, and optimize your expenses for {trip.destination}.</p>
-                                        <p className="text-xs text-muted-foreground/70 mt-1">💡 Budget is calculated <strong>per person</strong>. The AI will plan your full itinerary within this budget.</p>
-                                    </div>
+                            <div className="max-w-5xl mx-auto">
 
-                                    <CardContent className="p-8">
-                                        {/* Inputs */}
-                                        <div className="flex flex-col md:flex-row gap-6 mb-8 items-end">
+                                {/* Budget Input Card */}
+                                <Card className="rounded-3xl overflow-hidden border-border mb-6">
+                                    <div className="p-6 md:p-8 bg-gradient-to-br from-primary/5 via-background to-accent/5">
+                                        <div className="flex items-center gap-3 mb-1">
+                                            <div className="p-2.5 rounded-xl bg-primary/10">
+                                                <Wallet className="w-5 h-5 text-primary" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-2xl font-bold text-foreground">Trip Budget Planner</h2>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground ml-[52px] mb-6">Set your per-person budget for {trip.destination} and let AI analyze your spending plan.</p>
+
+                                        <div className="flex flex-col sm:flex-row gap-3 items-end">
                                             <div className="flex-grow">
-                                                <label className="block text-sm font-medium text-foreground mb-2">Total Budget <span className="text-muted-foreground font-normal">(Per Person)</span></label>
+                                                <label className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">Budget per person</label>
                                                 <div className="relative">
-                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">{currencyInput}</span>
+                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-primary">{currencyInput}</span>
                                                     <input
                                                         type="number"
                                                         value={budgetInput}
                                                         onChange={e => setBudgetInput(e.target.value)}
-                                                        className="flex h-12 w-full rounded-md border border-input bg-background px-3 py-2 pl-14 text-lg ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                        className="flex h-12 w-full rounded-xl border border-input bg-background px-3 py-2 pl-14 text-lg font-semibold ring-offset-background placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary transition-all"
                                                         placeholder="2000"
                                                     />
                                                 </div>
                                             </div>
-                                            <div className="w-full md:w-40">
-                                                <label className="block text-sm font-medium text-foreground mb-2">Currency</label>
-                                                <select value={currencyInput} onChange={e => setCurrencyInput(e.target.value)} className="flex h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-                                                    {['USD', 'EUR', 'GBP', 'INR', 'AUD', 'JPY'].map(c => <option key={c} value={c}>{c}</option>)}
+                                            <div className="w-full sm:w-32">
+                                                <label className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">Currency</label>
+                                                <select value={currencyInput} onChange={e => setCurrencyInput(e.target.value)} className="flex h-12 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary transition-all">
+                                                    {['USD', 'EUR', 'GBP', 'INR', 'AUD', 'JPY', 'CAD', 'SGD', 'THB', 'MXN'].map(c => <option key={c} value={c}>{c}</option>)}
                                                 </select>
                                             </div>
-                                            <Button onClick={handleAnalyzeBudget} disabled={isAnalyzing || !budgetInput} className="h-12 px-8">
-                                                {isAnalyzing ? <Loader2 className="animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />} Analyze
-                                            </Button>
-                                            <Button variant="outline" onClick={handleSaveBudget} className="h-12 px-6">Save</Button>
+                                            <div className="flex gap-2 w-full sm:w-auto">
+                                                <Button onClick={handleAnalyzeBudget} disabled={isAnalyzing || !budgetInput} className="h-12 px-6 flex-1 sm:flex-none rounded-xl gap-2 font-semibold">
+                                                    {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />} Analyze
+                                                </Button>
+                                                <Button variant="outline" onClick={handleSaveBudget} className="h-12 px-5 rounded-xl font-semibold">
+                                                    <Save className="w-4 h-4 mr-1.5" /> Save
+                                                </Button>
+                                            </div>
                                         </div>
-
-                                        {/* Report */}
-                                        {analysisReport ? (
-                                            <div className="bg-muted/30 rounded-2xl border border-border p-8">
-                                                <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
-                                                    h1: ({ node, ...props }) => <h3 className="text-xl font-bold text-primary mb-4 pb-2 border-b border-border" {...props} />,
-                                                    h2: ({ node, ...props }) => <h4 className="text-lg font-semibold text-foreground mt-6 mb-3" {...props} />,
-                                                    h3: ({ node, ...props }) => <h4 className="text-md font-semibold text-foreground/80 mt-4 mb-2" {...props} />,
-                                                    ul: ({ node, ...props }) => <ul className="space-y-2 mb-4 list-none pl-0" {...props} />,
-                                                    li: ({ node, ...props }) => <li className="flex items-start gap-2 text-muted-foreground text-sm" {...props}><span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" /><span className="flex-1">{props.children}</span></li>,
-                                                    strong: ({ node, ...props }) => <strong className="font-semibold text-foreground" {...props} />
-                                                }}>
-                                                    {analysisReport}
-                                                </ReactMarkdown>
-                                            </div>
-                                        ) : (
-                                            <div className="text-center py-12 text-muted-foreground">
-                                                <p>Enter your budget above and click "Analyze" to see the breakdown.</p>
-                                            </div>
-                                        )}
-                                    </CardContent>
+                                    </div>
                                 </Card>
+
+                                {/* Loading Skeleton */}
+                                <AnimatePresence>
+                                    {isAnalyzing && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            className="space-y-4"
+                                        >
+                                            {/* Skeleton cards */}
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                {[0, 1, 2].map(i => (
+                                                    <div key={i} className="rounded-2xl border border-border bg-card p-5 space-y-3" style={{ animationDelay: `${i * 150}ms` }}>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-8 h-8 rounded-lg bg-muted animate-pulse" />
+                                                            <div className="h-4 w-24 rounded bg-muted animate-pulse" />
+                                                        </div>
+                                                        <div className="h-7 w-32 rounded bg-muted animate-pulse" />
+                                                        <div className="h-2 w-full rounded-full bg-muted animate-pulse" />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="rounded-2xl border border-border bg-card p-6 space-y-3">
+                                                <div className="h-5 w-40 rounded bg-muted animate-pulse" />
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    {[0, 1, 2, 3].map(i => (
+                                                        <div key={i} className="h-12 rounded-xl bg-muted animate-pulse" style={{ animationDelay: `${i * 100}ms` }} />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="rounded-2xl border border-border bg-card p-6 space-y-3">
+                                                <div className="h-5 w-32 rounded bg-muted animate-pulse" />
+                                                <div className="space-y-2">
+                                                    {[0, 1, 2].map(i => (
+                                                        <div key={i} className="h-4 w-full rounded bg-muted animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <p className="text-center text-sm text-muted-foreground animate-pulse">✨ AI is analyzing your budget for {trip.destination}...</p>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+
+                                {/* Analysis Results */}
+                                <AnimatePresence>
+                                    {!isAnalyzing && analysisReport && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 16 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 0.5 }}
+                                            className="space-y-5"
+                                        >
+                                            {/* Parse and render sections */}
+                                            {(() => {
+                                                // Parse the markdown into sections
+                                                const sections = analysisReport.split(/(?=^#{1,3}\s)/m).filter(Boolean);
+                                                const parsedSections = sections.map(section => {
+                                                    const titleMatch = section.match(/^#{1,3}\s+(.+)/m);
+                                                    return {
+                                                        title: titleMatch ? titleMatch[1].replace(/[🏦📝💡🌟✨👉⚠️✅❌🎯📊💰🗺️]/g, '').trim() : '',
+                                                        rawTitle: titleMatch ? titleMatch[1] : '',
+                                                        content: section.replace(/^#{1,3}\s+.+/m, '').trim()
+                                                    };
+                                                });
+
+                                                // Extract key info from budget snapshot
+                                                const budgetSection = parsedSections.find(s =>
+                                                    s.title.toLowerCase().includes('budget') && s.title.toLowerCase().includes('snapshot')
+                                                );
+                                                const costSection = parsedSections.find(s =>
+                                                    s.title.toLowerCase().includes('estimated') && s.title.toLowerCase().includes('cost')
+                                                );
+                                                const verdictSection = parsedSections.find(s =>
+                                                    s.title.toLowerCase().includes('verdict') || s.title.toLowerCase().includes('tip')
+                                                );
+                                                const gemsSection = parsedSections.find(s =>
+                                                    s.title.toLowerCase().includes('gem') || s.title.toLowerCase().includes('hidden')
+                                                );
+                                                const totalSection = parsedSections.find(s =>
+                                                    s.title.toLowerCase().includes('estimated total')
+                                                );
+
+                                                // Extract budget values
+                                                const extractAmount = (text) => {
+                                                    const match = text?.match(/[\d,]+/);
+                                                    return match ? parseInt(match[0].replace(/,/g, '')) : 0;
+                                                };
+
+                                                const budgetVal = parseFloat(budgetInput) || 0;
+
+                                                // Parse cost items
+                                                const costItems = [];
+                                                if (costSection) {
+                                                    const lines = costSection.content.split('\n').filter(l => l.trim().startsWith('*') || l.trim().startsWith('-'));
+                                                    lines.forEach(line => {
+                                                        const cleanLine = line.replace(/^[\*\-\s•]+/, '').trim();
+                                                        const parts = cleanLine.split(/[:：]/);
+                                                        if (parts.length >= 2) {
+                                                            const label = parts[0].replace(/\*\*/g, '').trim();
+                                                            // Skip the "Estimated Total" line — it's not a cost category
+                                                            if (label.toLowerCase().includes('total')) return;
+                                                            const amount = extractAmount(parts.slice(1).join(':'));
+                                                            if (amount > 0) {
+                                                                costItems.push({ label, amount });
+                                                            }
+                                                        }
+                                                    });
+                                                }
+
+                                                // Also try to extract total from bold text in the entire report (e.g., **👉 Estimated Total:** **USD 2200**)
+                                                let boldTotal = 0;
+                                                const boldTotalMatch = analysisReport.match(/\*\*.*?Estimated Total.*?\*\*.*?(\d[\d,]*)/i);
+                                                if (boldTotalMatch) {
+                                                    boldTotal = parseInt(boldTotalMatch[1].replace(/,/g, ''));
+                                                }
+
+                                                const totalEstimated = costItems.reduce((s, c) => s + c.amount, 0) || extractAmount(totalSection?.rawTitle || '') || boldTotal || extractAmount(totalSection?.content || '');
+                                                const isWithinBudget = totalEstimated <= budgetVal;
+                                                const usagePercent = budgetVal > 0 ? Math.min((totalEstimated / budgetVal) * 100, 100) : 0;
+
+                                                // Parse tips
+                                                const tipLines = [];
+                                                if (verdictSection) {
+                                                    // First try bullet points
+                                                    const bullets = verdictSection.content.split('\n').filter(l => l.trim().startsWith('*') || l.trim().startsWith('-') || l.trim().startsWith('•'));
+                                                    if (bullets.length > 0) {
+                                                        bullets.forEach(line => {
+                                                            const tip = line.replace(/^[\*\-\s•]+/, '').replace(/\*\*/g, '').trim();
+                                                            if (tip.length > 10) tipLines.push(tip);
+                                                        });
+                                                    } else {
+                                                        // Fallback: split paragraph text into sentences
+                                                        const paragraphs = verdictSection.content.split('\n').filter(l => l.trim().length > 15);
+                                                        paragraphs.forEach(para => {
+                                                            const sentences = para.split(/(?<=[.!])\s+/).filter(s => s.trim().length > 15);
+                                                            sentences.forEach(s => tipLines.push(s.trim()));
+                                                        });
+                                                    }
+                                                }
+
+                                                // Parse gems
+                                                const gemLines = [];
+                                                if (gemsSection) {
+                                                    gemsSection.content.split('\n').filter(l => l.trim().startsWith('*') || l.trim().startsWith('-') || l.trim().startsWith('•')).forEach(line => {
+                                                        const gem = line.replace(/^[\*\-\s•]+/, '').replace(/\*\*/g, '').trim();
+                                                        if (gem.length > 5) gemLines.push(gem);
+                                                    });
+                                                }
+
+                                                // Status
+                                                const statusText = analysisReport.toLowerCase().includes('sufficient') ? 'SUFFICIENT' :
+                                                    analysisReport.toLowerCase().includes('tight') ? 'TIGHT' :
+                                                        analysisReport.toLowerCase().includes('over') ? 'OVER BUDGET' : 'REVIEWED';
+                                                const statusColor = statusText === 'SUFFICIENT' ? 'text-emerald-600 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800' :
+                                                    statusText === 'TIGHT' ? 'text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800' :
+                                                        statusText === 'OVER BUDGET' ? 'text-red-600 bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800' :
+                                                            'text-blue-600 bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800';
+                                                const statusIcon = statusText === 'SUFFICIENT' ? '✅' : statusText === 'TIGHT' ? '⚠️' : statusText === 'OVER BUDGET' ? '❌' : '📊';
+
+                                                return (
+                                                    <>
+                                                        {/* Summary Cards Row */}
+                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                            {/* Budget Card */}
+                                                            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-2xl border border-border bg-card p-5">
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30"><Wallet className="w-4 h-4 text-blue-600 dark:text-blue-400" /></div>
+                                                                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Your Budget</span>
+                                                                </div>
+                                                                <div className="text-2xl font-bold text-foreground">{currencyInput} {budgetVal.toLocaleString()}</div>
+                                                                <p className="text-xs text-muted-foreground mt-1">per person · {trip.days?.length || 0} days</p>
+                                                            </motion.div>
+
+                                                            {/* Estimated Total Card */}
+                                                            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="rounded-2xl border border-border bg-card p-5">
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    <div className="p-1.5 rounded-lg bg-violet-100 dark:bg-violet-900/30"><TrendingUp className="w-4 h-4 text-violet-600 dark:text-violet-400" /></div>
+                                                                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Estimated Total</span>
+                                                                </div>
+                                                                <div className={`text-2xl font-bold ${isWithinBudget ? 'text-foreground' : 'text-red-500'}`}>{currencyInput} {totalEstimated.toLocaleString()}</div>
+                                                                <div className="w-full bg-muted h-1.5 rounded-full mt-2 overflow-hidden">
+                                                                    <motion.div
+                                                                        initial={{ width: 0 }}
+                                                                        animate={{ width: `${usagePercent}%` }}
+                                                                        transition={{ duration: 1, ease: "easeOut" }}
+                                                                        className={`h-full rounded-full ${usagePercent > 90 ? 'bg-red-500' : usagePercent > 70 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                                                                    />
+                                                                </div>
+                                                            </motion.div>
+
+                                                            {/* Status Card */}
+                                                            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className={`rounded-2xl border p-5 ${statusColor}`}>
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    <span className="text-lg">{statusIcon}</span>
+                                                                    <span className="text-xs font-medium uppercase tracking-wide">Status</span>
+                                                                </div>
+                                                                <div className="text-2xl font-bold">{statusText}</div>
+                                                                <p className="text-xs mt-1 opacity-80">{Math.round(usagePercent)}% of budget used</p>
+                                                            </motion.div>
+                                                        </div>
+
+                                                        {/* Cost Breakdown */}
+                                                        {costItems.length > 0 && (
+                                                            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="rounded-2xl border border-border bg-card p-6">
+                                                                <h3 className="text-base font-bold text-foreground mb-4 flex items-center gap-2">
+                                                                    <span className="text-lg">📝</span> Estimated Cost Breakdown
+                                                                </h3>
+                                                                <div className="space-y-3">
+                                                                    {costItems.map((item, i) => {
+                                                                        const itemPercent = budgetVal > 0 ? (item.amount / budgetVal) * 100 : 0;
+                                                                        const colors = ['bg-blue-500', 'bg-violet-500', 'bg-amber-500', 'bg-emerald-500', 'bg-rose-500', 'bg-cyan-500'];
+                                                                        return (
+                                                                            <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 + i * 0.08 }} className="flex items-center gap-4">
+                                                                                <div className="w-40 flex-shrink-0">
+                                                                                    <span className="text-sm font-medium text-foreground">{item.label}</span>
+                                                                                </div>
+                                                                                <div className="flex-1 bg-muted rounded-full h-3 overflow-hidden">
+                                                                                    <motion.div
+                                                                                        initial={{ width: 0 }}
+                                                                                        animate={{ width: `${Math.min(itemPercent, 100)}%` }}
+                                                                                        transition={{ duration: 0.8, delay: 0.6 + i * 0.08, ease: "easeOut" }}
+                                                                                        className={`h-full rounded-full ${colors[i % colors.length]}`}
+                                                                                    />
+                                                                                </div>
+                                                                                <div className="w-28 text-right">
+                                                                                    <span className="text-sm font-bold text-foreground">{currencyInput} {item.amount.toLocaleString()}</span>
+                                                                                    <span className="text-xs text-muted-foreground ml-1">({Math.round(itemPercent)}%)</span>
+                                                                                </div>
+                                                                            </motion.div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </motion.div>
+                                                        )}
+
+                                                        {/* AI Verdict & Tips */}
+                                                        {tipLines.length > 0 && (
+                                                            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="rounded-2xl border border-border bg-card p-6">
+                                                                <h3 className="text-base font-bold text-foreground mb-4 flex items-center gap-2">
+                                                                    <span className="text-lg">💡</span> AI Tips & Recommendations
+                                                                </h3>
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                    {tipLines.map((tip, i) => (
+                                                                        <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 + i * 0.06 }} className="flex items-start gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
+                                                                            <div className="mt-0.5 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                                                                <CheckCircle2 className="w-3 h-3 text-primary" />
+                                                                            </div>
+                                                                            <p className="text-sm text-muted-foreground leading-relaxed">{tip}</p>
+                                                                        </motion.div>
+                                                                    ))}
+                                                                </div>
+                                                            </motion.div>
+                                                        )}
+
+                                                        {/* Hidden Gems */}
+                                                        {gemLines.length > 0 && (
+                                                            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }} className="rounded-2xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-900/10 p-6">
+                                                                <h3 className="text-base font-bold text-foreground mb-4 flex items-center gap-2">
+                                                                    <span className="text-lg">🌟</span> Hidden Gems & Budget Hacks
+                                                                </h3>
+                                                                <div className="space-y-2">
+                                                                    {gemLines.map((gem, i) => (
+                                                                        <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 + i * 0.05 }} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                                                                            <Star className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                                                                            <span>{gem}</span>
+                                                                        </motion.div>
+                                                                    ))}
+                                                                </div>
+                                                            </motion.div>
+                                                        )}
+
+                                                        {/* Fallback: if parsing extracted nothing useful, show raw markdown */}
+                                                        {costItems.length === 0 && tipLines.length === 0 && (
+                                                            <div className="rounded-2xl border border-border bg-card p-6">
+                                                                <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+                                                                    h1: ({ node, ...props }) => <h3 className="text-xl font-bold text-primary mb-4 pb-2 border-b border-border" {...props} />,
+                                                                    h2: ({ node, ...props }) => <h4 className="text-lg font-semibold text-foreground mt-6 mb-3" {...props} />,
+                                                                    h3: ({ node, ...props }) => <h4 className="text-md font-semibold text-foreground/80 mt-4 mb-2" {...props} />,
+                                                                    ul: ({ node, ...props }) => <ul className="space-y-2 mb-4 list-none pl-0" {...props} />,
+                                                                    li: ({ node, ...props }) => <li className="flex items-start gap-2 text-muted-foreground text-sm" {...props}><span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" /><span className="flex-1">{props.children}</span></li>,
+                                                                    strong: ({ node, ...props }) => <strong className="font-semibold text-foreground" {...props} />
+                                                                }}>
+                                                                    {analysisReport}
+                                                                </ReactMarkdown>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                );
+                                            })()}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+
+                                {/* Empty State */}
+                                {!isAnalyzing && !analysisReport && (
+                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20">
+                                        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/5 flex items-center justify-center">
+                                            <Sparkles className="w-7 h-7 text-primary/40" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-foreground mb-2">Ready to analyze</h3>
+                                        <p className="text-sm text-muted-foreground max-w-md mx-auto">Enter your budget above and click <strong>Analyze</strong> to get an AI-powered breakdown with cost estimates, tips, and hidden gems for {trip.destination}.</p>
+                                    </motion.div>
+                                )}
+
                             </div>
                         </div>
 
