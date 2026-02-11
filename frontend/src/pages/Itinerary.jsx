@@ -3,11 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Calendar, MapPin, ArrowRight, Trash2, Clock, CheckCircle2, Pin, X } from 'lucide-react';
 import useItineraryStore from '../store/itineraryStore';
 import { Link } from 'react-router-dom';
-import LocationInput from '../components/ui/LocationInput';
 import { getFallbackImage, loadDestinationImage } from '../utils/destinationImages';
-import { getCurrencyForDestination } from '../utils/currencyMap';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
+import CreateTripForm from '../components/features/CreateTripForm';
 
 /** Dynamic image component that fetches real photos from Wikipedia */
 const TripCardImage = ({ destination, className }) => {
@@ -55,16 +54,6 @@ const Itinerary = () => {
         setIsEditing(false);
     };
 
-    // Multi-city segment state
-    const [segments, setSegments] = useState([{ location: '', days: 3 }]);
-    const [startDate, setStartDate] = useState('');
-    const [tripMeta, setTripMeta] = useState({
-        title: '',
-        budget: '',
-        currency: 'USD',
-        travelers: 1
-    });
-
     const sortedTrips = [...trips].sort((a, b) => {
         if (a.pinned === b.pinned) {
             return new Date(b.createdAt) - new Date(a.createdAt);
@@ -72,53 +61,9 @@ const Itinerary = () => {
         return a.pinned ? -1 : 1;
     });
 
-    const addSegment = () => {
-        setSegments([...segments, { location: '', days: 2 }]);
-    };
-
-    const removeSegment = (index) => {
-        if (segments.length > 1) {
-            setSegments(segments.filter((_, i) => i !== index));
-        }
-    };
-
-    const updateSegment = (index, field, value) => {
-        const newSegments = [...segments];
-        newSegments[index][field] = field === 'days' ? parseInt(value) || 1 : value;
-        setSegments(newSegments);
-
-        // Auto-detect currency from the first destination
-        if (field === 'location' && index === 0 && value) {
-            const detectedCurrency = getCurrencyForDestination(value);
-            setTripMeta(prev => ({ ...prev, currency: detectedCurrency }));
-        }
-    };
-
-    const finalizeCreation = () => {
-        const totalDuration = segments.reduce((sum, seg) => sum + seg.days, 0);
-        const start = new Date(startDate);
-        const end = new Date(start);
-        end.setDate(start.getDate() + totalDuration - 1);
-
-        createTrip({
-            ...tripMeta,
-            segments,
-            startDate,
-            endDate: end.toISOString(),
-            duration: totalDuration,
-            destination: segments[0].location
-        });
-
+    const handleTripSubmit = async (tripData) => {
+        await createTrip(tripData);
         setIsCreating(false);
-        setTripMeta({ title: '', budget: '', currency: 'USD', travelers: 1 });
-        setSegments([{ location: '', days: 3 }]);
-        setStartDate('');
-    };
-
-    const handleCreate = async (e) => {
-        e.preventDefault();
-        if (!tripMeta.title || !startDate || segments.some(s => !s.location)) return;
-        finalizeCreation();
     };
 
     return (
@@ -346,121 +291,12 @@ const Itinerary = () => {
                                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                                className="relative bg-card rounded-3xl shadow-2xl w-full max-w-xl p-8 overflow-hidden max-h-[90vh] overflow-y-auto border border-border"
+                                className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto"
                             >
-                                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary to-accent" />
-
-                                <h2 className="text-2xl font-bold text-foreground mb-6">Create New Trip</h2>
-
-                                <form onSubmit={handleCreate} className="space-y-6">
-                                    <div>
-                                        <label className="block text-sm font-medium text-foreground mb-1">Trip Title</label>
-                                        <input
-                                            type="text"
-                                            required
-                                            placeholder="e.g. Euro Trip 2025"
-                                            className="input"
-                                            value={tripMeta.title}
-                                            onChange={e => setTripMeta({ ...tripMeta, title: e.target.value })}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-foreground mb-3">Destinations & Schedule</label>
-                                        <div className="space-y-3">
-                                            {segments.map((segment, index) => (
-                                                <div key={index} className="flex gap-3">
-                                                    <div className="flex-grow">
-                                                        <LocationInput
-                                                            value={segment.location}
-                                                            onChange={(val) => updateSegment(index, 'location', val)}
-                                                            placeholder="City (e.g. Paris)"
-                                                            className="w-full"
-                                                        />
-                                                    </div>
-                                                    <div className="w-24">
-                                                        <input
-                                                            type="number"
-                                                            required
-                                                            min="1"
-                                                            placeholder="Days"
-                                                            className="input"
-                                                            value={segment.days}
-                                                            onChange={e => updateSegment(index, 'days', e.target.value)}
-                                                        />
-                                                    </div>
-                                                    {segments.length > 1 && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => removeSegment(index)}
-                                                            className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                                                        >
-                                                            <X className="w-5 h-5" />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            ))}
-                                            <button
-                                                type="button"
-                                                onClick={addSegment}
-                                                className="text-sm text-primary font-medium hover:underline flex items-center gap-1"
-                                            >
-                                                <Plus className="w-4 h-4" /> Add Another Destination
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-foreground mb-1">Start Date</label>
-                                            <input
-                                                type="date"
-                                                required
-                                                min={new Date().toISOString().split('T')[0]}
-                                                className="input"
-                                                value={startDate}
-                                                onChange={e => setStartDate(e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="flex flex-col justify-end pb-2">
-                                            <div className="text-sm text-muted-foreground">
-                                                Total Duration: <span className="font-semibold text-foreground">{segments.reduce((acc, curr) => acc + curr.days, 0)} days</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-foreground mb-1">Travelers</label>
-                                        <select
-                                            className="input"
-                                            value={tripMeta.travelers}
-                                            onChange={e => setTripMeta({ ...tripMeta, travelers: parseInt(e.target.value) })}
-                                        >
-                                            {[1, 2, 3, 4, 5, 6, 7, 8, '9+'].map(num => (
-                                                <option key={num} value={num === '9+' ? 9 : num}>
-                                                    {num} {num === 1 ? 'Person' : 'People'}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div className="flex gap-4 pt-4">
-                                        <Button
-                                            type="button"
-                                            variant="secondary"
-                                            onClick={() => setIsCreating(false)}
-                                            className="flex-1"
-                                        >
-                                            Cancel
-                                        </Button>
-                                        <Button
-                                            type="submit"
-                                            className="flex-1 gap-2"
-                                        >
-                                            Create Trip
-                                        </Button>
-                                    </div>
-                                </form>
+                                <CreateTripForm
+                                    onSubmit={handleTripSubmit}
+                                    onCancel={() => setIsCreating(false)}
+                                />
                             </motion.div>
                         </div>
                     )}

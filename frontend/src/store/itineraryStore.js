@@ -64,6 +64,13 @@ const useItineraryStore = create((set, get) => ({
                 pinned: false,
                 segments: segments,
                 days: tripDays,
+                // Constraint-driven fields
+                start_location: tripData.start_location || null,
+                return_location: tripData.return_location || null,
+                travel_style: tripData.travel_style || null,
+                own_vehicle_type: tripData.own_vehicle_type || 'none',
+                travel_preference: tripData.travel_preference || 'any',
+                accommodation_preference: tripData.accommodation_preference || 'mid-range',
             };
 
             const { data, error } = await supabase
