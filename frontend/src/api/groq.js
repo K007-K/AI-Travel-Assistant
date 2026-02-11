@@ -114,11 +114,13 @@ export const getHiddenGems = async (destination, tripContext = {}) => {
 
     try {
         const jsonResponse = await makeGroqRequest([
-            { role: "system", content: "You are a travel API that outputs strict JSON." },
+            { role: "system", content: "You are a travel API that outputs strict JSON. Never wrap output in markdown code fences." },
             { role: "user", content: prompt }
         ], true);
 
-        return JSON.parse(jsonResponse).gems;
+        // Strip markdown code fences the LLM may add (```json ... ```)
+        const clean = jsonResponse.replace(/```(?:json)?\s*/gi, '').replace(/```\s*$/gi, '').trim();
+        return JSON.parse(clean).gems;
     } catch (error) {
         console.error("Failed to get hidden gems:", error);
         return [];
