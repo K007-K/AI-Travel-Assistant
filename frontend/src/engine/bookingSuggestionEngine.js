@@ -34,7 +34,7 @@ export function suggestBookingsForSegment(segment, currencyRate = 1, options = {
 
     let rawResults = [];
 
-    if (segment.type === 'outbound_travel' || segment.type === 'return_travel') {
+    if (segment.type === 'outbound_travel' || segment.type === 'return_travel' || segment.type === 'intercity_travel') {
         const mode = meta.transport_mode || 'train';
         const formData = {
             origin: meta.from || '',
@@ -138,7 +138,7 @@ export function suggestBookingsForSegment(segment, currencyRate = 1, options = {
  * @returns {Object<string, BookingSuggestion>} — Keyed by segment_id
  */
 export function generateAllBookingSuggestions(segments, currencyRate = 1, options = {}) {
-    const bookableTypes = ['outbound_travel', 'return_travel', 'accommodation'];
+    const bookableTypes = ['outbound_travel', 'return_travel', 'intercity_travel', 'accommodation'];
     const bookableSegments = segments.filter(s => bookableTypes.includes(s.type));
 
     // Pass bookable count so upgrade pool can be split evenly

@@ -758,6 +758,7 @@ export function insertPairwiseLocalTransport(activities, tripId, dayNumber, budg
 export function getSegmentTypeLabel(type) {
     const labels = {
         outbound_travel: 'Travel',
+        intercity_travel: 'Intercity',
         return_travel: 'Return',
         local_transport: 'Local Transport',
         accommodation: 'Accommodation',
@@ -772,5 +773,5 @@ export function getSegmentTypeLabel(type) {
  * Check if a segment type is a logistics type (non-activity)
  */
 export function isLogisticsSegment(type) {
-    return ['outbound_travel', 'return_travel', 'local_transport', 'accommodation'].includes(type);
+    return ['outbound_travel', 'return_travel', 'intercity_travel', 'local_transport', 'accommodation'].includes(type);
 }

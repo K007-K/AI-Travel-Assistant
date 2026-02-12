@@ -6,6 +6,7 @@ import maplibregl from 'maplibre-gl';
  */
 const TRANSPORT_ICONS = {
     outbound_travel: { emoji: '✈️', bg: '#14b8a6' },
+    intercity_travel: { emoji: '🚆', bg: '#14b8a6' },
     return_travel: { emoji: '✈️', bg: '#14b8a6' },
     local_transport: { emoji: '🚗', bg: '#06b6d4' },
     accommodation: { emoji: '🏨', bg: '#6366f1' },

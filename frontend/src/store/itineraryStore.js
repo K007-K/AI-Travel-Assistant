@@ -106,7 +106,7 @@ function buildDaysFromSegments(segments, trip) {
                 // Logistics metadata
                 segmentType: seg.type,
                 transportMode: seg.metadata?.transport_mode || null,
-                isLogistics: ['outbound_travel', 'return_travel', 'local_transport', 'accommodation'].includes(seg.type),
+                isLogistics: ['outbound_travel', 'return_travel', 'intercity_travel', 'local_transport', 'accommodation'].includes(seg.type),
                 isGem: seg.type === 'gem', // Rule 7: Flag gems for UI isolation
             }))
         };

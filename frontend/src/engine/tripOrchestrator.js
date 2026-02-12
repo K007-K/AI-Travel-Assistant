@@ -244,7 +244,7 @@ function computeDailySummary(segments, totalDays) {
             .reduce((sum, s) => sum + (parseFloat(s.estimated_cost) || 0), 0);
 
         const transportCost = daySegs
-            .filter(s => ['outbound_travel', 'return_travel', 'local_transport'].includes(s.type))
+            .filter(s => ['outbound_travel', 'return_travel', 'intercity_travel', 'local_transport'].includes(s.type))
             .reduce((sum, s) => sum + (parseFloat(s.estimated_cost) || 0), 0);
 
         const stayCost = daySegs
@@ -261,7 +261,7 @@ function computeDailySummary(segments, totalDays) {
                     .reduce((sum, s) => sum + (parseFloat(s.estimated_cost) || 0), 0)
             ),
             travel_cost: Math.round(
-                daySegs.filter(s => ['outbound_travel', 'return_travel'].includes(s.type))
+                daySegs.filter(s => ['outbound_travel', 'return_travel', 'intercity_travel'].includes(s.type))
                     .reduce((sum, s) => sum + (parseFloat(s.estimated_cost) || 0), 0)
             ),
             stay_cost: Math.round(stayCost),

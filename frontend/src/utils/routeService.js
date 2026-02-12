@@ -18,6 +18,7 @@ const PROFILE_MAP = {
     train: null,        // No road routing for train — use straight-line
     flight: null,       // No road routing for flight — use arc
     outbound_travel: null,
+    intercity_travel: null,
     return_travel: null,
     local_transport: 'driving-car',
     accommodation: null,

@@ -29,6 +29,7 @@ const ACTIVITY_TYPES = [
     { value: 'accommodation', label: 'Stay', icon: Hotel, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' },
     // Logistics types (injected by Transport Engine)
     { value: 'outbound_travel', label: 'Travel', icon: Plane, color: 'text-teal-500 bg-teal-50 dark:bg-teal-900/20' },
+    { value: 'intercity_travel', label: 'Intercity', icon: Plane, color: 'text-teal-500 bg-teal-50 dark:bg-teal-900/20' },
     { value: 'return_travel', label: 'Return', icon: Plane, color: 'text-teal-500 bg-teal-50 dark:bg-teal-900/20' },
     { value: 'local_transport', label: 'Local Transport', icon: Bus, color: 'text-cyan-500 bg-cyan-50 dark:bg-cyan-900/20' },
 ];
@@ -630,7 +631,7 @@ const ItineraryBuilder = () => {
                                                     const costSegments = acts.filter(a => !a.isGem);
                                                     dayTotal = costSegments.reduce((s, a) => s + (a.estimated_cost || 0), 0);
                                                     activityCost = costSegments.filter(a => !a.isLogistics).reduce((s, a) => s + (a.estimated_cost || 0), 0);
-                                                    transportCost = costSegments.filter(a => a.segmentType === 'outbound_travel' || a.segmentType === 'return_travel' || a.segmentType === 'local_transport').reduce((s, a) => s + (a.estimated_cost || 0), 0);
+                                                    transportCost = costSegments.filter(a => a.segmentType === 'outbound_travel' || a.segmentType === 'return_travel' || a.segmentType === 'intercity_travel' || a.segmentType === 'local_transport').reduce((s, a) => s + (a.estimated_cost || 0), 0);
                                                     accomCost = costSegments.filter(a => a.segmentType === 'accommodation').reduce((s, a) => s + (a.estimated_cost || 0), 0);
                                                 }
 

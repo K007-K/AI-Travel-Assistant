@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react';
  */
 const TRANSPORT_STYLES = {
     outbound_travel: { color: '#a855f7', dasharray: [6, 4], width: 3 },  // purple dashed (flight)
+    intercity_travel: { color: '#3b82f6', dasharray: null, width: 3 },    // blue solid (train/bus)
     return_travel: { color: '#a855f7', dasharray: [6, 4], width: 3 },  // purple dashed (flight)
     local_transport: { color: '#06b6d4', dasharray: [2, 3], width: 2.5 }, // cyan dotted
     accommodation: { color: '#6366f1', dasharray: null, width: 2 },     // indigo solid
