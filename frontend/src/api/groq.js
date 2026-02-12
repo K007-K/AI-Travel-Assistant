@@ -47,10 +47,9 @@ Format: Use Markdown.
     }
 };
 
-export const generateTripPlan = async (destination, days, budget, travelers, currency = 'USD', tripDays = [], budgetTier = 'mid-range') => {
+export const generateTripPlan = async (destination, days, budget, travelers, currency = 'USD', tripDays = [], budgetTier = 'mid-range', lifecycleOpts = {}) => {
     try {
-        // Securely invoke the itinerary-generator function
-        // The Prompt construction and System Prompt are now hidden on the server
+        // lifecycleOpts may contain: activityBudget, activityPerDay, travelStyle, excludeTransport, excludeAccommodation, pace
         const { data, error } = await supabase.functions.invoke('itinerary-generator', {
             body: {
                 destination,
@@ -59,9 +58,16 @@ export const generateTripPlan = async (destination, days, budget, travelers, cur
                 travelers,
                 currency,
                 tripDays,
-                budgetTier
+                budgetTier,
+                // Lifecycle orchestration fields (Phase 4 constraints)
+                activityBudget: lifecycleOpts.activityBudget || null,
+                travelStyle: lifecycleOpts.travelStyle || null,
+                pace: lifecycleOpts.pace || null,
+                excludeTransport: lifecycleOpts.excludeTransport || false,
+                excludeAccommodation: lifecycleOpts.excludeAccommodation || false,
             }
         });
+
 
         if (error) {
             console.error("Itinerary Edge Function Error:", error);

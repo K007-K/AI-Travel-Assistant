@@ -4,7 +4,14 @@
  * Generates deterministic, context-aware booking results with composite scores.
  * Replaces the old random generateMockResults with structured data and a
  * transparent scoring formula for flights, hotels, and trains.
+ *
+ * Rule 8: All results are synthetic / estimated. No real API integration.
+ * Results MUST be labeled as "Estimated Results (Demo Mode)" in the UI.
  */
+
+// ── Rule 8: Demo Mode Flag ──────────────────────────────────────────
+export const BOOKING_IS_DEMO = true;
+export const BOOKING_DEMO_LABEL = 'Estimated Results (Demo Mode)';
 
 // ── Airline / Hotel / Train provider databases ───────────────────────
 

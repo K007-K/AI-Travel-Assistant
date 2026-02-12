@@ -43,10 +43,16 @@ const ItineraryBuilder = () => {
         updateTrip,
         addActivity,
         batchAddActivities,
+        generateFullItinerary,
         reorderActivities,
         deleteActivity,
         toggleActivityComplete,
         ensureSegments,
+        orchestrationPhase,
+        allocation: storeAllocation,
+        dailySummary: storeDailySummary,
+        bookingOptions: storeBookingOptions,
+        hiddenGems: storeHiddenGems,
     } = useItineraryStore();
     const { syncAiEstimates, fetchBudgetSummary, budgetSummary, setTripBudget, deleteCostEventForActivity } = useBudgetStore();
 
@@ -95,8 +101,8 @@ const ItineraryBuilder = () => {
             ensureSegments(foundTrip.id);
             if (!selectedDay) setSelectedDay(foundTrip.days[0]?.id);
 
-            // Load gems once
-            if (hiddenGems.length === 0 && !isLoadingGems) {
+            // Load gems from store if orchestrator populated them, else fetch separately
+            if (storeHiddenGems.length === 0 && hiddenGems.length === 0 && !isLoadingGems) {
                 setIsLoadingGems(true);
                 getHiddenGems(foundTrip.destination, {
                     budgetTier: foundTrip.accommodation_preference || 'mid-range',
@@ -172,39 +178,18 @@ const ItineraryBuilder = () => {
         if (!trip) return;
         setIsGenerating(true);
         try {
-            const plan = await generateTripPlan(
-                trip.destination,
-                trip.days.length,
-                trip.budget || 2000,
-                trip.travelers || 1,
-                trip.currency || activeCurrency,
-                trip.days,
-                trip.budgetTier || 'mid-range'
-            );
-            if (plan && plan.days) {
-                // Batch-insert all AI-generated activities into trip_segments
-                const activitiesByDay = plan.days.map(genDay =>
-                    (genDay.activities || []).map(activity => ({
-                        title: activity.title,
-                        time: activity.time || '09:00',
-                        type: activity.type || 'sightseeing',
-                        location: activity.location,
-                        notes: activity.notes,
-                        estimated_cost: parseFloat(activity.estimated_cost) || 0,
-                        safety_warning: activity.safety_warning,
-                    }))
-                );
-                await batchAddActivities(trip.id, activitiesByDay);
-                showToast("✨ Itinerary generated successfully!");
+            // ── New: Full lifecycle orchestration (10 phases) ──
+            const result = await generateFullItinerary(trip.id);
+
+            if (result) {
+                showToast("✨ Itinerary generated via orchestrator!");
 
                 // Sync AI estimated costs to cost_events table
-                // Re-read the trip from store to get the updated days with segment IDs
                 setTimeout(async () => {
                     const updatedTrips = useItineraryStore.getState().trips;
                     const updatedTrip = updatedTrips.find(t => t.id === trip.id);
                     if (updatedTrip?.days) {
                         await syncAiEstimates(trip.id, updatedTrip.days, trip.currency || activeCurrency);
-                        // Re-fetch budget summary and show fit/exceed feedback
                         await fetchBudgetSummary(trip.id);
                         const summary = useBudgetStore.getState().budgetSummary;
                         if (summary) {
@@ -222,7 +207,6 @@ const ItineraryBuilder = () => {
                                 showToast('✅ Itinerary fits within budget');
                             }
                         }
-                        // Write generation snapshot
                         await updateTrip(trip.id, {
                             generated_with_budget: trip.budget,
                             generated_with_currency: trip.currency || activeCurrency,
@@ -233,7 +217,7 @@ const ItineraryBuilder = () => {
                 }, 500);
             }
         } catch (error) {
-            console.error("Generation failed", error);
+            console.error("Orchestration failed", error);
             showToast("❌ Failed to generate itinerary.");
         } finally {
             setIsGenerating(false);
@@ -249,12 +233,23 @@ const ItineraryBuilder = () => {
         showToast("Activity added!");
     };
 
-    const handleAddGem = (gem) => {
+    const handleAddGem = async (gem) => {
         if (!selectedDay) return;
-        addActivity(trip.id, selectedDay, {
-            title: gem.title, time: '14:00', type: 'sightseeing', location: trip.destination, notes: gem.description
-        });
-        showToast(`Added ${gem.title}!`);
+        try {
+            await addActivity(trip.id, selectedDay, {
+                title: gem.title,
+                time: '14:00',
+                type: 'sightseeing',
+                segmentType: 'gem', // Rule 7: Insert as 'gem', not 'activity'
+                location: trip.destination,
+                notes: gem.description,
+                estimated_cost: gem.estimated_cost || 0, // Rule 7: Preserve gem cost
+            });
+            showToast(`✨ Added ${gem.title}!`);
+        } catch (err) {
+            // Rule 5: Surface strict budget errors
+            showToast(`❌ ${err.message}`);
+        }
     };
 
     const handleAnalyzeBudget = async () => {
@@ -515,6 +510,32 @@ const ItineraryBuilder = () => {
                                         </Card>
                                     ) : (
                                         <>
+                                            {/* Orchestration Stepper — Fix Group 8 */}
+                                            {isGenerating && orchestrationPhase && (
+                                                <Card className="mb-4 border-primary/30 bg-gradient-to-r from-primary/5 to-accent/5">
+                                                    <div className="p-4 flex items-center gap-3">
+                                                        <Loader2 className="animate-spin w-5 h-5 text-primary" />
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-foreground">{orchestrationPhase}</p>
+                                                            <p className="text-xs text-muted-foreground">Building your optimized itinerary...</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="px-4 pb-3">
+                                                        <div className="flex gap-1">
+                                                            {['Budget', 'Travel', 'Stay', 'Activities', 'Geocode', 'Local Transport', 'Return', 'Bookings', 'Summary', 'Gems', 'Reconcile'].map((step, i) => {
+                                                                const phaseNum = parseFloat(orchestrationPhase?.match(/[\d.]+/)?.[0] || '0');
+                                                                const stepPhase = i <= 0 ? 1 : i <= 1 ? 2 : i <= 2 ? 3 : i <= 3 ? 4 : i <= 4 ? 4.5 : i <= 5 ? 5 : i <= 6 ? 6 : i <= 7 ? 7 : i <= 8 ? 8 : i <= 9 ? 9 : 10;
+                                                                const isDone = phaseNum > stepPhase;
+                                                                const isCurrent = phaseNum === stepPhase;
+                                                                return (
+                                                                    <div key={i} className={`h-1.5 flex-1 rounded-full transition-all ${isDone ? 'bg-primary' : isCurrent ? 'bg-primary/50 animate-pulse' : 'bg-muted'
+                                                                        }`} title={step} />
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                </Card>
+                                            )}
                                             <Reorder.Group axis="y" values={activeDay?.activities || []} onReorder={(newOrder) => reorderActivities(trip.id, activeDay.id, newOrder)} className="space-y-4">
                                                 {activeDay?.activities.map((activity) => {
                                                     const typeInfo = ACTIVITY_TYPES.find(t => t.value === activity.type) || ACTIVITY_TYPES[0];
@@ -555,18 +576,64 @@ const ItineraryBuilder = () => {
                                                                     </div>
                                                                 </div>
                                                             </Card>
+                                                            {/* Booking Options — Fix Group 8 */}
+                                                            {activity.segmentId && storeBookingOptions?.[activity.segmentId] && (
+                                                                <div className="mx-5 mb-4 -mt-1">
+                                                                    <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                                                                        {storeBookingOptions[activity.segmentId].options?.map((opt, oi) => (
+                                                                            <div key={oi} className={`flex-shrink-0 px-3 py-2 rounded-xl border text-xs ${opt.tag === 'Upgrade Available'
+                                                                                ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20'
+                                                                                : opt.tag === 'Best'
+                                                                                    ? 'border-primary/40 bg-primary/5'
+                                                                                    : 'border-border bg-muted/30'
+                                                                                }`}>
+                                                                                <div className="flex items-center gap-1.5 mb-0.5">
+                                                                                    <span className="font-medium text-foreground">{opt.provider}</span>
+                                                                                    {opt.tag && (
+                                                                                        <span className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded-full ${opt.tag === 'Upgrade Available'
+                                                                                            ? 'bg-amber-200 text-amber-800 dark:bg-amber-800 dark:text-amber-200'
+                                                                                            : 'bg-primary/20 text-primary'
+                                                                                            }`}>{opt.tag}</span>
+                                                                                    )}
+                                                                                </div>
+                                                                                <span className="text-muted-foreground">{activeCurrencySymbol}{(opt.estimated_price || 0).toLocaleString()}</span>
+                                                                                {opt.rating && <span className="ml-1 text-yellow-600">★{opt.rating}</span>}
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                    {storeBookingOptions[activity.segmentId].demo_label && (
+                                                                        <p className="text-[10px] text-muted-foreground/60 mt-1">Demo booking data</p>
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                         </Reorder.Item>
                                                     );
                                                 })}
                                             </Reorder.Group>
 
-                                            {/* Daily Expense Summary — Categorized Breakdown */}
+                                            {/* Daily Expense Summary — Uses orchestrator data when available (Fix Group 8) */}
                                             {(() => {
-                                                const acts = activeDay?.activities || [];
-                                                const activityCost = acts.filter(a => !a.isLogistics).reduce((s, a) => s + (a.estimated_cost || 0), 0);
-                                                const transportCost = acts.filter(a => a.segmentType === 'outbound_travel' || a.segmentType === 'return_travel' || a.segmentType === 'local_transport').reduce((s, a) => s + (a.estimated_cost || 0), 0);
-                                                const accomCost = acts.filter(a => a.segmentType === 'accommodation').reduce((s, a) => s + (a.estimated_cost || 0), 0);
-                                                const dayTotal = activityCost + transportCost + accomCost;
+                                                const dayNum = activeDay?.dayNumber;
+                                                // Prefer orchestrator daily summary if available
+                                                const orchSummary = storeDailySummary?.find(s => s.day_number === dayNum);
+
+                                                let dayTotal, activityCost, transportCost, accomCost;
+
+                                                if (orchSummary) {
+                                                    dayTotal = orchSummary.total_day_cost || 0;
+                                                    activityCost = orchSummary.activity_cost || 0;
+                                                    transportCost = (orchSummary.travel_cost || 0) + (orchSummary.local_transport_cost || 0);
+                                                    accomCost = orchSummary.stay_cost || 0;
+                                                } else {
+                                                    // Fallback: UI-computed
+                                                    const acts = activeDay?.activities || [];
+                                                    const costSegments = acts.filter(a => !a.isGem);
+                                                    dayTotal = costSegments.reduce((s, a) => s + (a.estimated_cost || 0), 0);
+                                                    activityCost = costSegments.filter(a => !a.isLogistics).reduce((s, a) => s + (a.estimated_cost || 0), 0);
+                                                    transportCost = costSegments.filter(a => a.segmentType === 'outbound_travel' || a.segmentType === 'return_travel' || a.segmentType === 'local_transport').reduce((s, a) => s + (a.estimated_cost || 0), 0);
+                                                    accomCost = costSegments.filter(a => a.segmentType === 'accommodation').reduce((s, a) => s + (a.estimated_cost || 0), 0);
+                                                }
+
                                                 const dailyBudget = trip.budget && trip.days.length ? Math.round(trip.budget / trip.days.length) : 0;
                                                 if (dayTotal === 0 && dailyBudget === 0) return null;
                                                 const pct = dailyBudget > 0 ? Math.min(100, Math.round((dayTotal / dailyBudget) * 100)) : 0;
@@ -581,7 +648,7 @@ const ItineraryBuilder = () => {
                                                                     </div>
                                                                     <div>
                                                                         <h4 className="font-semibold text-foreground">Day {activeDay?.dayNumber} Expenses</h4>
-                                                                        <p className="text-xs text-muted-foreground">Estimated total (per person)</p>
+                                                                        <p className="text-xs text-muted-foreground">{orchSummary ? 'From lifecycle engine' : 'Estimated total (per person)'}</p>
                                                                     </div>
                                                                 </div>
                                                                 <div className="text-right">
@@ -634,25 +701,56 @@ const ItineraryBuilder = () => {
                                             <MapContainer trip={trip} destination={trip.destination} />
                                         </Card>
 
-                                        {/* Scrollable Hidden Gems — Enhanced */}
+                                        {/* Allocation Breakdown — Fix Group 8 */}
+                                        {storeAllocation && (
+                                            <Card className="rounded-3xl border-border">
+                                                <CardHeader>
+                                                    <CardTitle className="flex items-center gap-2 text-lg">
+                                                        <BarChart3 className="w-5 h-5 text-primary" /> Budget Allocation
+                                                    </CardTitle>
+                                                </CardHeader>
+                                                <CardContent className="space-y-2.5">
+                                                    {[
+                                                        { label: 'Intercity Travel', value: storeAllocation.intercity, color: 'bg-teal-500' },
+                                                        { label: 'Accommodation', value: storeAllocation.accommodation, color: 'bg-indigo-500' },
+                                                        { label: 'Activities', value: storeAllocation.activity, color: 'bg-primary' },
+                                                        { label: 'Local Transport', value: storeAllocation.local_transport, color: 'bg-amber-500' },
+                                                        { label: 'Buffer', value: storeAllocation.buffer, color: 'bg-muted-foreground' },
+                                                        ...(storeAllocation.upgrade_pool ? [{ label: 'Upgrade Pool', value: storeAllocation.upgrade_pool, color: 'bg-amber-400' }] : []),
+                                                    ].map((item, i) => (
+                                                        <div key={i}>
+                                                            <div className="flex justify-between text-xs mb-0.5">
+                                                                <span className="text-muted-foreground">{item.label}</span>
+                                                                <span className="font-medium text-foreground">{activeCurrencySymbol}{(item.value || 0).toLocaleString()}</span>
+                                                            </div>
+                                                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                                                                <div className={`h-full rounded-full ${item.color}`} style={{ width: `${storeAllocation.total_budget > 0 ? Math.round(((item.value || 0) / storeAllocation.total_budget) * 100) : 0}%` }} />
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    <div className="pt-2 border-t border-border flex justify-between text-xs font-semibold">
+                                                        <span>Total Budget</span>
+                                                        <span>{activeCurrencySymbol}{(storeAllocation.total_budget || 0).toLocaleString()}</span>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        )}
+
+                                        {/* Scrollable Hidden Gems — Fix Group 5: Read-only */}
                                         <Card className="rounded-3xl border-border flex flex-col max-h-[calc(100vh-25rem)]">
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2 text-lg">
                                                     <Sun className="w-5 h-5 text-yellow-500" /> Hidden Gems
+                                                    <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground ml-auto">Recommendation only</span>
                                                 </CardTitle>
                                             </CardHeader>
                                             <CardContent className="space-y-3 overflow-y-auto pr-2 custom-scrollbar">
                                                 {isLoadingGems && (
                                                     <div className="text-center py-4 text-muted-foreground text-sm">Loading gems…</div>
                                                 )}
-                                                {hiddenGems.map((gem, i) => (
+                                                {(storeHiddenGems.length > 0 ? storeHiddenGems : hiddenGems).map((gem, i) => (
                                                     <div key={i} className="p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors shrink-0">
-                                                        <div className="flex justify-between items-start mb-1.5">
-                                                            <h4 className="text-sm font-medium text-foreground">{gem.title}</h4>
-                                                            <button onClick={() => handleAddGem(gem)} className="text-primary hover:scale-110 transition-transform p-1">
-                                                                <Plus className="w-4 h-4" />
-                                                            </button>
-                                                        </div>
+                                                        <h4 className="text-sm font-medium text-foreground mb-1.5">{gem.title}</h4>
                                                         <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{gem.description}</p>
                                                         <div className="flex gap-2 flex-wrap">
                                                             {gem.category && (

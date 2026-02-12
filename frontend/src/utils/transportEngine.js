@@ -5,6 +5,11 @@
  * and local commute trip_segments based on trip constraints.
  * 
  * NO AI calls — all costs come from lookup tables.
+ * 
+ * Behavioral rules enforced:
+ * - Rule 3: No flight when estimated driving time < 5 hours
+ * - Rule 4: Own vehicle prioritized when available AND feasible (≤ 6h drive)
+ * - Rule 9: Local transport inserted between activities > 2km apart (pairwise)
  */
 
 // ── Cost Lookup Tables (base costs in USD, converted later) ──────────
@@ -23,10 +28,18 @@ const ACCOMMODATION_COSTS = {
     luxury: { perNight: 200 },
 };
 
-const LOCAL_TRANSPORT_COSTS = {
-    budget: { perDay: 5 },
-    'mid-range': { perDay: 15 },
-    luxury: { perDay: 40 },
+// ── Local transport cost per km (for pairwise insertion) ─────────────
+
+const LOCAL_FARE_PER_KM = {
+    budget: 0.10,      // USD/km — auto-rickshaw, public bus
+    'mid-range': 0.25, // USD/km — cab, metro
+    luxury: 0.60,      // USD/km — premium cab
+};
+
+const LOCAL_MIN_FARE = {
+    budget: 1,
+    'mid-range': 3,
+    luxury: 8,
 };
 
 // ── Currency conversion rates (approximate, relative to USD) ─────────
@@ -42,74 +55,230 @@ const CURRENCY_MULTIPLIERS = {
     BDT: 110, NPR: 133, MMK: 2100, KHR: 4100, LAK: 20500,
 };
 
-// ── Distance Estimation ──────────────────────────────────────────────
+// ── Distance & Time Estimation ───────────────────────────────────────
+
+/** Approximate km for each distance tier */
+const KM_ESTIMATES = { local: 20, short: 300, medium: 1000, long: 3000 };
 
 /**
- * Rough distance tier based on whether locations are in the same country / region.
- * Since we don't have geocoding, we use a heuristic:
- * - Same string → 0 (same city)
- * - Different strings → estimate based on common patterns
+ * Estimate driving time in hours for a given distance in km.
+ * Uses 60 km/h average (realistic mixed road/highway).
+ */
+function estimateDrivingTime(distanceKm) {
+    const avgSpeed = 60; // km/h
+    return distanceKm / avgSpeed;
+}
+
+// ── Geocode lookup (lightweight, for distance estimation) ────────────
+
+const GEOCODE_CITIES = {
+    'paris': { lat: 48.8566, lng: 2.3522 },
+    'london': { lat: 51.5074, lng: -0.1278 },
+    'new york': { lat: 40.7128, lng: -74.0060 },
+    'tokyo': { lat: 35.6762, lng: 139.6503 },
+    'dubai': { lat: 25.2048, lng: 55.2708 },
+    'mumbai': { lat: 19.0760, lng: 72.8777 },
+    'delhi': { lat: 28.6139, lng: 77.2090 },
+    'new delhi': { lat: 28.6139, lng: 77.2090 },
+    'bangalore': { lat: 12.9716, lng: 77.5946 },
+    'bengaluru': { lat: 12.9716, lng: 77.5946 },
+    'hyderabad': { lat: 17.3850, lng: 78.4867 },
+    'chennai': { lat: 13.0827, lng: 80.2707 },
+    'kolkata': { lat: 22.5726, lng: 88.3639 },
+    'goa': { lat: 15.2993, lng: 74.1240 },
+    'jaipur': { lat: 26.9124, lng: 75.7873 },
+    'agra': { lat: 27.1767, lng: 78.0081 },
+    'varanasi': { lat: 25.3176, lng: 82.9739 },
+    'udaipur': { lat: 24.5854, lng: 73.7125 },
+    'shimla': { lat: 31.1048, lng: 77.1734 },
+    'manali': { lat: 32.2396, lng: 77.1887 },
+    'pune': { lat: 18.5204, lng: 73.8567 },
+    'coorg': { lat: 12.3375, lng: 75.8069 },
+    'mysore': { lat: 12.2958, lng: 76.6394 },
+    'mysuru': { lat: 12.2958, lng: 76.6394 },
+    'kochi': { lat: 9.9312, lng: 76.2673 },
+    'kerala': { lat: 10.8505, lng: 76.2711 },
+    'rishikesh': { lat: 30.0869, lng: 78.2676 },
+    'pondicherry': { lat: 11.9416, lng: 79.8083 },
+    'ooty': { lat: 11.4102, lng: 76.6950 },
+    'darjeeling': { lat: 27.0410, lng: 88.2663 },
+    'leh': { lat: 34.1526, lng: 77.5771 },
+    'ladakh': { lat: 34.1526, lng: 77.5771 },
+    'kashmir': { lat: 34.0837, lng: 74.7973 },
+    'amritsar': { lat: 31.6340, lng: 74.8723 },
+    'lucknow': { lat: 26.8467, lng: 80.9462 },
+    'ahmedabad': { lat: 23.0225, lng: 72.5714 },
+    'surat': { lat: 21.1702, lng: 72.8311 },
+    'indore': { lat: 22.7196, lng: 75.8577 },
+    'bhopal': { lat: 23.2599, lng: 77.4126 },
+    'nagpur': { lat: 21.1458, lng: 79.0882 },
+    'visakhapatnam': { lat: 17.6868, lng: 83.2185 },
+    'bangkok': { lat: 13.7563, lng: 100.5018 },
+    'singapore': { lat: 1.3521, lng: 103.8198 },
+    'bali': { lat: -8.3405, lng: 115.0920 },
+    'rome': { lat: 41.9028, lng: 12.4964 },
+    'barcelona': { lat: 41.3874, lng: 2.1686 },
+    'amsterdam': { lat: 52.3676, lng: 4.9041 },
+    'sydney': { lat: -33.8688, lng: 151.2093 },
+    'san francisco': { lat: 37.7749, lng: -122.4194 },
+    'los angeles': { lat: 34.0522, lng: -118.2437 },
+    'istanbul': { lat: 41.0082, lng: 28.9784 },
+    'cairo': { lat: 30.0444, lng: 31.2357 },
+    'cape town': { lat: -33.9249, lng: 18.4241 },
+    'rio de janeiro': { lat: -22.9068, lng: -43.1729 },
+    'berlin': { lat: 52.5200, lng: 13.4050 },
+    'vienna': { lat: 48.2082, lng: 16.3738 },
+    'prague': { lat: 50.0755, lng: 14.4378 },
+    'seoul': { lat: 37.5665, lng: 126.9780 },
+    'kuala lumpur': { lat: 3.1390, lng: 101.6869 },
+    'hong kong': { lat: 22.3193, lng: 114.1694 },
+    'lisbon': { lat: 38.7223, lng: -9.1393 },
+    'athens': { lat: 37.9838, lng: 23.7275 },
+    'zurich': { lat: 47.3769, lng: 8.5417 },
+    'vancouver': { lat: 49.2827, lng: -123.1207 },
+    'toronto': { lat: 43.6532, lng: -79.3832 },
+    'miami': { lat: 25.7617, lng: -80.1918 },
+    'hawaii': { lat: 19.8968, lng: -155.5828 },
+    'maldives': { lat: 3.2028, lng: 73.2207 },
+};
+
+/** Lookup geocode for a city name (partial match supported) */
+function geocodeCityForDistance(location) {
+    if (!location) return null;
+    const norm = location.toLowerCase().trim();
+    if (GEOCODE_CITIES[norm]) return GEOCODE_CITIES[norm];
+    for (const [city, coords] of Object.entries(GEOCODE_CITIES)) {
+        if (norm.includes(city) || city.includes(norm)) return coords;
+    }
+    return null;
+}
+
+/**
+ * Fix Group 2: Robust distance tier estimation.
+ *
+ * Priority:
+ * 1. sameRegionPairs override → 'short'
+ * 2. Geocode both cities → haversine → tier from km
+ * 3. Country keyword match → 'short'
+ * 4. Default → 'short' (NOT 'medium' — prevents cost inflation)
  */
 function estimateDistanceTier(from, to) {
-    if (!from || !to) return 'medium';
+    if (!from || !to) return 'short';
 
     const a = from.toLowerCase().trim();
     const b = to.toLowerCase().trim();
 
     if (a === b) return 'local';
 
-    // If they share a country keyword, likely short distance
-    const countryKeywords = [
-        'india', 'usa', 'uk', 'japan', 'france', 'germany', 'italy', 'spain',
-        'thailand', 'australia', 'brazil', 'mexico', 'canada', 'china',
-    ];
-
-    const aCountry = countryKeywords.find(c => a.includes(c));
-    const bCountry = countryKeywords.find(c => b.includes(c));
-
-    if (aCountry && bCountry && aCountry === bCountry) return 'short';
-
-    // Check if both look like cities in the same region
+    // 1. Override: known same-region pairs
     const sameRegionPairs = [
-        ['delhi', 'mumbai'], ['delhi', 'jaipur'], ['mumbai', 'goa'], ['mumbai', 'pune'],
-        ['bangalore', 'chennai'], ['bangalore', 'mysore'], ['hyderabad', 'bangalore'],
-        ['paris', 'lyon'], ['paris', 'nice'], ['london', 'manchester'], ['london', 'edinburgh'],
-        ['new york', 'boston'], ['new york', 'philadelphia'], ['los angeles', 'san francisco'],
-        ['tokyo', 'osaka'], ['tokyo', 'kyoto'], ['bangkok', 'chiang mai'], ['bangkok', 'phuket'],
-        ['sydney', 'melbourne'], ['rome', 'florence'], ['rome', 'venice'],
-        ['berlin', 'munich'], ['barcelona', 'madrid'],
+        ['delhi', 'mumbai'], ['delhi', 'jaipur'], ['delhi', 'agra'],
+        ['delhi', 'shimla'], ['delhi', 'rishikesh'], ['delhi', 'manali'],
+        ['delhi', 'lucknow'], ['delhi', 'amritsar'], ['delhi', 'varanasi'],
+        ['mumbai', 'goa'], ['mumbai', 'pune'], ['mumbai', 'ahmedabad'],
+        ['mumbai', 'surat'], ['mumbai', 'nashik'], ['mumbai', 'lonavala'],
+        ['bangalore', 'chennai'], ['bangalore', 'mysore'], ['bangalore', 'coorg'],
+        ['bangalore', 'ooty'], ['bangalore', 'pondicherry'], ['bangalore', 'goa'],
+        ['bangalore', 'hampi'], ['bengaluru', 'mysuru'], ['bengaluru', 'coorg'],
+        ['hyderabad', 'bangalore'], ['hyderabad', 'goa'], ['hyderabad', 'chennai'],
+        ['hyderabad', 'vijayawada'], ['hyderabad', 'visakhapatnam'],
+        ['chennai', 'pondicherry'], ['chennai', 'kochi'], ['chennai', 'ooty'],
+        ['kolkata', 'darjeeling'], ['kolkata', 'varanasi'],
+        ['jaipur', 'udaipur'], ['jaipur', 'jodhpur'], ['jaipur', 'agra'],
+        ['kochi', 'munnar'], ['kochi', 'alleppey'],
+        ['shimla', 'manali'], ['leh', 'srinagar'],
+        ['paris', 'lyon'], ['paris', 'nice'], ['paris', 'marseille'],
+        ['london', 'manchester'], ['london', 'edinburgh'], ['london', 'birmingham'],
+        ['new york', 'boston'], ['new york', 'philadelphia'], ['new york', 'washington'],
+        ['los angeles', 'san francisco'], ['los angeles', 'las vegas'],
+        ['tokyo', 'osaka'], ['tokyo', 'kyoto'],
+        ['bangkok', 'chiang mai'], ['bangkok', 'phuket'], ['bangkok', 'pattaya'],
+        ['sydney', 'melbourne'], ['sydney', 'canberra'],
+        ['rome', 'florence'], ['rome', 'venice'], ['rome', 'naples'],
+        ['berlin', 'munich'], ['berlin', 'hamburg'],
+        ['barcelona', 'madrid'], ['barcelona', 'valencia'],
+        ['istanbul', 'ankara'], ['istanbul', 'cappadocia'],
+        ['dubai', 'abu dhabi'],
     ];
 
     const isShort = sameRegionPairs.some(([x, y]) =>
         (a.includes(x) && b.includes(y)) || (a.includes(y) && b.includes(x))
     );
-
     if (isShort) return 'short';
 
-    // Default to medium for different cities
-    return 'medium';
+    // 2. Geocode-based haversine distance
+    const coordsA = geocodeCityForDistance(from);
+    const coordsB = geocodeCityForDistance(to);
+    if (coordsA && coordsB) {
+        const km = haversineDistance(coordsA.lat, coordsA.lng, coordsB.lat, coordsB.lng);
+        if (km < 100) return 'local';
+        if (km < 500) return 'short';
+        if (km <= 1200) return 'medium';
+        return 'long';
+    }
+
+    // 3. Country keyword match → 'short'
+    const countryKeywords = [
+        'india', 'usa', 'uk', 'japan', 'france', 'germany', 'italy', 'spain',
+        'thailand', 'australia', 'brazil', 'mexico', 'canada', 'china',
+    ];
+    const aCountry = countryKeywords.find(c => a.includes(c));
+    const bCountry = countryKeywords.find(c => b.includes(c));
+    if (aCountry && bCountry && aCountry === bCountry) return 'short';
+
+    // 4. Default → 'short' (Fix Group 2: prevents 1000km cost inflation)
+    return 'short';
 }
 
-// ── Transport Mode Decision ──────────────────────────────────────────
+// ── Transport Mode Decision (Rule 3 + Rule 4 + Road Trip enforced) ───────
 
 function decideTransportMode(trip, distanceTier) {
     const pref = trip.travel_preference || 'any';
     const vehicle = trip.own_vehicle_type || 'none';
+    const distanceKm = KM_ESTIMATES[distanceTier] || 500;
+    const drivingHours = estimateDrivingTime(distanceKm);
+    const travelStyle = trip.travel_style || '';
 
-    // If user has their own vehicle and it's a road trip
-    if (vehicle !== 'none' && trip.travel_style === 'road_trip') {
+    // ── Fix Group 6: Road trip override ──
+    if (travelStyle === 'road_trip') {
+        // NEVER allow flight in road trip mode
+        // Force own vehicle when ≤ 800km
+        if (vehicle !== 'none' && distanceKm <= 800) {
+            return vehicle; // 'car' or 'bike'
+        }
+        // > 800km with own vehicle: still use own vehicle (road trip spirit)
+        if (vehicle !== 'none') {
+            return vehicle;
+        }
+        // No own vehicle in road trip mode: use bus/train, never flight
+        return distanceKm <= 300 ? 'bus' : 'train';
+    }
+
+    // ── Rule 4: Own vehicle prioritized when available AND feasible (≤ 6h) ──
+    if (vehicle !== 'none' && drivingHours <= 6) {
         return vehicle; // 'car' or 'bike'
     }
 
-    // If user explicitly chose a mode
-    if (pref !== 'any') return pref;
+    // If user explicitly chose a mode (but still enforce Rule 3)
+    if (pref !== 'any') {
+        // ── Rule 3: Never allow flight when driving time < 5h ──
+        if (pref === 'flight' && drivingHours < 5) {
+            return 'train'; // Downgrade explicit flight preference
+        }
+        return pref;
+    }
 
-    // Auto-decide based on distance
+    // Auto-decide based on distance + time
+    // ── Rule 3: Flight only when driving time ≥ 5 hours ──
+    if (drivingHours >= 5) {
+        return 'flight';
+    }
+
+    // Sub-5h routes: prefer train for short/medium, bus for local
     switch (distanceTier) {
         case 'local': return 'bus';
         case 'short': return 'train';
-        case 'medium': return 'flight';
-        case 'long': return 'flight';
+        case 'medium': return 'train'; // Was flight — now train (< 5h)
         default: return 'train';
     }
 }
@@ -121,9 +290,7 @@ function calculateTransportCost(mode, distanceTier, travelers, currency) {
     let baseCost = 0;
 
     if (mode === 'car' || mode === 'bike') {
-        // Estimate km based on tier
-        const kmEstimates = { local: 20, short: 300, medium: 1000, long: 3000 };
-        const km = kmEstimates[distanceTier] || 500;
+        const km = KM_ESTIMATES[distanceTier] || 500;
         baseCost = km * TRANSPORT_COSTS[mode].perKm;
     } else {
         const costs = TRANSPORT_COSTS[mode] || TRANSPORT_COSTS.train;
@@ -133,16 +300,91 @@ function calculateTransportCost(mode, distanceTier, travelers, currency) {
     return Math.round(baseCost * travelers * multiplier);
 }
 
+// ── Fix Group 1: Envelope-Aware Transport ────────────────────────────
+
+const DOWNGRADE_LADDER = ['flight', 'train', 'bus', 'car'];
+
+/**
+ * Calculate transport cost with budget envelope awareness.
+ * If preferred mode exceeds remaining envelope, walk down the
+ * downgrade ladder until cost fits or clamp to remaining.
+ *
+ * @param {string} preferredMode — Mode from decideTransportMode()
+ * @param {string} distanceTier
+ * @param {number} travelers
+ * @param {string} currency
+ * @param {number} remaining — allocation.intercity_remaining
+ * @returns {{ mode: string, cost: number, adjusted: boolean }}
+ */
+function envelopeAwareTransportCost(preferredMode, distanceTier, travelers, currency, remaining) {
+    // If no budget left at all, return zero-cost
+    if (remaining <= 0) {
+        return { mode: preferredMode, cost: 0, adjusted: true };
+    }
+
+    let cost = calculateTransportCost(preferredMode, distanceTier, travelers, currency);
+
+    // If within envelope, use as-is
+    if (cost <= remaining) {
+        return { mode: preferredMode, cost, adjusted: false };
+    }
+
+    // Walk the downgrade ladder starting from the step AFTER current mode
+    const startIdx = DOWNGRADE_LADDER.indexOf(preferredMode);
+    let bestMode = preferredMode;
+    let bestCost = cost;
+
+    for (let i = Math.max(0, startIdx + 1); i < DOWNGRADE_LADDER.length; i++) {
+        const trialMode = DOWNGRADE_LADDER[i];
+        const trialCost = calculateTransportCost(trialMode, distanceTier, travelers, currency);
+        if (trialCost <= remaining) {
+            return { mode: trialMode, cost: trialCost, adjusted: true };
+        }
+        // Track cheapest even if it still exceeds
+        if (trialCost < bestCost) {
+            bestMode = trialMode;
+            bestCost = trialCost;
+        }
+    }
+
+    // Cheapest mode still exceeds — clamp to remaining
+    return { mode: bestMode, cost: remaining, adjusted: true };
+}
+
 function calculateAccommodationCost(preference, currency) {
     const multiplier = CURRENCY_MULTIPLIERS[currency] || 1;
     const tier = ACCOMMODATION_COSTS[preference] || ACCOMMODATION_COSTS['mid-range'];
     return Math.round(tier.perNight * multiplier);
 }
 
-function calculateLocalTransportCost(budgetTier, currency) {
+/**
+ * Calculate pairwise local transport cost for a given distance in km.
+ * Rule 9: Realistic per-trip fare based on distance.
+ */
+function calculateLocalTripCost(distanceKm, budgetTier, currency) {
     const multiplier = CURRENCY_MULTIPLIERS[currency] || 1;
-    const tier = LOCAL_TRANSPORT_COSTS[budgetTier] || LOCAL_TRANSPORT_COSTS['mid-range'];
-    return Math.round(tier.perDay * multiplier);
+    const farePerKm = LOCAL_FARE_PER_KM[budgetTier] || LOCAL_FARE_PER_KM['mid-range'];
+    const minFare = LOCAL_MIN_FARE[budgetTier] || LOCAL_MIN_FARE['mid-range'];
+    const cost = Math.max(minFare, distanceKm * farePerKm);
+    return Math.round(cost * multiplier);
+}
+
+// ── Haversine Distance (for Rule 9) ──────────────────────────────────
+
+/**
+ * Haversine distance between two lat/lng points in km.
+ * Used for pairwise local transport insertion.
+ */
+export function haversineDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // km
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 // ── Transport Mode Label & Icon Hint ─────────────────────────────────
@@ -155,26 +397,259 @@ const MODE_LABELS = {
     bike: '🏍️ Ride',
 };
 
-// ── Main Engine ──────────────────────────────────────────────────────
+// Export CURRENCY_MULTIPLIERS for orchestrator / booking engine
+export { CURRENCY_MULTIPLIERS };
+
+// ── Isolated Phase Functions (used by tripOrchestrator) ──────────────
 
 /**
- * Generate transport, accommodation, and local transport segments
- * for a trip based on its constraints.
- * 
- * @param {object} trip - Trip object with constraints
- * @returns {object[]} Array of trip_segment rows ready for insert
+ * Phase 2: Build outbound travel segment (start_location → first destination).
+ * Deducts cost from allocation.intercity_remaining.
+ *
+ * @param {object} trip        — Trip object
+ * @param {object} allocation  — Budget allocation from budgetAllocator
+ * @param {number} currencyRate — Currency multiplier (unused here, cost uses trip.currency)
+ * @returns {object|null} — Segment row or null if no outbound needed
+ */
+export function buildOutboundSegment(trip, allocation, currencyRate) {
+    const tripSegments = trip.segments || [];
+    const startLoc = trip.start_location;
+    const firstDest = tripSegments[0]?.location || trip.destination;
+    const travelers = trip.travelers || 1;
+    const currency = trip.currency || 'USD';
+
+    if (!startLoc || !firstDest || startLoc.toLowerCase() === firstDest.toLowerCase()) {
+        return null;
+    }
+
+    // Fix Group 4: Skip if no intercity budget remaining
+    const remaining = allocation?.intercity_remaining ?? Infinity;
+    if (remaining <= 0) return null;
+
+    const distTier = estimateDistanceTier(startLoc, firstDest);
+    const preferredMode = decideTransportMode(trip, distTier);
+
+    // Fix Group 1: Envelope-aware cost with downgrade ladder
+    const { mode, cost, adjusted } = envelopeAwareTransportCost(
+        preferredMode, distTier, travelers, currency, remaining
+    );
+
+    // Deduct from intercity envelope
+    if (allocation) {
+        allocation.intercity_remaining = Math.max(0, (allocation.intercity_remaining || 0) - cost);
+    }
+
+    return {
+        trip_id: trip.id,
+        type: 'outbound_travel',
+        title: `${MODE_LABELS[mode] || mode} — ${startLoc} → ${firstDest}`,
+        day_number: 1,
+        location: startLoc,
+        estimated_cost: cost,
+        order_index: -2,
+        metadata: {
+            transport_mode: mode,
+            from: startLoc,
+            to: firstDest,
+            distance_tier: distTier,
+            per_person: Math.round(cost / travelers),
+            adjusted_for_budget: adjusted || undefined,
+        },
+    };
+}
+
+/**
+ * Phase 2b: Build inter-city travel segments for multi-city trips.
+ *
+ * @param {object} trip        — Trip object
+ * @param {object} allocation  — Budget allocation
+ * @param {number} currencyRate
+ * @returns {object[]} — Array of intercity segments
+ */
+export function buildIntercitySegments(trip, allocation, currencyRate) {
+    const tripSegments = trip.segments || [];
+    const travelers = trip.travelers || 1;
+    const currency = trip.currency || 'USD';
+    const segments = [];
+
+    for (let i = 0; i < tripSegments.length - 1; i++) {
+        const fromCity = tripSegments[i].location;
+        const toCity = tripSegments[i + 1].location;
+
+        if (fromCity && toCity && fromCity.toLowerCase() !== toCity.toLowerCase()) {
+            let transitionDay = 0;
+            for (let j = 0; j <= i; j++) {
+                transitionDay += (tripSegments[j].days || 0);
+            }
+
+            // Fix Group 4: Skip if no intercity budget remaining
+            const remaining = allocation?.intercity_remaining ?? Infinity;
+            if (remaining <= 0) continue;
+
+            const distTier = estimateDistanceTier(fromCity, toCity);
+            const preferredMode = decideTransportMode(trip, distTier);
+
+            // Fix Group 1: Envelope-aware cost with downgrade ladder
+            const { mode, cost, adjusted } = envelopeAwareTransportCost(
+                preferredMode, distTier, travelers, currency, remaining
+            );
+
+            if (allocation) {
+                allocation.intercity_remaining = Math.max(0, (allocation.intercity_remaining || 0) - cost);
+            }
+
+            segments.push({
+                trip_id: trip.id,
+                type: 'intercity_travel',
+                title: `${MODE_LABELS[mode] || mode} — ${fromCity} → ${toCity}`,
+                day_number: transitionDay,
+                location: fromCity,
+                estimated_cost: cost,
+                order_index: 999,
+                metadata: {
+                    transport_mode: mode,
+                    from: fromCity,
+                    to: toCity,
+                    distance_tier: distTier,
+                    per_person: Math.round(cost / travelers),
+                    adjusted_for_budget: adjusted || undefined,
+                },
+            });
+        }
+    }
+
+    return segments;
+}
+
+/**
+ * Phase 6: Build return travel segment (last destination → return_location).
+ *
+ * @param {object} trip
+ * @param {object} allocation
+ * @param {number} currencyRate
+ * @param {number} totalDays — Which day to place return on
+ * @returns {object|null}
+ */
+export function buildReturnSegment(trip, allocation, currencyRate, totalDays) {
+    const tripSegments = trip.segments || [];
+    const returnLoc = trip.return_location || trip.start_location;
+    const lastDest = tripSegments[tripSegments.length - 1]?.location || trip.destination;
+    const travelers = trip.travelers || 1;
+    const currency = trip.currency || 'USD';
+
+    // Compute totalDays if not provided
+    if (!totalDays) {
+        totalDays = tripSegments.reduce((sum, s) => sum + (s.days || 0), 0);
+    }
+
+    if (!returnLoc || !lastDest || returnLoc.toLowerCase() === lastDest.toLowerCase()) {
+        return null;
+    }
+
+    // Fix Group 4: Skip if no intercity budget remaining
+    const remaining = allocation?.intercity_remaining ?? Infinity;
+    if (remaining <= 0) return null;
+
+    const distTier = estimateDistanceTier(lastDest, returnLoc);
+    const preferredMode = decideTransportMode(trip, distTier);
+
+    // Fix Group 1: Envelope-aware cost with downgrade ladder
+    const { mode, cost, adjusted } = envelopeAwareTransportCost(
+        preferredMode, distTier, travelers, currency, remaining
+    );
+
+    if (allocation) {
+        allocation.intercity_remaining = Math.max(0, (allocation.intercity_remaining || 0) - cost);
+    }
+
+    return {
+        trip_id: trip.id,
+        type: 'return_travel',
+        title: `${MODE_LABELS[mode] || mode} — ${lastDest} → ${returnLoc}`,
+        day_number: totalDays,
+        location: lastDest,
+        estimated_cost: cost,
+        order_index: 1000,
+        metadata: {
+            transport_mode: mode,
+            from: lastDest,
+            to: returnLoc,
+            distance_tier: distTier,
+            per_person: Math.round(cost / travelers),
+            adjusted_for_budget: adjusted || undefined,
+        },
+    };
+}
+
+/**
+ * Phase 3: Build nightly accommodation segments.
+ * Cost per night = allocation.accommodation_per_night (from budget allocator).
+ * Falls back to lookup-table cost if no allocation provided.
+ *
+ * @param {object} trip
+ * @param {object} allocation
+ * @param {number} currencyRate
+ * @param {object[]} dayLocations — Array of { dayNumber, location }
+ * @returns {object[]}
+ */
+export function buildAccommodationSegments(trip, allocation, currencyRate, dayLocations) {
+    const accomPref = trip.accommodation_preference || 'mid-range';
+    const travelStyle = trip.travel_style || '';
+    const currency = trip.currency || 'USD';
+    const totalDays = dayLocations?.length || 0;
+    const segments = [];
+
+    // Accommodation quality label
+    let qualityLabel = accomPref.charAt(0).toUpperCase() + accomPref.slice(1);
+    if (travelStyle === 'road_trip') {
+        qualityLabel = 'Flexible lodging';
+    }
+
+    for (let d = 1; d < totalDays; d++) { // No accommodation on last night
+        const dayLoc = dayLocations[d - 1]?.location || trip.destination;
+
+        // Use allocation-based pricing if available, else lookup table
+        const nightCost = allocation?.accommodation_per_night
+            ? allocation.accommodation_per_night
+            : calculateAccommodationCost(accomPref, currency);
+
+        // Fix Group 2: Deduct from accommodation envelope
+        if (allocation?.accommodation_remaining !== undefined) {
+            allocation.accommodation_remaining = Math.max(0, allocation.accommodation_remaining - nightCost);
+        }
+
+        segments.push({
+            trip_id: trip.id,
+            type: 'accommodation',
+            title: `🏨 ${qualityLabel} stay in ${dayLoc}`,
+            day_number: d,
+            location: dayLoc,
+            estimated_cost: nightCost,
+            order_index: 998,
+            metadata: {
+                accommodation_tier: accomPref,
+                per_person: nightCost,
+                quality_label: qualityLabel,
+            },
+        });
+    }
+
+    return segments;
+}
+
+// ── Legacy Wrapper (deprecated — use orchestrator) ───────────────────
+
+/**
+ * @deprecated Use tripOrchestrator.orchestrateTrip() instead.
+ * Kept for backward compatibility during migration.
  */
 export function generateTransportSegments(trip) {
     if (!trip) return [];
 
-    const segments = [];
     const currency = trip.currency || 'USD';
-    const travelers = trip.travelers || 1;
-    const accomPref = trip.accommodation_preference || 'mid-range';
-    const budgetTier = accomPref; // Use accommodation preference as budget tier proxy
+    const currencyRate = CURRENCY_MULTIPLIERS[currency] || 1;
     const tripSegments = trip.segments || [];
 
-    // Build day-to-location mapping
     const dayLocations = [];
     let dayCount = 0;
     tripSegments.forEach(seg => {
@@ -184,139 +659,97 @@ export function generateTransportSegments(trip) {
         }
     });
 
-    const totalDays = dayLocations.length || (trip.days?.length || 0);
-    if (totalDays === 0) return [];
-
-    // ── 1. Outbound Travel (start_location → first destination) ──────
-    const startLoc = trip.start_location;
-    const firstDest = tripSegments[0]?.location || trip.destination;
-
-    if (startLoc && firstDest && startLoc.toLowerCase() !== firstDest.toLowerCase()) {
-        const distTier = estimateDistanceTier(startLoc, firstDest);
-        const mode = decideTransportMode(trip, distTier);
-        const cost = calculateTransportCost(mode, distTier, travelers, currency);
-
-        segments.push({
-            trip_id: trip.id,
-            type: 'outbound_travel',
-            title: `${MODE_LABELS[mode] || mode} — ${startLoc} → ${firstDest}`,
-            day_number: 1,
-            location: startLoc,
-            estimated_cost: cost,
-            order_index: -2, // Before all activities
-            metadata: {
-                transport_mode: mode,
-                from: startLoc,
-                to: firstDest,
-                distance_tier: distTier,
-                per_person: Math.round(cost / travelers),
-            },
+    if (dayLocations.length === 0 && trip.days) {
+        trip.days.forEach((d, i) => {
+            dayLocations.push({ dayNumber: i + 1, location: d.location || trip.destination });
         });
     }
 
-    // ── 2. Inter-city Travel (between consecutive destinations) ───────
-    for (let i = 0; i < tripSegments.length - 1; i++) {
-        const fromCity = tripSegments[i].location;
-        const toCity = tripSegments[i + 1].location;
+    const totalDays = dayLocations.length;
+    if (totalDays === 0) return [];
 
-        if (fromCity && toCity && fromCity.toLowerCase() !== toCity.toLowerCase()) {
-            // Calculate which day this transition happens
-            let transitionDay = 0;
-            for (let j = 0; j <= i; j++) {
-                transitionDay += (tripSegments[j].days || 0);
+    const segments = [];
+
+    const outbound = buildOutboundSegment(trip, null, currencyRate);
+    if (outbound) segments.push(outbound);
+
+    segments.push(...buildIntercitySegments(trip, null, currencyRate));
+
+    const ret = buildReturnSegment(trip, null, currencyRate, totalDays);
+    if (ret) segments.push(ret);
+
+    segments.push(...buildAccommodationSegments(trip, null, currencyRate, dayLocations));
+
+    return segments;
+}
+
+/**
+ * Rule 9: Insert pairwise local transport segments between activities > 2km apart.
+ * Called after AI generates activities and geocodes them.
+ *
+ * @param {object[]} activities - Array of activity objects with lat/lng
+ * @param {string} tripId - Trip UUID
+ * @param {number} dayNumber - Day number
+ * @param {string} budgetTier - 'budget' | 'mid-range' | 'luxury'
+ * @param {string} currency - Currency code
+ * @param {object} [allocation] - Budget allocation for envelope deduction
+ * @returns {object[]} Array of local_transport segments to insert between activities
+ */
+export function insertPairwiseLocalTransport(activities, tripId, dayNumber, budgetTier, currency, allocation) {
+    const localSegments = [];
+    const FALLBACK_DISTANCE_KM = 5; // Used when one activity lacks coordinates
+
+    for (let i = 0; i < activities.length - 1; i++) {
+        const a = activities[i];
+        const b = activities[i + 1];
+
+        const aHasCoords = a.latitude && a.longitude;
+        const bHasCoords = b.latitude && b.longitude;
+        const aFailed = a.metadata?.geocode_failed;
+        const bFailed = b.metadata?.geocode_failed;
+
+        // Fix Group 1: Skip ONLY when BOTH activities have geocode_failed
+        if (aFailed && bFailed) continue;
+
+        let distKm;
+        if (aHasCoords && bHasCoords) {
+            distKm = haversineDistance(
+                parseFloat(a.latitude), parseFloat(a.longitude),
+                parseFloat(b.latitude), parseFloat(b.longitude)
+            );
+        } else {
+            // One has coordinates, one doesn't — use fallback distance
+            distKm = FALLBACK_DISTANCE_KM;
+        }
+
+        if (distKm > 2) {
+            const cost = calculateLocalTripCost(distKm, budgetTier, currency);
+
+            // Fix Group 2: Deduct from local_transport envelope
+            if (allocation?.local_transport_remaining !== undefined) {
+                allocation.local_transport_remaining = Math.max(0, allocation.local_transport_remaining - cost);
             }
 
-            const distTier = estimateDistanceTier(fromCity, toCity);
-            const mode = decideTransportMode(trip, distTier);
-            const cost = calculateTransportCost(mode, distTier, travelers, currency);
-
-            segments.push({
-                trip_id: trip.id,
-                type: 'outbound_travel',
-                title: `${MODE_LABELS[mode] || mode} — ${fromCity} → ${toCity}`,
-                day_number: transitionDay,
-                location: fromCity,
+            localSegments.push({
+                trip_id: tripId,
+                type: 'local_transport',
+                title: `🚕 ${a.location || a.title} → ${b.location || b.title} (${distKm.toFixed(1)} km)`,
+                day_number: dayNumber,
+                location: a.location || '',
                 estimated_cost: cost,
-                order_index: 999, // After all activities on that day
+                order_index: a.order_index + 0.5,
                 metadata: {
-                    transport_mode: mode,
-                    from: fromCity,
-                    to: toCity,
-                    distance_tier: distTier,
-                    per_person: Math.round(cost / travelers),
+                    from: a.location || a.title,
+                    to: b.location || b.title,
+                    distance_km: Math.round(distKm * 10) / 10,
+                    budget_tier: budgetTier,
+                    per_person: cost,
                 },
             });
         }
     }
 
-    // ── 3. Return Travel (last destination → return_location) ─────────
-    const returnLoc = trip.return_location || trip.start_location;
-    const lastDest = tripSegments[tripSegments.length - 1]?.location || trip.destination;
-
-    if (returnLoc && lastDest && returnLoc.toLowerCase() !== lastDest.toLowerCase()) {
-        const distTier = estimateDistanceTier(lastDest, returnLoc);
-        const mode = decideTransportMode(trip, distTier);
-        const cost = calculateTransportCost(mode, distTier, travelers, currency);
-
-        segments.push({
-            trip_id: trip.id,
-            type: 'return_travel',
-            title: `${MODE_LABELS[mode] || mode} — ${lastDest} → ${returnLoc}`,
-            day_number: totalDays,
-            location: lastDest,
-            estimated_cost: cost,
-            order_index: 1000,
-            metadata: {
-                transport_mode: mode,
-                from: lastDest,
-                to: returnLoc,
-                distance_tier: distTier,
-                per_person: Math.round(cost / travelers),
-            },
-        });
-    }
-
-    // ── 4. Daily Local Transport ──────────────────────────────────────
-    for (let d = 1; d <= totalDays; d++) {
-        const dayLoc = dayLocations[d - 1]?.location || trip.destination;
-        const localCost = calculateLocalTransportCost(budgetTier, currency);
-
-        segments.push({
-            trip_id: trip.id,
-            type: 'local_transport',
-            title: `🚕 Local transport in ${dayLoc}`,
-            day_number: d,
-            location: dayLoc,
-            estimated_cost: localCost,
-            order_index: -1, // Before activities
-            metadata: {
-                budget_tier: budgetTier,
-                per_person: localCost,
-            },
-        });
-    }
-
-    // ── 5. Daily Accommodation ────────────────────────────────────────
-    for (let d = 1; d < totalDays; d++) { // No accommodation on last night
-        const dayLoc = dayLocations[d - 1]?.location || trip.destination;
-        const nightCost = calculateAccommodationCost(accomPref, currency);
-
-        segments.push({
-            trip_id: trip.id,
-            type: 'accommodation',
-            title: `🏨 ${accomPref.charAt(0).toUpperCase() + accomPref.slice(1)} stay in ${dayLoc}`,
-            day_number: d,
-            location: dayLoc,
-            estimated_cost: nightCost,
-            order_index: 998, // Near end of day
-            metadata: {
-                accommodation_tier: accomPref,
-                per_person: nightCost,
-            },
-        });
-    }
-
-    return segments;
+    return localSegments;
 }
 
 /**
@@ -329,6 +762,7 @@ export function getSegmentTypeLabel(type) {
         local_transport: 'Local Transport',
         accommodation: 'Accommodation',
         activity: 'Activity',
+        gem: 'Hidden Gem',
         food: 'Food & Dining',
     };
     return labels[type] || type;

@@ -5,7 +5,7 @@ import useBookingStore from '../store/bookingStore';
 import { useNavigate } from 'react-router-dom';
 import LocationInput from '../components/ui/LocationInput';
 import DemoBanner from '../components/ui/DemoBanner';
-import { generateFlightResults, generateHotelResults, generateTrainResults, sortResults } from '../utils/bookingScorer';
+import { generateFlightResults, generateHotelResults, generateTrainResults, sortResults, BOOKING_DEMO_LABEL } from '../utils/bookingScorer';
 
 const Bookings = () => {
     const navigate = useNavigate();
@@ -171,7 +171,7 @@ const Bookings = () => {
 
                     {/* Form */}
                     <div className="p-8 md:p-12">
-                        <DemoBanner message="Demo Mode – Search results are simulated. No real bookings are processed." />
+                        <DemoBanner message={`⚠️ ${BOOKING_DEMO_LABEL} — No real bookings are processed.`} />
                         <form onSubmit={handleSearch} className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
                                 {activeTab === 'flights' && (

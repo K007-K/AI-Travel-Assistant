@@ -95,6 +95,7 @@ export default function useMapSegments(trip) {
                         segmentType: activity.segmentType || null,
                         isLogistics: !!activity.isLogistics,
                         dayNumber: activity.dayNumber,
+                        orderIndex: activity.order_index ?? 0, // Rule 10: For sequence sorting
                         estimatedCost: activity.estimated_cost || 0,
                         location: activity.location,
                         safety_warning: activity.safety_warning,
@@ -103,6 +104,12 @@ export default function useMapSegments(trip) {
             }
 
             if (!cancelled) {
+                // Rule 10: Sort markers by day_number ASC, order_index ASC
+                // so fallback polyline connects in correct travel sequence
+                newMarkers.sort((a, b) => {
+                    if (a.dayNumber !== b.dayNumber) return a.dayNumber - b.dayNumber;
+                    return (a.orderIndex || 0) - (b.orderIndex || 0);
+                });
                 setMarkers(newMarkers);
                 setGeocodingDone(true);
             }

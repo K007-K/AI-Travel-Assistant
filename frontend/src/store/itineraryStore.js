@@ -1,12 +1,56 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import { generateTransportSegments } from '../utils/transportEngine';
+import { generateTransportSegments, CURRENCY_MULTIPLIERS } from '../utils/transportEngine';
+import { orchestrateTrip } from '../engine/tripOrchestrator';
+import { generateAllBookingSuggestions } from '../engine/bookingSuggestionEngine';
+
+// ── Rule 5: Strict Budget Guard ──────────────────────────────────────
+
+/**
+ * Check if adding a segment would exceed strict budget.
+ * Returns { allowed: true } or { allowed: false, message: string }.
+ */
+async function checkStrictBudget(tripId, newCost) {
+    // Fetch the trip to check budget_type
+    const { data: trip } = await supabase
+        .from('trips')
+        .select('budget, budget_type')
+        .eq('id', tripId)
+        .single();
+
+    if (!trip || trip.budget_type !== 'strict' || !trip.budget) {
+        return { allowed: true };
+    }
+
+    // Sum existing segment costs (exclude gems — Rule 7)
+    const { data: segments } = await supabase
+        .from('trip_segments')
+        .select('estimated_cost, type')
+        .eq('trip_id', tripId)
+        .neq('type', 'gem');
+
+    const cumulativeCost = (segments || []).reduce(
+        (sum, s) => sum + (parseFloat(s.estimated_cost) || 0), 0
+    );
+
+    const totalAfter = cumulativeCost + (parseFloat(newCost) || 0);
+
+    if (totalAfter > parseFloat(trip.budget)) {
+        return {
+            allowed: false,
+            message: `Budget exceeded in strict mode. Current: ${Math.round(cumulativeCost)}, Adding: ${Math.round(newCost)}, Limit: ${trip.budget}`,
+        };
+    }
+
+    return { allowed: true };
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
 /** Map a trip_segment row's type to a UI-friendly activity type string */
 function segmentTypeToActivityType(seg) {
     if (seg.type === 'activity') return seg.metadata?.activityType || 'sightseeing';
+    if (seg.type === 'gem') return 'gem'; // Rule 7: Hidden gems have distinct type
     // Logistics types pass through directly (outbound_travel, return_travel, etc.)
     return seg.type;
 }
@@ -58,10 +102,12 @@ function buildDaysFromSegments(segments, trip) {
                 safety_warning: seg.metadata?.safety_warning || null,
                 isCompleted: seg.metadata?.isCompleted || false,
                 rating: seg.metadata?.rating || 0,
+                order_index: seg.order_index ?? 0, // Rule 10: Pass through for map ordering
                 // Logistics metadata
                 segmentType: seg.type,
                 transportMode: seg.metadata?.transport_mode || null,
                 isLogistics: ['outbound_travel', 'return_travel', 'local_transport', 'accommodation'].includes(seg.type),
+                isGem: seg.type === 'gem', // Rule 7: Flag gems for UI isolation
             }))
         };
     });
@@ -146,6 +192,13 @@ const useItineraryStore = create((set, get) => ({
     currentTrip: null,
     isLoading: false,
     error: null,
+
+    // ── Lifecycle Orchestration State ─────────────────────────────────
+    allocation: null,          // Budget allocation from Phase 1
+    dailySummary: [],          // Per-day cost breakdown from Phase 8
+    bookingOptions: {},        // Booking suggestions keyed by segment_id (Phase 7)
+    hiddenGems: [],            // Isolated hidden gems (Phase 9)
+    orchestrationPhase: null,  // Current phase name for progress UI
 
     // ── Fetch ────────────────────────────────────────────────────────
     fetchTrips: async () => {
@@ -440,13 +493,25 @@ const useItineraryStore = create((set, get) => ({
             (max, a, i) => Math.max(max, i), -1
         );
 
+        // Determine segment type: 'gem' for hidden gems (Rule 7), else 'activity'
+        const segType = activity.segmentType || 'activity';
+        const estimatedCost = parseFloat(activity.estimated_cost) || 0;
+
+        // ── Rule 5: Strict Budget Guard ──────────────────────────────
+        if (segType !== 'gem') { // Gems excluded from budget (Rule 7)
+            const budgetCheck = await checkStrictBudget(tripId, estimatedCost);
+            if (!budgetCheck.allowed) {
+                throw new Error(budgetCheck.message);
+            }
+        }
+
         const segmentRow = {
             trip_id: tripId,
-            type: 'activity',
+            type: segType,
             title: activity.title,
             day_number: dayNumber,
             location: activity.location || day?.location || null,
-            estimated_cost: parseFloat(activity.estimated_cost) || 0,
+            estimated_cost: estimatedCost,
             order_index: maxOrder + 1,
             metadata: {
                 time: activity.time || '09:00',
@@ -505,13 +570,83 @@ const useItineraryStore = create((set, get) => ({
         }));
     },
 
-    // ── Batch Add Activities (for AI generation) ─────────────────────
+    // ── Full Lifecycle Generation (Orchestrator) ─────────────────────
+    generateFullItinerary: async (tripId) => {
+        const store = get();
+        const trip = store.trips.find(t => t.id === tripId);
+        if (!trip) throw new Error('Trip not found');
+
+        // Reset orchestration state
+        set({
+            allocation: null,
+            dailySummary: [],
+            bookingOptions: {},
+            hiddenGems: [],
+            orchestrationPhase: 'Starting',
+        });
+
+        // Run the 10-phase orchestrator
+        const result = await orchestrateTrip(trip, {
+            onPhase: (num, name) => {
+                set({ orchestrationPhase: `Phase ${num}: ${name}` });
+            },
+        });
+
+        // Clear all existing segments for this trip
+        await supabase
+            .from('trip_segments')
+            .delete()
+            .eq('trip_id', tripId);
+
+        // Bulk-insert ALL segments from orchestrator
+        const { data: inserted, error } = await supabase
+            .from('trip_segments')
+            .insert(result.segments)
+            .select();
+
+        if (error) {
+            console.error('Error inserting orchestrated segments:', error);
+            set({ orchestrationPhase: null });
+            throw error;
+        }
+
+        // Rebuild virtual days from inserted segments
+        const rebuiltDays = buildDaysFromSegments(inserted || [], trip);
+
+        // Fix Group 4: Generate booking suggestions post-insert using real DB UUIDs
+        const currency = trip.currency || 'USD';
+        const currencyRate = CURRENCY_MULTIPLIERS[currency] || 1;
+        const isLuxury = (trip.accommodation_preference || 'mid-range') === 'luxury';
+        const upgradePool = result.allocation?.upgrade_pool || 0;
+
+        const bookingOptions = generateAllBookingSuggestions(
+            inserted || [],
+            currencyRate,
+            { isLuxury, upgradePool }
+        );
+
+        // Update store with full lifecycle output
+        set(state => ({
+            trips: state.trips.map(t =>
+                t.id === tripId ? { ...t, days: rebuiltDays, _hasSegments: true } : t
+            ),
+            allocation: result.allocation,
+            dailySummary: result.daily_summary,
+            bookingOptions: bookingOptions,
+            hiddenGems: result.hidden_gems,
+            orchestrationPhase: null,
+        }));
+
+        return { ...result, booking_options: bookingOptions };
+    },
+
+    // ── Batch Add Activities (legacy — used for manual adds) ──────────
     batchAddActivities: async (tripId, activitiesByDay) => {
         const store = get();
         const trip = store.trips.find(t => t.id === tripId);
         if (!trip) return;
 
-        // Delete all existing activity segments for this trip
+        // Delete all existing segments for this trip
         await supabase
             .from('trip_segments')
             .delete()
@@ -526,7 +661,6 @@ const useItineraryStore = create((set, get) => ({
             const dayLocation = trip.days?.[dayIndex]?.location || trip.destination;
 
             if (!dayActivities || dayActivities.length === 0) {
-                // Keep a placeholder so the day still shows
                 rows.push({
                     trip_id: tripId,
                     type: 'activity',
@@ -560,7 +694,7 @@ const useItineraryStore = create((set, get) => ({
             }
         });
 
-        // Also add placeholders for any remaining days with no activities
+        // Placeholders for uncovered days
         const coveredDays = new Set(activitiesByDay.map((_, i) => i + 1));
         for (let d = 1; d <= totalDays; d++) {
             if (!coveredDays.has(d)) {
@@ -588,7 +722,7 @@ const useItineraryStore = create((set, get) => ({
             return;
         }
 
-        // Now generate and insert transport + accommodation segments
+        // Generate transport/accommodation via legacy engine
         const transportSegs = generateTransportSegments(trip);
         let allInserted = inserted || [];
 
@@ -603,7 +737,6 @@ const useItineraryStore = create((set, get) => ({
             }
         }
 
-        // Rebuild virtual days from ALL segments
         const rebuiltDays = buildDaysFromSegments(allInserted, trip);
         set(state => ({
             trips: state.trips.map(t =>

@@ -14,7 +14,11 @@ serve(async (req) => {
 
     try {
         const RequestData = await req.json()
-        const { destination, days, budget, travelers, currency, tripDays, budgetTier } = RequestData
+        const {
+            destination, days, budget, travelers, currency, tripDays, budgetTier,
+            // New lifecycle fields (from orchestrator)
+            activityBudget, travelStyle, pace, excludeTransport, excludeAccommodation,
+        } = RequestData
 
         if (!GROQ_API_KEY) {
             throw new Error('GROQ_API_KEY is not set')
@@ -109,22 +113,51 @@ serve(async (req) => {
         }
         // --- RAG RETRIEVAL END ---
 
-        const dailyBudget = Math.round((budget || 2000) / (days || 1));
+        // Use activityBudget from orchestrator if available, else fall back to total budget
+        const effectiveBudget = activityBudget || budget || 2000;
+        const dailyBudget = Math.round(effectiveBudget / (days || 1));
+        const effectivePace = pace || 'moderate';
+
+        // Constraint block: tell AI what NOT to generate
+        const constraintBlock = (excludeTransport || excludeAccommodation) ? `
+    ⚠️ GENERATION CONSTRAINTS:
+    ${excludeTransport ? '- DO NOT include any transport segments (flights, trains, buses, taxis, local transport).' : ''}
+    ${excludeAccommodation ? '- DO NOT include any accommodation or hotel suggestions.' : ''}
+    - Return ONLY activities (sightseeing, dining, experiences, tours).
+    - Transport and accommodation are handled separately by the orchestration engine.
+    ` : '';
+
+        // Travel style hints
+        const styleHint = travelStyle === 'road_trip'
+            ? '\n    ROAD TRIP MODE: Include scenic stops, roadside attractions, and driving-friendly activities. Prioritize destinations accessible by car.'
+            : travelStyle
+                ? `\n    TRAVEL STYLE: "${travelStyle}" — tailor activities accordingly.`
+                : '';
+
+        // Pace constraints
+        const paceHint = effectivePace === 'relaxed'
+            ? '\n    PACE: Relaxed — max 4 activities per day with generous breaks.'
+            : effectivePace === 'packed'
+                ? '\n    PACE: Packed — include 6-8 activities per day for maximum coverage.'
+                : '\n    PACE: Moderate — 5-6 activities per day with reasonable breaks.';
 
         const prompt = `
     Generate a comprehensive, fully detailed ${days}-day itinerary for ${travelers} traveler(s).
-    Total budget: ${budget} ${currency} (per person).
-    Daily budget per person: ~${dailyBudget} ${currency}.
+    ACTIVITY BUDGET ONLY: ${effectiveBudget} ${currency} total for all days.
+    Daily activity budget: ~${dailyBudget} ${currency}/day.
     ${scheduleContext}
 
     ${budgetGuidance}
+    ${constraintBlock}
+    ${styleHint}
+    ${paceHint}
 
     REAL-WORLD CONTEXT (Use this to ground your detailed recommendations):
     ${contextData || "No specific verified data found in knowledge base. Rely on general knowledge."}
 
     ⚠️ ABSOLUTE REQUIREMENT: Your recommendations MUST strictly adhere to the ${tierKey.toUpperCase()} tier guidelines above.
     
-    CRITICAL BUDGET RULE: The sum of ALL estimated_cost values across ALL days MUST NOT EXCEED ${budget} ${currency}.
+    CRITICAL BUDGET RULE: The sum of ALL estimated_cost values across ALL days MUST NOT EXCEED ${effectiveBudget} ${currency}.
     Each day's total should be approximately ${dailyBudget} ${currency}.
     
     CRITICAL: You must provide a FULL day's schedule for EVERY day. 
