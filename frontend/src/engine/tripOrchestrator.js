@@ -557,6 +557,18 @@ export async function orchestrateTrip(trip, callbacks = {}) {
         (a.order_index || 0) - (b.order_index || 0)
     );
 
+    // Re-index order_index to sequential integers per day
+    // (local transport uses fractional 0.5 offsets for sorting, but DB column is integer)
+    let currentDay = -1;
+    let idx = 0;
+    for (const seg of allSegments) {
+        if (seg.day_number !== currentDay) {
+            currentDay = seg.day_number;
+            idx = 0;
+        }
+        seg.order_index = idx++;
+    }
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // RETURN CONTRACT OUTPUT
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

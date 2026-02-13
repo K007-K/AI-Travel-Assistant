@@ -599,9 +599,11 @@ const useItineraryStore = create((set, get) => ({
             .eq('trip_id', tripId);
 
         // Bulk-insert ALL segments from orchestrator
+        // Strip latitude/longitude — not in DB schema, only used for map/local-transport
+        const dbSegments = result.segments.map(({ latitude, longitude, ...rest }) => rest);
         const { data: inserted, error } = await supabase
             .from('trip_segments')
-            .insert(result.segments)
+            .insert(dbSegments)
             .select();
 
         if (error) {
