@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
     Sparkles,
@@ -12,40 +12,23 @@ import {
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import { Button } from '../ui/button';
+import useBackgroundBrightness from '../../hooks/useBackgroundBrightness';
 
 const Navbar = () => {
     const { user, profile, logout } = useAuthStore();
     const location = useLocation();
-    const [scrolled, setScrolled] = useState(false);
+    const navRef = useRef(null);
 
-    // Routes that have a dark hero image behind the navbar
-    const isDarkHeroPage = useMemo(() => {
-        return location.pathname.startsWith('/destination/');
-    }, [location.pathname]);
-
-    // Track scroll position — once past the hero (~420px), switch to "scrolled" mode
-    useEffect(() => {
-        if (!isDarkHeroPage) {
-            setScrolled(false);
-            return;
-        }
-        const handleScroll = () => setScrolled(window.scrollY > 400);
-        handleScroll(); // run on mount
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, [isDarkHeroPage]);
-
-    // Determine if text should be light (white) — only when on dark hero AND not scrolled
-    const isLight = isDarkHeroPage && !scrolled;
+    // ── Dynamic: detect if the background behind the navbar is dark ──
+    const isOverDark = useBackgroundBrightness(navRef);
+    const isLight = isOverDark; // white text when over dark background
 
     // Fallback for display name
     const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Traveler';
 
     const isActive = (path) => location.pathname === path;
 
-    // -------------------------------------------------------------------------
-    // Navbar background — SAME glassmorphism on all pages, only text changes
-    // -------------------------------------------------------------------------
+    // ── Consistent glassmorphism background on ALL pages ──
     const navBg = 'bg-white/40 backdrop-blur-2xl border-b border-white/30 shadow-sm supports-[backdrop-filter]:bg-white/20';
 
     // -------------------------------------------------------------------------
@@ -53,33 +36,33 @@ const Navbar = () => {
     // -------------------------------------------------------------------------
     if (!user) {
         return (
-            <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${navBg}`}>
+            <nav ref={navRef} className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${navBg}`}>
                 <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
                     {/* Logo */}
                     <Link to="/" className="flex items-center gap-2 group">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-blue-500 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform duration-300">
                             <Plane className="w-6 h-6" />
                         </div>
-                        <span className={`font-display font-bold text-2xl tracking-tight group-hover:text-blue-400 transition-colors ${isLight ? 'text-white' : 'text-slate-900'}`}>ROAMEO</span>
+                        <span className={`font-display font-bold text-2xl tracking-tight group-hover:text-blue-400 transition-colors duration-300 ${isLight ? 'text-white' : 'text-slate-900'}`}>ROAMEO</span>
                     </Link>
 
                     {/* Landing Page Navigation */}
                     <div className="hidden md:flex items-center gap-6">
                         <Link
                             to="/"
-                            className={`text-sm font-medium transition-colors ${isActive('/') ? 'text-blue-400 font-bold' : isLight ? 'text-white/80 hover:text-white' : 'text-slate-600 hover:text-blue-600'}`}
+                            className={`text-sm font-medium transition-colors duration-300 ${isActive('/') ? 'text-blue-400 font-bold' : isLight ? 'text-white/80 hover:text-white' : 'text-slate-600 hover:text-blue-600'}`}
                         >
                             Home
                         </Link>
                         <a
                             href="/#features"
-                            className={`text-sm font-medium transition-colors ${isLight ? 'text-white/80 hover:text-white' : 'text-slate-600 hover:text-blue-600'}`}
+                            className={`text-sm font-medium transition-colors duration-300 ${isLight ? 'text-white/80 hover:text-white' : 'text-slate-600 hover:text-blue-600'}`}
                         >
                             Features
                         </a>
                         <Link
                             to="/about"
-                            className={`text-sm font-medium transition-colors ${isActive('/about') ? 'text-blue-400 font-bold' : isLight ? 'text-white/80 hover:text-white' : 'text-slate-600 hover:text-blue-600'}`}
+                            className={`text-sm font-medium transition-colors duration-300 ${isActive('/about') ? 'text-blue-400 font-bold' : isLight ? 'text-white/80 hover:text-white' : 'text-slate-600 hover:text-blue-600'}`}
                         >
                             About
                         </Link>
@@ -88,7 +71,7 @@ const Navbar = () => {
                     {/* Auth Buttons */}
                     <div className="flex items-center gap-3">
                         <Link to="/login">
-                            <Button variant="ghost" size="sm" className={isLight ? 'hover:bg-white/10 text-white' : 'hover:bg-slate-100 text-slate-600'}>Log In</Button>
+                            <Button variant="ghost" size="sm" className={`transition-colors duration-300 ${isLight ? 'hover:bg-white/10 text-white' : 'hover:bg-slate-100 text-slate-600'}`}>Log In</Button>
                         </Link>
                         <Link to="/signup">
                             <Button size="sm" className="bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 rounded-full px-6">Sign Up</Button>
@@ -103,7 +86,7 @@ const Navbar = () => {
     // RENDER: DASHBOARD NAVBAR (Authenticated)
     // -------------------------------------------------------------------------
     return (
-        <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${navBg}`}>
+        <nav ref={navRef} className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${navBg}`}>
             <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
                 {/* Logo */}
                 <Link to="/" className="flex items-center gap-2 group">

@@ -1,27 +1,22 @@
 ---
-description: Commit and push changes to git after completing a fix or feature
+description: Commit and push changes to git after completing a fix or feature. IMPORTANT - This workflow MUST be run automatically after EVERY code change without waiting for the user to ask. Always commit and push when a task is confirmed working.
 ---
 
-After completing any code change (fix, feature, refactor, etc.), follow these steps:
+After completing any code change (fix, feature, refactor, etc.), follow these steps AUTOMATICALLY without user prompting:
 
 // turbo-all
 
-1. Check for uncommitted changes:
-```bash
-cd /Users/appalarajukuramdasu/Desktop/AITRAVEL && git status
-```
-
-2. Stage all changes:
+1. Stage all changes:
 ```bash
 cd /Users/appalarajukuramdasu/Desktop/AITRAVEL && git add -A
 ```
 
-3. Commit with a descriptive message following conventional commits format (`feat:`, `fix:`, `refactor:`, `chore:`, etc.):
+2. Commit with a descriptive message following conventional commits format (`feat:`, `fix:`, `refactor:`, `chore:`, etc.):
 ```bash
 cd /Users/appalarajukuramdasu/Desktop/AITRAVEL && git commit -m "<type>: <short description>"
 ```
 
-4. Push to the remote `main` branch:
+3. Push to the remote `main` branch:
 ```bash
 cd /Users/appalarajukuramdasu/Desktop/AITRAVEL && git push origin main
 ```
