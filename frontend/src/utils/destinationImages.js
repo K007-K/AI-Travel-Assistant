@@ -1,106 +1,221 @@
 /**
  * Dynamic destination / attraction images.
  *
- * Strategy (most → least specific):
+ * Strategy:
  *   1. localStorage cache (7-day TTL)
- *   2. Known LANDMARK_QUERIES → Wikipedia article image
- *   3. Wikipedia article for the attraction name alone
- *   4. Wikipedia opensearch → find best-matching article → image
- *   5. Wikimedia Commons file search
- *   6. Wikimedia Commons category search
- *   7. Gradient placeholder (final fallback — always works)
+ *   2. Known ATTRACTION_IMAGES map → direct Wikipedia article → image
+ *   3. Wikipedia REST API (page summary)
+ *   4. MediaWiki pageimages API (more reliable for thumbnails)
+ *   5. Wikipedia opensearch → find closest article
+ *   6. Wikimedia Commons search
+ *   7. Gradient fallback SVG (always works)
  */
 
-const CACHE_KEY = 'destination_image_cache_v3';
+const CACHE_KEY = 'destination_image_cache_v4';
 const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-// Map of destinations to their famous landmark/attraction for better image results
+// ─── Comprehensive map: attraction/cuisine name → Wikipedia article title ───
+// This covers ALL curated destination highlights and cuisines for 100% reliability.
+const ATTRACTION_IMAGES = {
+    // ── Araku Valley (d1) ──
+    'borra caves': 'Borra Caves',
+    'padmapuram gardens': 'Padmapuram Gardens',
+    'coffee plantations': 'Coffee production in India',
+    'tribal museum': 'Araku Valley',
+    'katiki waterfalls': 'Katiki Waterfalls',
+    'bamboo chicken': 'Bamboo chicken',
+    'araku coffee': 'Coffee production in India',
+    'bongulo chicken': 'Bamboo chicken',
+
+    // ── Visakhapatnam (d2) ──
+    'kailasagiri': 'Kailasagiri',
+    'rk beach': 'Ramakrishna Beach',
+    'ins kursura submarine museum': 'INS Kursura (S20)',
+    'yarada beach': 'Yarada Beach',
+    'simhachalam temple': 'Simhachalam',
+    'vizag fish curry': 'Fish curry',
+    'punugulu': 'Punugulu',
+
+    // ── Tirupati (d3) ──
+    'tirumala temple': 'Tirumala Venkateswara Temple',
+    'talakona waterfall': 'Talakona',
+    'sri padmavathi temple': 'Sri Padmavathi Ammavari Temple',
+    'chandragiri fort': 'Chandragiri Fort, Andhra Pradesh',
+    'silathoranam': 'Silathoranam',
+    'tirupati laddu': 'Tirupati laddu',
+    'pulihora': 'Pulihora',
+    'dosa varieties': 'Dosa',
+
+    // ── New York City (d4) ──
+    'statue of liberty': 'Statue of Liberty',
+    'central park': 'Central Park',
+    'times square': 'Times Square',
+    'metropolitan museum of art': 'Metropolitan Museum of Art',
+    'brooklyn bridge': 'Brooklyn Bridge',
+    'new york pizza': 'New York-style pizza',
+    'bagels': 'Bagel',
+    'cheesecake': 'Cheesecake',
+
+    // ── Banff (d5) ──
+    'lake louise': 'Lake Louise, Alberta',
+    'moraine lake': 'Moraine Lake',
+    'banff gondola': 'Banff Gondola',
+    'johnston canyon': 'Johnston Canyon',
+    'icefields parkway': 'Icefields Parkway',
+    'alberta beef': 'Alberta beef',
+    'bison burger': 'Bison hunting',
+    'poutine': 'Poutine',
+
+    // ── Dubai (d6) ──
+    'burj khalifa': 'Burj Khalifa',
+    'dubai mall': 'Dubai Mall',
+    'palm jumeirah': 'Palm Jumeirah',
+    'dubai marina': 'Dubai Marina',
+    'desert safari': 'Desert safari',
+    'al machboos': 'Machboos',
+    'shawarma': 'Shawarma',
+    'luqaimat': 'Luqaimat',
+
+    // ── Queenstown (d7) ──
+    'milford sound': 'Milford Sound',
+    'bungy at kawarau bridge': 'Kawarau Bridge',
+    'skyline gondola': 'Skyline Queenstown',
+    'glenorchy': 'Glenorchy, New Zealand',
+    'shotover jet': 'Shotover Jet',
+    'fergburger': 'Fergburger',
+    'nz lamb': 'Lamb and mutton',
+    'hokey pokey ice cream': 'Hokey pokey (ice cream)',
+
+    // ── Mumbai (d8) ──
+    'gateway of india': 'Gateway of India',
+    'marine drive': 'Marine Drive, Mumbai',
+    'elephanta caves': 'Elephanta Caves',
+    'chhatrapati shivaji terminus': 'Chhatrapati Shivaji Maharaj Terminus',
+    'dharavi': 'Dharavi',
+    'vada pav': 'Vada pav',
+    'pav bhaji': 'Pav bhaji',
+    'bombay sandwich': 'Bombay sandwich',
+
+    // ── Jaipur (d9) ──
+    'hawa mahal': 'Hawa Mahal',
+    'amer fort': 'Amer Fort',
+    'city palace': 'City Palace, Jaipur',
+    'jantar mantar': 'Jantar Mantar, Jaipur',
+    'nahargarh fort': 'Nahargarh Fort',
+    'dal baati churma': 'Dal Baati Churma',
+    'laal maas': 'Laal maas',
+    'ghewar': 'Ghewar',
+
+    // ── Kerala (d10) ──
+    'alleppey backwaters': 'Alappuzha',
+    'munnar tea gardens': 'Munnar',
+    'periyar wildlife sanctuary': 'Periyar National Park',
+    'varkala beach': 'Varkala',
+    'fort kochi': 'Fort Kochi',
+    'malabar fish curry': 'Fish molee',
+    'appam & stew': 'Appam',
+    'kerala sadya': 'Sadya',
+
+    // ── London (d11) ──
+    'tower of london': 'Tower of London',
+    'british museum': 'British Museum',
+    'buckingham palace': 'Buckingham Palace',
+    'london eye': 'London Eye',
+    'westminster abbey': 'Westminster Abbey',
+    'fish and chips': 'Fish and chips',
+    'full english breakfast': 'Full breakfast',
+    'afternoon tea': 'Tea (meal)',
+
+    // ── Rome (d12) ──
+    'colosseum': 'Colosseum',
+    'vatican city': 'Vatican City',
+    'trevi fountain': 'Trevi Fountain',
+    'roman forum': 'Roman Forum',
+    'pantheon': 'Pantheon, Rome',
+    'cacio e pepe': 'Cacio e pepe',
+    'supplì': 'Supplì',
+    'gelato': 'Gelato',
+
+    // ── Sydney (d13) ──
+    'sydney opera house': 'Sydney Opera House',
+    'harbour bridge': 'Sydney Harbour Bridge',
+    'bondi beach': 'Bondi Beach',
+    'taronga zoo': 'Taronga Zoo',
+    'blue mountains': 'Blue Mountains (New South Wales)',
+    'meat pie': 'Meat pie',
+    'flat white': 'Flat white',
+    'barramundi': 'Barramundi',
+
+    // ── Santorini (d14) ──
+    'oia sunset': 'Oia, Greece',
+    'red beach': 'Red Beach (Santorini)',
+    'ancient akrotiri': 'Akrotiri (prehistoric city)',
+    'fira to oia hike': 'Santorini',
+    'wine tasting': 'Santorini (wine)',
+    'tomatokeftedes': 'Keftedes',
+    'fava': 'Fava Santorinis',
+    'fresh seafood': 'Greek cuisine',
+
+    // ── Kyoto (d15) ──
+    'fushimi inari shrine': 'Fushimi Inari-taisha',
+    'kinkaku-ji (golden pavilion)': 'Kinkaku-ji',
+    'arashiyama bamboo grove': 'Arashiyama',
+    'kiyomizu-dera': 'Kiyomizu-dera',
+    'geisha district (gion)': 'Gion',
+    'kaiseki': 'Kaiseki',
+    'matcha everything': 'Matcha',
+    'yudofu (hot tofu)': 'Yudofu',
+};
+
+// Map of destination names → Wikipedia landmark articles (for hero images)
 const LANDMARK_QUERIES = {
-    'visakhapatnam': 'Kailasagiri Visakhapatnam',
-    'vizag': 'Kailasagiri Visakhapatnam',
-    'hyderabad': 'Charminar Hyderabad',
-    'mumbai': 'Gateway of India Mumbai',
-    'delhi': 'India Gate New Delhi',
-    'new delhi': 'India Gate New Delhi',
-    'chennai': 'Marina Beach Chennai',
+    'visakhapatnam': 'Kailasagiri',
+    'vizag': 'Kailasagiri',
+    'hyderabad': 'Charminar',
+    'mumbai': 'Gateway of India',
+    'delhi': 'India Gate',
+    'new delhi': 'India Gate',
+    'chennai': 'Marina Beach',
     'bangalore': 'Vidhana Soudha',
     'bengaluru': 'Vidhana Soudha',
-    'kolkata': 'Victoria Memorial Kolkata',
+    'kolkata': 'Victoria Memorial, Kolkata',
     'jaipur': 'Hawa Mahal',
     'agra': 'Taj Mahal',
-    'varanasi': 'Varanasi Ghats',
-    'goa': 'Baga Beach Goa',
-    'udaipur': 'Lake Palace Udaipur',
+    'varanasi': 'Varanasi',
+    'goa': 'Goa',
+    'udaipur': 'Lake Palace',
     'mysore': 'Mysore Palace',
     'mysuru': 'Mysore Palace',
-    'pondicherry': 'Promenade Beach Pondicherry',
-    'amritsar': 'Golden Temple',
-    'darjeeling': 'Darjeeling tea garden',
-    'shimla': 'Ridge Shimla',
-    'manali': 'Solang Valley',
-    'leh': 'Pangong Lake',
-    'ladakh': 'Pangong Lake',
-    'rishikesh': 'Lakshman Jhula',
-    'tirupati': 'Tirumala Venkateswara Temple',
-    'hampi': 'Virupaksha Temple Hampi',
-    'ooty': 'Ooty Lake',
-    'kodaikanal': 'Kodaikanal Lake',
-    'munnar': 'Munnar tea gardens',
-    'alleppey': 'Kerala houseboat',
-    'kochi': 'Chinese fishing nets Kochi',
     'paris': 'Eiffel Tower',
-    'london': 'Big Ben London',
+    'london': 'Big Ben',
     'new york': 'Statue of Liberty',
     'new york city': 'Statue of Liberty',
-    'tokyo': 'Shibuya Crossing',
+    'tokyo': 'Tokyo',
     'dubai': 'Burj Khalifa',
     'singapore': 'Marina Bay Sands',
-    'bali': 'Tanah Lot Bali',
-    'rome': 'Colosseum Rome',
+    'bali': 'Tanah Lot',
+    'rome': 'Colosseum',
     'sydney': 'Sydney Opera House',
-    'maldives': 'Maldives beach resort',
-    'bangkok': 'Wat Arun Bangkok',
-    'barcelona': 'Sagrada Familia Barcelona',
-    'amsterdam': 'Amsterdam canals',
-    'istanbul': 'Hagia Sophia Istanbul',
+    'bangkok': 'Wat Arun',
+    'barcelona': 'Sagrada Família',
+    'amsterdam': 'Amsterdam',
+    'istanbul': 'Hagia Sophia',
     'cairo': 'Great Pyramid of Giza',
-    'venice': 'Grand Canal Venice',
-    'kyoto': 'Fushimi Inari Kyoto',
-    'prague': 'Charles Bridge Prague',
-    'lisbon': 'Belém Tower Lisbon',
+    'venice': 'Venice',
+    'kyoto': 'Fushimi Inari-taisha',
+    'prague': 'Charles Bridge',
+    'lisbon': 'Belém Tower',
     'vienna': 'Schönbrunn Palace',
     'berlin': 'Brandenburg Gate',
-    'athens': 'Parthenon Athens',
-    'moscow': 'Saint Basil Cathedral',
-    'petra': 'Al-Khazneh Petra',
-    'machu picchu': 'Machu Picchu',
-    'angkor wat': 'Angkor Wat',
-    'great wall': 'Great Wall of China',
-    'toronto': 'CN Tower Toronto',
-    'vancouver': 'Stanley Park Vancouver',
-    'santorini': 'Santorini Greece',
-    'mykonos': 'Mykonos Greece',
-    'phuket': 'Phi Phi Islands',
-    'hanoi': 'Ha Long Bay',
-    'ho chi minh': 'Ho Chi Minh City',
-    'marrakech': 'Jemaa el-Fnaa Marrakech',
-    'cape town': 'Table Mountain Cape Town',
-    'nairobi': 'Nairobi National Park',
-    'rio de janeiro': 'Christ the Redeemer Rio',
-    'buenos aires': 'La Boca Buenos Aires',
-    'cusco': 'Machu Picchu',
+    'athens': 'Parthenon',
+    'toronto': 'CN Tower',
+    'vancouver': 'Stanley Park',
+    'santorini': 'Santorini',
     'queenstown': 'Milford Sound',
-    'banff': 'Lake Louise',
-    'kerala': 'Kerala backwaters',
+    'banff': 'Lake Louise, Alberta',
+    'kerala': 'Alappuzha',
     'araku valley': 'Borra Caves',
-    'cartagena': 'Cartagena Colombia',
-    'zanzibar': 'Zanzibar beach',
-    'kathmandu': 'Swayambhunath Kathmandu',
-    'colombo': 'Colombo Sri Lanka',
-    'dhaka': 'Lalbagh Fort Dhaka',
-    'beijing': 'Great Wall of China',
-    'shanghai': 'Shanghai skyline',
-    'chiang mai': 'Doi Suthep Chiang Mai',
+    'tirupati': 'Tirumala Venkateswara Temple',
 };
 
 // ─── Cache helpers ─────────────────────────────────────────────────
@@ -138,6 +253,30 @@ async function fetchFromWikipedia(query) {
         if (!res.ok) return null;
         const data = await res.json();
         return data.originalimage?.source || data.thumbnail?.source || null;
+    } catch {
+        return null;
+    }
+}
+
+// ─── MediaWiki pageimages API (more reliable for thumbnails) ───────
+async function fetchPageImage(title) {
+    try {
+        const params = new URLSearchParams({
+            action: 'query',
+            titles: title,
+            prop: 'pageimages',
+            pithumbsize: '800',
+            format: 'json',
+            origin: '*',
+        });
+        const res = await fetch(`https://en.wikipedia.org/w/api.php?${params}`);
+        if (!res.ok) return null;
+        const data = await res.json();
+        const pages = Object.values(data.query?.pages || {});
+        for (const page of pages) {
+            if (page.thumbnail?.source) return page.thumbnail.source;
+        }
+        return null;
     } catch {
         return null;
     }
@@ -182,7 +321,6 @@ async function fetchFromWikimediaCommons(query) {
 
         if (!data.query?.pages) return null;
 
-        // Find first image that's landscape-oriented and large enough
         const pages = Object.values(data.query.pages);
         for (const page of pages) {
             const info = page.imageinfo?.[0];
@@ -190,7 +328,6 @@ async function fetchFromWikimediaCommons(query) {
                 return info.thumburl || info.url;
             }
         }
-        // Fallback: return any image
         const first = pages[0]?.imageinfo?.[0];
         return first?.thumburl || first?.url || null;
     } catch {
@@ -238,7 +375,7 @@ export function getFallbackImage(destination) {
 /**
  * Load an image for any attraction, cuisine, or destination.
  *
- * @param {string} query   – e.g. "Hawa Mahal", "Dal Baati Churma food dish"
+ * @param {string} query   – e.g. "Hawa Mahal", "Vada Pav", "Visakhapatnam"
  * @param {function} setUrl – React state setter
  */
 export async function loadDestinationImage(query, setUrl) {
@@ -253,10 +390,18 @@ export async function loadDestinationImage(query, setUrl) {
         return;
     }
 
-    // 2. Check if we have a known landmark mapping
-    const landmarkQuery = LANDMARK_QUERIES[key];
-    if (landmarkQuery) {
-        const url = await fetchFromWikipedia(landmarkQuery);
+    // 2. Check ATTRACTION_IMAGES map (covers all curated destinations)
+    const mappedTitle = ATTRACTION_IMAGES[key];
+    if (mappedTitle) {
+        // Try REST API first (higher quality images)
+        let url = await fetchFromWikipedia(mappedTitle);
+        if (url) {
+            setCache(key, url);
+            setUrl(url);
+            return;
+        }
+        // Try MediaWiki pageimages API (more reliable)
+        url = await fetchPageImage(mappedTitle);
         if (url) {
             setCache(key, url);
             setUrl(url);
@@ -264,31 +409,39 @@ export async function loadDestinationImage(query, setUrl) {
         }
     }
 
-    // 3. Try the query directly on Wikipedia
-    const directUrl = await fetchFromWikipedia(query);
+    // 3. Check LANDMARK_QUERIES map
+    const landmarkQuery = LANDMARK_QUERIES[key];
+    if (landmarkQuery) {
+        let url = await fetchFromWikipedia(landmarkQuery);
+        if (!url) url = await fetchPageImage(landmarkQuery);
+        if (url) {
+            setCache(key, url);
+            setUrl(url);
+            return;
+        }
+    }
+
+    // 4. Try the query directly on Wikipedia
+    let directUrl = await fetchFromWikipedia(query);
     if (directUrl) {
         setCache(key, directUrl);
         setUrl(directUrl);
         return;
     }
 
-    // 4. Extract just the first meaningful part (before " food", " dish", etc.)
-    const cleanedQuery = query
-        .replace(/\s+(food|dish|cuisine|meal|drink|dessert|sweet|snack)\b/gi, '')
-        .trim();
-    if (cleanedQuery !== query) {
-        const cleanUrl = await fetchFromWikipedia(cleanedQuery);
-        if (cleanUrl) {
-            setCache(key, cleanUrl);
-            setUrl(cleanUrl);
-            return;
-        }
+    // 5. Try MediaWiki pageimages API directly
+    directUrl = await fetchPageImage(query);
+    if (directUrl) {
+        setCache(key, directUrl);
+        setUrl(directUrl);
+        return;
     }
 
-    // 5. Use Wikipedia opensearch to find the closest article title
-    const titles = await findWikipediaTitle(cleanedQuery || query);
+    // 6. Use Wikipedia opensearch to find the closest article title
+    const titles = await findWikipediaTitle(query);
     for (const title of titles) {
-        const url = await fetchFromWikipedia(title);
+        let url = await fetchFromWikipedia(title);
+        if (!url) url = await fetchPageImage(title);
         if (url) {
             setCache(key, url);
             setUrl(url);
@@ -296,16 +449,8 @@ export async function loadDestinationImage(query, setUrl) {
         }
     }
 
-    // 6. Try "Tourism in {query}" on Wikipedia
-    const tourismUrl = await fetchFromWikipedia(`Tourism in ${cleanedQuery || query}`);
-    if (tourismUrl) {
-        setCache(key, tourismUrl);
-        setUrl(tourismUrl);
-        return;
-    }
-
     // 7. Search Wikimedia Commons
-    const commonsUrl = await fetchFromWikimediaCommons(cleanedQuery || query);
+    const commonsUrl = await fetchFromWikimediaCommons(query);
     if (commonsUrl) {
         setCache(key, commonsUrl);
         setUrl(commonsUrl);
