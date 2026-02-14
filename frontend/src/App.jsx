@@ -15,6 +15,8 @@ const Discover = lazy(() => import('./pages/Discover'));
 const About = lazy(() => import('./pages/About'));
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const ItineraryBuilder = lazy(() => import('./components/features/ItineraryBuilder'));
 const Itinerary = lazy(() => import('./pages/Itinerary'));
 const Budget = lazy(() => import('./pages/Budget'));
@@ -22,6 +24,7 @@ const Settings = lazy(() => import('./pages/Settings'));
 const Bookings = lazy(() => import('./pages/Bookings'));
 const BookingReview = lazy(() => import('./pages/BookingReview'));
 const MyBookings = lazy(() => import('./pages/MyBookings'));
+const DestinationDetail = lazy(() => import('./pages/DestinationDetail'));
 
 // AI Pages (named exports → wrapped for React.lazy)
 const TranslationPage = lazy(() => import('./pages/ai/TranslationPage').then(m => ({ default: m.TranslationPage })));
@@ -87,9 +90,12 @@ function App() {
                   <Route path="/ai/memory" element={<MemoryPage />} />
 
                   <Route path="/discover" element={<Discover />} />
+                  <Route path="/destination/:id" element={<DestinationDetail />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<Signup />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   <Route
                     path="/itinerary/:id"
                     element={

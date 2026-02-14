@@ -146,15 +146,12 @@ const Discover = () => {
                                             ))}
                                         </div>
 
-                                        <button
-                                            onClick={() => {
-                                                setSelectedDestination(dest);
-                                                setIsBudgetModalOpen(true);
-                                            }}
+                                        <Link
+                                            to={`/destination/${dest.id}`}
                                             className="btn btn-outline w-full flex items-center justify-center gap-2 group-hover:bg-primary-50 dark:group-hover:bg-primary-950"
                                         >
                                             Explore Details <ChevronRight className="w-4 h-4" />
-                                        </button>
+                                        </Link>
                                     </div>
                                 </motion.div>
                             ))

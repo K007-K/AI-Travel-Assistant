@@ -34,8 +34,12 @@ export default function RouteLayer({ map, routes, markers }) {
         const addRoutes = () => {
             // Clean up old layers
             for (const id of addedIds.current) {
-                if (map.getLayer(`route-layer-${id}`)) map.removeLayer(`route-layer-${id}`);
-                if (map.getSource(`route-source-${id}`)) map.removeSource(`route-source-${id}`);
+                try {
+                    if (map.getStyle()) {
+                        if (map.getLayer(`route-layer-${id}`)) map.removeLayer(`route-layer-${id}`);
+                        if (map.getSource(`route-source-${id}`)) map.removeSource(`route-source-${id}`);
+                    }
+                } catch (e) { /* map already removed */ }
             }
             addedIds.current.clear();
 
@@ -109,6 +113,8 @@ export default function RouteLayer({ map, routes, markers }) {
             }
         };
 
+        if (!map.getStyle) return; // map already destroyed
+
         if (map.isStyleLoaded()) {
             addRoutes();
         } else {
@@ -116,10 +122,16 @@ export default function RouteLayer({ map, routes, markers }) {
         }
 
         return () => {
-            // Cleanup
+            // Remove load listener in case it hasn't fired yet
+            try { map.off('load', addRoutes); } catch (e) { /* ignore */ }
+            // Cleanup — guard against map being destroyed during navigation
             for (const id of addedIds.current) {
-                if (map.getLayer(`route-layer-${id}`)) map.removeLayer(`route-layer-${id}`);
-                if (map.getSource(`route-source-${id}`)) map.removeSource(`route-source-${id}`);
+                try {
+                    if (map && map.getStyle()) {
+                        if (map.getLayer(`route-layer-${id}`)) map.removeLayer(`route-layer-${id}`);
+                        if (map.getSource(`route-source-${id}`)) map.removeSource(`route-source-${id}`);
+                    }
+                } catch (e) { /* map already removed */ }
             }
             addedIds.current.clear();
         };

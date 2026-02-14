@@ -103,6 +103,9 @@ function buildDaysFromSegments(segments, trip) {
                 isCompleted: seg.metadata?.isCompleted || false,
                 rating: seg.metadata?.rating || 0,
                 order_index: seg.order_index ?? 0, // Rule 10: Pass through for map ordering
+                // Embedded coordinates (from orchestrator geocoding)
+                latitude: seg.metadata?.latitude || null,
+                longitude: seg.metadata?.longitude || null,
                 // Logistics metadata
                 segmentType: seg.type,
                 transportMode: seg.metadata?.transport_mode || null,
@@ -599,8 +602,13 @@ const useItineraryStore = create((set, get) => ({
             .eq('trip_id', tripId);
 
         // Bulk-insert ALL segments from orchestrator
-        // Strip latitude/longitude — not in DB schema, only used for map/local-transport
-        const dbSegments = result.segments.map(({ latitude, longitude, ...rest }) => rest);
+        // Embed lat/lng into metadata (so they survive DB round-trip) then strip top-level
+        const dbSegments = result.segments.map(({ latitude, longitude, ...rest }) => {
+            if (latitude != null || longitude != null) {
+                rest.metadata = { ...rest.metadata, latitude, longitude };
+            }
+            return rest;
+        });
         const { data: inserted, error } = await supabase
             .from('trip_segments')
             .insert(dbSegments)
@@ -822,29 +830,97 @@ const useItineraryStore = create((set, get) => ({
             .eq('id', activityId);
     },
 
-    // ── Reorder Activities ───────────────────────────────────────────
-    reorderActivities: async (tripId, dayId, newActivities) => {
-        // Optimistic UI update
+    // ── Update Activity Time ─────────────────────────────────────────
+    updateActivityTime: async (tripId, dayId, activityId, newTime) => {
+        // Optimistic update
+        set(state => ({
+            trips: state.trips.map(t => {
+                if (t.id !== tripId) return t;
+                return {
+                    ...t,
+                    days: t.days.map(d => {
+                        if (d.id !== dayId) return d;
+                        return {
+                            ...d,
+                            activities: d.activities.map(a =>
+                                a.id === activityId ? { ...a, time: newTime } : a
+                            ),
+                        };
+                    }),
+                };
+            }),
+        }));
+
+        // Fetch current metadata, merge, update
+        const { data: seg } = await supabase
+            .from('trip_segments')
+            .select('metadata')
+            .eq('id', activityId)
+            .single();
+
+        await supabase
+            .from('trip_segments')
+            .update({ metadata: { ...(seg?.metadata || {}), time: newTime } })
+            .eq('id', activityId);
+    },
+
+    // ── Reorder Activities (LOCAL ONLY — no DB write) ──────────────────
+    reorderActivities: (tripId, dayId, newActivities) => {
+        const store = get();
+        const trip = store.trips.find(t => t.id === tripId);
+        const day = trip?.days?.find(d => d.id === dayId);
+
+        // Capture the original time slots in positional order
+        const originalTimes = (day?.activities || []).map(a => a.time || '09:00');
+
+        // Assign original time slots to the new ordering
+        const reorderedWithTimes = newActivities.map((act, idx) => ({
+            ...act,
+            time: originalTimes[idx] || act.time,
+        }));
+
+        // Local-only UI update — NOT persisted until persistReorder is called
         set(state => ({
             trips: state.trips.map(t => {
                 if (t.id !== tripId) return t;
                 return {
                     ...t,
                     days: t.days.map(d =>
-                        d.id === dayId ? { ...d, activities: newActivities } : d
+                        d.id === dayId ? { ...d, activities: reorderedWithTimes } : d
                     ),
                 };
             }),
         }));
+    },
 
-        // Batch-update order_index for each segment
-        const updates = newActivities.map((act, idx) =>
-            supabase
-                .from('trip_segments')
-                .update({ order_index: idx })
-                .eq('id', act.id)
-        );
+    // ── Persist Reorder to DB (called on explicit Save) ──────────────
+    persistReorder: async (tripId) => {
+        const store = get();
+        const trip = store.trips.find(t => t.id === tripId);
+        if (!trip?.days) return;
 
+        const updates = [];
+        for (const day of trip.days) {
+            for (let idx = 0; idx < (day.activities || []).length; idx++) {
+                const act = day.activities[idx];
+                updates.push(
+                    supabase
+                        .from('trip_segments')
+                        .select('metadata')
+                        .eq('id', act.id)
+                        .single()
+                        .then(({ data: seg }) =>
+                            supabase
+                                .from('trip_segments')
+                                .update({
+                                    order_index: idx,
+                                    metadata: { ...(seg?.metadata || {}), time: act.time },
+                                })
+                                .eq('id', act.id)
+                        )
+                );
+            }
+        }
         await Promise.all(updates);
     },
 

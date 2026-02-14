@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, Reorder, AnimatePresence } from 'framer-motion';
 import {
@@ -8,7 +8,7 @@ import {
     Landmark, Music, Sun, Sparkles, Map as MapIcon, Loader2,
     CheckCircle2, Circle, AlertCircle, TrendingUp,
     ShieldCheck, BarChart3, AlertTriangle, DollarSign, Lightbulb,
-    Plane, Train, Bus, Car, Bike, Hotel
+    Plane, Train, Bus, Car, Bike, Hotel, PlusCircle
 } from 'lucide-react';
 import useItineraryStore from '../../store/itineraryStore';
 import useBudgetStore from '../../store/budgetStore';
@@ -46,8 +46,10 @@ const ItineraryBuilder = () => {
         batchAddActivities,
         generateFullItinerary,
         reorderActivities,
+        persistReorder,
         deleteActivity,
         toggleActivityComplete,
+        updateActivityTime,
         ensureSegments,
         orchestrationPhase,
         allocation: storeAllocation,
@@ -76,6 +78,17 @@ const ItineraryBuilder = () => {
     const [isLoadingGems, setIsLoadingGems] = useState(false);
     const [toast, setToast] = useState(null);
     const [hasFetched, setHasFetched] = useState(false);
+    const [addedGemTitles, setAddedGemTitles] = useState(new Set());
+    const [gemTimePickerFor, setGemTimePickerFor] = useState(null); // gem awaiting time selection
+    const [gemTime, setGemTime] = useState('10:00');
+
+    // Unsaved changes tracking
+    const [isDirty, setIsDirty] = useState(false);
+    const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+    const activitiesSnapshot = useRef(null);
+
+    // Map focus
+    const [focusedActivityId, setFocusedActivityId] = useState(null);
 
     // Budget Analysis State
     const [budgetInput, setBudgetInput] = useState('');
@@ -92,6 +105,13 @@ const ItineraryBuilder = () => {
             setHasFetched(true);
         }
     }, [trips.length, fetchTrips, hasFetched]);
+
+    // Snapshot activities on first load for discard capability
+    useEffect(() => {
+        if (trip?.days && !activitiesSnapshot.current) {
+            activitiesSnapshot.current = JSON.parse(JSON.stringify(trip.days.map(d => ({ id: d.id, activities: d.activities }))));
+        }
+    }, [trip?.days]);
 
     // Sync trip from store whenever trips change
     useEffect(() => {
@@ -225,6 +245,38 @@ const ItineraryBuilder = () => {
         }
     };
 
+    const handleAddGemToPlan = (gem) => {
+        if (!trip || !selectedDay) {
+            showToast('⚠️ Select a day first');
+            return;
+        }
+        // Open time picker for this gem
+        const defaultTime = gem.best_time === 'Evening' ? '18:00' : gem.best_time === 'Afternoon' ? '14:00' : '10:00';
+        setGemTime(defaultTime);
+        setGemTimePickerFor(gem);
+    };
+
+    const confirmAddGem = async () => {
+        const gem = gemTimePickerFor;
+        if (!gem || !trip || !selectedDay) return;
+        setGemTimePickerFor(null);
+        try {
+            await addActivity(trip.id, selectedDay, {
+                title: gem.title,
+                location: gem.location || trip.destination,
+                time: gemTime,
+                type: gem.category?.toLowerCase() || 'sightseeing',
+                notes: gem.description || '',
+                estimated_cost: gem.estimated_cost || 0,
+                segmentType: 'activity',
+            });
+            setAddedGemTitles(prev => new Set([...prev, gem.title]));
+            showToast(`✅ Added "${gem.title}" to Day ${selectedDay.replace('day-', '')} at ${gemTime}`);
+        } catch (err) {
+            showToast(`❌ ${err.message || 'Could not add gem'}`);
+        }
+    };
+
     const handleAddActivity = (e) => {
         e.preventDefault();
         if (!newActivity.title || !newActivity.time) return;
@@ -298,6 +350,7 @@ const ItineraryBuilder = () => {
     const handleDeleteActivity = async (tripId, dayId, activityId) => {
         await deleteActivity(tripId, dayId, activityId);
         await deleteCostEventForActivity(tripId, activityId);
+        setIsDirty(true);
         // Update AI cost summary if it's visible
         const summary = useBudgetStore.getState().budgetSummary;
         if (summary && aiCostSummary) {
@@ -310,6 +363,33 @@ const ItineraryBuilder = () => {
                 fits: budget > 0 ? forecast <= budget : true
             });
         }
+    };
+
+    // Back navigation with unsaved changes guard
+    const handleBack = () => {
+        if (isDirty) {
+            setShowLeaveDialog(true);
+        } else {
+            navigate('/itinerary');
+        }
+    };
+
+    const handleSaveAndLeave = async () => {
+        try {
+            await persistReorder(trip.id);
+            showToast('✅ Changes saved!');
+            setTimeout(() => navigate('/itinerary'), 400);
+        } catch (err) {
+            showToast('❌ Failed to save changes');
+        }
+    };
+
+    const handleDiscardAndLeave = async () => {
+        setShowLeaveDialog(false);
+        setIsDirty(false);
+        // Re-fetch from DB to revert any local changes
+        await fetchTrips();
+        navigate('/itinerary');
     };
 
     if (!trip) return null;
@@ -325,9 +405,114 @@ const ItineraryBuilder = () => {
                 )}
             </AnimatePresence>
 
+            {/* Gem Time Picker Modal */}
+            <AnimatePresence>
+                {gemTimePickerFor && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+                        onClick={() => setGemTimePickerFor(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            className="bg-background rounded-2xl shadow-2xl p-6 w-[320px] space-y-4 border border-border"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <h3 className="text-lg font-semibold text-foreground">Schedule Activity</h3>
+                            <p className="text-sm text-muted-foreground">Adding <strong>{gemTimePickerFor.title}</strong> to Day {selectedDay?.replace('day-', '')}</p>
+                            <div>
+                                <label className="text-xs font-medium text-muted-foreground mb-1 block">Select Time</label>
+                                <input
+                                    type="time"
+                                    value={gemTime}
+                                    onChange={e => setGemTime(e.target.value)}
+                                    className="w-full px-3 py-2 rounded-xl border border-border bg-muted text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                />
+                            </div>
+                            <div className="flex gap-2 pt-1">
+                                <button
+                                    onClick={() => setGemTimePickerFor(null)}
+                                    className="flex-1 px-4 py-2 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+                                >Cancel</button>
+                                <button
+                                    onClick={confirmAddGem}
+                                    className="flex-1 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
+                                >Add to Plan</button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Leave Confirmation Dialog */}
+            <AnimatePresence>
+                {showLeaveDialog && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+                        onClick={() => setShowLeaveDialog(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            className="bg-background rounded-2xl shadow-2xl p-6 w-[360px] space-y-4 border border-border"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                                    <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                                </div>
+                                <h3 className="text-lg font-semibold text-foreground">Unsaved Changes</h3>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                                You have unsaved changes to your itinerary. Would you like to save them before leaving?
+                            </p>
+                            <div className="flex gap-2 pt-2">
+                                <button
+                                    onClick={handleDiscardAndLeave}
+                                    className="flex-1 px-4 py-2.5 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors"
+                                >Discard Changes</button>
+                                <button
+                                    onClick={handleSaveAndLeave}
+                                    className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+                                ><Save className="w-4 h-4" /> Save & Leave</button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Floating Save Button */}
+            <AnimatePresence>
+                {isDirty && (
+                    <motion.button
+                        initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 20, scale: 0.9 }}
+                        onClick={async () => {
+                            await persistReorder(trip.id);
+                            setIsDirty(false);
+                            showToast('✅ Changes saved!');
+                        }}
+                        className="fixed bottom-6 right-6 z-[60] bg-primary text-primary-foreground px-5 py-3 rounded-2xl shadow-xl font-semibold text-sm flex items-center gap-2 hover:bg-primary/90 transition-colors"
+                    >
+                        <Save className="w-4 h-4" /> Save Changes
+                    </motion.button>
+                )}
+            </AnimatePresence>
+
             {/* FIXED TABS HEADER */}
             <header className="flex-none bg-background/80 glass border-b border-border z-50 h-16 flex items-center justify-between px-4">
-                <Button variant="ghost" size="sm" onClick={() => navigate('/itinerary')} className="gap-2">
+                <Button variant="ghost" size="sm" onClick={handleBack} className="gap-2">
                     <ArrowLeft className="w-4 h-4" />
                     <span className="hidden sm:inline">Back</span>
                 </Button>
@@ -537,14 +722,17 @@ const ItineraryBuilder = () => {
                                                     </div>
                                                 </Card>
                                             )}
-                                            <Reorder.Group axis="y" values={activeDay?.activities || []} onReorder={(newOrder) => reorderActivities(trip.id, activeDay.id, newOrder)} className="space-y-4">
+                                            <Reorder.Group axis="y" values={activeDay?.activities || []} onReorder={(newOrder) => { reorderActivities(trip.id, activeDay.id, newOrder); setIsDirty(true); }} className="space-y-4">
                                                 {activeDay?.activities.map((activity) => {
                                                     const typeInfo = ACTIVITY_TYPES.find(t => t.value === activity.type) || ACTIVITY_TYPES[0];
                                                     const Icon = typeInfo.icon;
                                                     const isLogistics = activity.isLogistics;
                                                     return (
                                                         <Reorder.Item key={activity.id} value={activity} className="relative" dragListener={!isLogistics}>
-                                                            <Card className={`border hover:border-primary/50 transition-colors ${activity.safety_warning ? 'border-l-4 border-l-destructive' : ''} ${isLogistics ? 'border-l-4 border-l-teal-500 bg-teal-50/30 dark:bg-teal-900/10' : ''}`}>
+                                                            <Card
+                                                                className={`border hover:border-primary/50 transition-all cursor-pointer ${focusedActivityId === activity.id ? 'border-primary ring-2 ring-primary/20 shadow-md' : ''} ${activity.safety_warning ? 'border-l-4 border-l-destructive' : ''} ${isLogistics ? 'border-l-4 border-l-teal-500 bg-teal-50/30 dark:bg-teal-900/10' : ''}`}
+                                                                onClick={() => setFocusedActivityId(focusedActivityId === activity.id ? null : activity.id)}
+                                                            >
                                                                 <div className="p-5 flex items-start gap-4">
                                                                     {!isLogistics && <div className="mt-2 text-muted-foreground/50 cursor-grab hover:text-foreground"><GripVertical className="w-5 h-5" /></div>}
                                                                     {!isLogistics && (
@@ -698,8 +886,8 @@ const ItineraryBuilder = () => {
                                 {/* Sidebar */}
                                 <div className="lg:col-span-1">
                                     <div className="sticky top-6 space-y-6">
-                                        <Card className="rounded-3xl overflow-hidden h-72 border-border">
-                                            <MapContainer trip={trip} destination={trip.destination} />
+                                        <Card className="rounded-3xl overflow-visible h-96 border-border">
+                                            <MapContainer trip={trip} destination={trip.destination} focusedActivityId={focusedActivityId} onPinClick={(id) => setFocusedActivityId(id)} />
                                         </Card>
 
                                         {/* Allocation Breakdown — Fix Group 8 */}
@@ -742,35 +930,53 @@ const ItineraryBuilder = () => {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2 text-lg">
                                                     <Sun className="w-5 h-5 text-yellow-500" /> Hidden Gems
-                                                    <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground ml-auto">Recommendation only</span>
                                                 </CardTitle>
                                             </CardHeader>
                                             <CardContent className="space-y-3 overflow-y-auto pr-2 custom-scrollbar">
                                                 {isLoadingGems && (
                                                     <div className="text-center py-4 text-muted-foreground text-sm">Loading gems…</div>
                                                 )}
-                                                {(storeHiddenGems.length > 0 ? storeHiddenGems : hiddenGems).map((gem, i) => (
-                                                    <div key={i} className="p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors shrink-0">
-                                                        <h4 className="text-sm font-medium text-foreground mb-1.5">{gem.title}</h4>
-                                                        <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{gem.description}</p>
-                                                        <div className="flex gap-2 flex-wrap">
-                                                            {gem.category && (
-                                                                <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">{gem.category}</span>
-                                                            )}
-                                                            {gem.best_time && (
-                                                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">{gem.best_time}</span>
-                                                            )}
-                                                            {gem.estimated_cost > 0 && (
-                                                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
-                                                                    {activeCurrencySymbol}{gem.estimated_cost}
-                                                                </span>
-                                                            )}
-                                                            {gem.estimated_cost === 0 && (
-                                                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Free</span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                ))}
+                                                <AnimatePresence>
+                                                    {(storeHiddenGems.length > 0 ? storeHiddenGems : hiddenGems)
+                                                        .filter(gem => !addedGemTitles.has(gem.title))
+                                                        .map((gem, i) => (
+                                                            <motion.div
+                                                                key={gem.title}
+                                                                initial={{ opacity: 1, height: 'auto' }}
+                                                                exit={{ opacity: 0, height: 0, marginBottom: 0, padding: 0, overflow: 'hidden' }}
+                                                                transition={{ duration: 0.4, ease: 'easeInOut' }}
+                                                                className="p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors shrink-0"
+                                                            >
+                                                                <div className="flex items-start justify-between gap-2">
+                                                                    <h4 className="text-sm font-medium text-foreground mb-1.5">{gem.title}</h4>
+                                                                    <button
+                                                                        onClick={() => handleAddGemToPlan(gem)}
+                                                                        className="shrink-0 p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+                                                                        title={`Add to Day ${selectedDay?.replace('day-', '') || '1'}`}
+                                                                    >
+                                                                        <PlusCircle className="w-4 h-4" />
+                                                                    </button>
+                                                                </div>
+                                                                <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{gem.description}</p>
+                                                                <div className="flex gap-2 flex-wrap">
+                                                                    {gem.category && (
+                                                                        <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">{gem.category}</span>
+                                                                    )}
+                                                                    {gem.best_time && (
+                                                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">{gem.best_time}</span>
+                                                                    )}
+                                                                    {gem.estimated_cost > 0 && (
+                                                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                                                                            {activeCurrencySymbol}{gem.estimated_cost}
+                                                                        </span>
+                                                                    )}
+                                                                    {gem.estimated_cost === 0 && (
+                                                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Free</span>
+                                                                    )}
+                                                                </div>
+                                                            </motion.div>
+                                                        ))}
+                                                </AnimatePresence>
                                             </CardContent>
                                         </Card>
                                     </div>

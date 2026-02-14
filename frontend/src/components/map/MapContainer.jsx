@@ -10,7 +10,7 @@ import useMapSegments from '../../hooks/useMapSegments';
  * Uses OSM raster tiles (fully free, no API key).
  * Manages map lifecycle, auto-fit bounds, and child layers.
  */
-export default function MapContainer({ trip, destination, onMapReady, highlightedSegmentId }) {
+export default function MapContainer({ trip, destination, onMapReady, highlightedSegmentId, focusedActivityId, onPinClick }) {
     const containerRef = useRef(null);
     const mapRef = useRef(null);
     const [mapLoaded, setMapLoaded] = useState(false);
@@ -78,7 +78,6 @@ export default function MapContainer({ trip, destination, onMapReady, highlighte
         if (bounds) {
             map.fitBounds(bounds, { padding: 60, maxZoom: 14, duration: 800 });
         } else if (destination) {
-            // Fallback: geocode destination
             geocodeAndCenter(map, destination);
         }
     }, [bounds, destination, mapLoaded]);
@@ -101,7 +100,7 @@ export default function MapContainer({ trip, destination, onMapReady, highlighte
             {mapLoaded && (
                 <>
                     <RouteLayer map={mapRef.current} routes={routes} markers={markers} />
-                    <MarkerLayer map={mapRef.current} markers={markers} />
+                    <MarkerLayer map={mapRef.current} markers={markers} bounds={bounds} onPinClick={onPinClick} />
                 </>
             )}
 

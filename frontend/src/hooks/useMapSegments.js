@@ -2,11 +2,12 @@ import { useMemo, useState, useEffect } from 'react';
 
 /**
  * Geocode a location string using Nominatim with localStorage caching.
+ * Optionally accepts a viewbox to bias results toward a region.
  */
-async function geocode(query) {
+async function geocode(query, viewbox = null) {
     if (!query) return null;
 
-    const cacheKey = `geo:${query}`;
+    const cacheKey = viewbox ? `geo:${query}:vb` : `geo:${query}`;
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
         try { return JSON.parse(cached); }
@@ -16,10 +17,14 @@ async function geocode(query) {
     try {
         await new Promise(r => setTimeout(r, 1200)); // Rate-limit Nominatim
 
-        const res = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
-            { headers: { 'Accept-Language': 'en-US,en;q=0.9' } }
-        );
+        let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
+        if (viewbox) {
+            url += `&viewbox=${viewbox}&bounded=0`;
+        }
+
+        const res = await fetch(url, {
+            headers: { 'Accept-Language': 'en-US,en;q=0.9' }
+        });
         if (!res.ok) return null;
         const data = await res.json();
 
@@ -32,6 +37,19 @@ async function geocode(query) {
         console.error(`Geocode failed for "${query}":`, e);
     }
     return null;
+}
+
+/**
+ * Compute haversine distance in km between two lat/lng points.
+ */
+function haversineKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 /**
@@ -64,7 +82,7 @@ export default function useMapSegments(trip) {
             }));
     }, [allActivities]);
 
-    // Geocode activities sequentially
+    // Geocode activities — prefer embedded coordinates, fallback to Nominatim
     useEffect(() => {
         let cancelled = false;
 
@@ -76,26 +94,60 @@ export default function useMapSegments(trip) {
             }
 
             const destination = trip?.destination || '';
+
+            // Step 1: Geocode the trip destination itself to build a viewbox
+            let destLat = null, destLng = null;
+            if (destination) {
+                const destCoords = await geocode(destination);
+                if (destCoords) {
+                    destLat = destCoords[0];
+                    destLng = destCoords[1];
+                }
+            }
+
+            // Build a Nominatim viewbox (±3 degrees around destination)
+            const viewbox = (destLat != null && destLng != null)
+                ? `${destLng - 3},${destLat + 3},${destLng + 3},${destLat - 3}`
+                : null;
+
             const newMarkers = [];
 
             for (const activity of allActivities) {
                 if (cancelled) break;
                 if (!activity.location) continue;
 
-                const query = `${activity.location}, ${destination}`;
-                const coords = await geocode(query);
+                let lat = null, lng = null;
 
-                if (coords && !cancelled) {
+                // Prefer embedded coordinates from orchestrator geocoding
+                if (activity.latitude && activity.longitude) {
+                    lat = parseFloat(activity.latitude);
+                    lng = parseFloat(activity.longitude);
+                }
+
+                // Fallback: Nominatim geocoding with viewbox bias
+                if (lat == null || lng == null || (lat === 0 && lng === 0)) {
+                    const query = `${activity.location}, ${destination}`;
+                    const coords = await geocode(query, viewbox);
+                    if (coords) {
+                        lat = coords[0];
+                        lng = coords[1];
+                    }
+                }
+
+                // Skip if still no valid coordinates
+                if (lat == null || lng == null || (lat === 0 && lng === 0)) continue;
+
+                if (!cancelled) {
                     newMarkers.push({
                         id: activity.id,
                         title: activity.title,
-                        lat: coords[0],
-                        lng: coords[1],
+                        lat,
+                        lng,
                         type: activity.type,
                         segmentType: activity.segmentType || null,
                         isLogistics: !!activity.isLogistics,
                         dayNumber: activity.dayNumber,
-                        orderIndex: activity.order_index ?? 0, // Rule 10: For sequence sorting
+                        orderIndex: activity.order_index ?? 0,
                         estimatedCost: activity.estimated_cost || 0,
                         location: activity.location,
                         safety_warning: activity.safety_warning,
@@ -103,14 +155,40 @@ export default function useMapSegments(trip) {
                 }
             }
 
-            if (!cancelled) {
-                // Rule 10: Sort markers by day_number ASC, order_index ASC
-                // so fallback polyline connects in correct travel sequence
-                newMarkers.sort((a, b) => {
+            if (!cancelled && newMarkers.length > 0) {
+                // ── Outlier detection: remove markers too far from the cluster ──
+                let refLat = destLat, refLng = destLng;
+                if (refLat == null || refLng == null) {
+                    // Fallback: median of all markers
+                    const sortedLats = [...newMarkers].sort((a, b) => a.lat - b.lat);
+                    const sortedLngs = [...newMarkers].sort((a, b) => a.lng - b.lng);
+                    const mid = Math.floor(sortedLats.length / 2);
+                    refLat = sortedLats[mid].lat;
+                    refLng = sortedLngs[mid].lng;
+                }
+
+                const MAX_DISTANCE_KM = 500;
+                const validMarkers = newMarkers.filter(m => {
+                    const dist = haversineKm(refLat, refLng, m.lat, m.lng);
+                    if (dist > MAX_DISTANCE_KM) {
+                        console.warn(`[MapSegments] Dropping outlier "${m.title}" (${dist.toFixed(0)}km from ${destination})`);
+                        // Clear bad cache so it re-geocodes next time
+                        localStorage.removeItem(`geo:${m.location}, ${destination}`);
+                        localStorage.removeItem(`geo:${m.location}, ${destination}:vb`);
+                        return false;
+                    }
+                    return true;
+                });
+
+                // Sort markers by day_number ASC, order_index ASC
+                validMarkers.sort((a, b) => {
                     if (a.dayNumber !== b.dayNumber) return a.dayNumber - b.dayNumber;
                     return (a.orderIndex || 0) - (b.orderIndex || 0);
                 });
-                setMarkers(newMarkers);
+                setMarkers(validMarkers);
+                setGeocodingDone(true);
+            } else if (!cancelled) {
+                setMarkers([]);
                 setGeocodingDone(true);
             }
         }

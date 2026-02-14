@@ -39,6 +39,9 @@ const useAuthStore = create((set, get) => ({
                         // INITIAL_SESSION with no user = not logged in
                         set({ user: null, profile: null, isAuthenticated: false, isLoading: false });
                     }
+                } else if (event === 'PASSWORD_RECOVERY') {
+                    // User clicked the reset link in email — set session but flag recovery mode
+                    set({ user: session?.user || null, isAuthenticated: true, isLoading: false, passwordRecovery: true });
                 } else if (event === 'SIGNED_OUT') {
                     set({ user: null, profile: null, isAuthenticated: false, isLoading: false });
                 }
@@ -192,7 +195,37 @@ const useAuthStore = create((set, get) => ({
         }
     },
 
-    clearError: () => set({ error: null })
+    clearError: () => set({ error: null }),
+
+    // ── Forgot Password ──────────────────────────────────────────────
+    sendPasswordReset: async (email) => {
+        set({ isLoading: true, error: null });
+        try {
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/reset-password`,
+            });
+            if (error) throw error;
+            set({ isLoading: false });
+        } catch (error) {
+            set({ isLoading: false, error: error.message });
+            throw error;
+        }
+    },
+
+    // ── Update Password (after reset) ────────────────────────────────
+    updatePassword: async (newPassword) => {
+        set({ isLoading: true, error: null });
+        try {
+            const { error } = await supabase.auth.updateUser({
+                password: newPassword,
+            });
+            if (error) throw error;
+            set({ isLoading: false });
+        } catch (error) {
+            set({ isLoading: false, error: error.message });
+            throw error;
+        }
+    },
 }));
 
 export default useAuthStore;
