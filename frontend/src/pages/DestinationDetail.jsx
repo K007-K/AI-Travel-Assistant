@@ -33,7 +33,7 @@ const Section = ({ icon: Icon, title, children, delay = 0 }) => (
 const HighlightCard = ({ highlight, index, destinationName }) => {
     const [imgUrl, setImgUrl] = useState(null);
     useEffect(() => {
-        loadDestinationImage(highlight.name + ' ' + destinationName, setImgUrl);
+        loadDestinationImage(highlight.name, setImgUrl);
     }, [highlight.name, destinationName]);
 
     const fallback = getFallbackImage(highlight.name);
@@ -65,21 +65,31 @@ const HighlightCard = ({ highlight, index, destinationName }) => {
     );
 };
 
-/* ─── Cuisine Card ──────────────────────────────────────────────── */
-const CuisineCard = ({ item, index }) => {
-    const emojis = ['🍛', '☕', '🍲', '🥘', '🍜', '🍰', '🥗', '🍕'];
+/* ─── Cuisine Card with photo ──────────────────────────────────────────── */
+const CuisineCard = ({ item, index, destinationName }) => {
+    const [imgUrl, setImgUrl] = useState(null);
+    useEffect(() => {
+        loadDestinationImage(item.name, setImgUrl);
+    }, [item.name]);
+
+    const fallback = getFallbackImage(item.name);
     return (
         <motion.div
             initial={{ opacity: 0, x: -16 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ delay: index * 0.08, duration: 0.4 }}
-            className="flex gap-4 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/40 border border-amber-200 dark:border-amber-800/50 hover:shadow-md transition-shadow duration-300"
+            className="group flex gap-4 p-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/40 border border-amber-200 dark:border-amber-800/50 hover:shadow-md transition-shadow duration-300 overflow-hidden"
         >
-            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center text-xl border border-amber-100 dark:border-slate-700">
-                {emojis[index % emojis.length]}
+            <div className="flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden shadow-sm">
+                <img
+                    src={imgUrl || fallback}
+                    alt={item.name}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    loading="lazy"
+                />
             </div>
-            <div>
+            <div className="flex-1 min-w-0">
                 <h4 className="font-bold text-slate-800 dark:text-white mb-0.5 text-sm">{item.name}</h4>
                 <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{item.desc}</p>
             </div>
@@ -248,7 +258,7 @@ export default function DestinationDetail() {
                 <Section icon={Utensils} title="Local Cuisine" delay={0.1}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {dest.cuisine?.map((c, i) => (
-                            <CuisineCard key={c.name} item={c} index={i} />
+                            <CuisineCard key={c.name} item={c} index={i} destinationName={dest.name} />
                         ))}
                     </div>
                 </Section>

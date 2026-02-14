@@ -1,10 +1,17 @@
 /**
- * Dynamic destination images — fetches famous landmark/tourism photos.
- * Strategy: Wikipedia "Tourism in {city}" → Wikimedia Commons search → gradient fallback.
- * All results cached in localStorage for 7 days.
+ * Dynamic destination / attraction images.
+ *
+ * Strategy (most → least specific):
+ *   1. localStorage cache (7-day TTL)
+ *   2. Known LANDMARK_QUERIES → Wikipedia article image
+ *   3. Wikipedia article for the attraction name alone
+ *   4. Wikipedia opensearch → find best-matching article → image
+ *   5. Wikimedia Commons file search
+ *   6. Wikimedia Commons category search
+ *   7. Gradient placeholder (final fallback — always works)
  */
 
-const CACHE_KEY = 'destination_image_cache_v2';
+const CACHE_KEY = 'destination_image_cache_v3';
 const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 // Map of destinations to their famous landmark/attraction for better image results
@@ -15,32 +22,39 @@ const LANDMARK_QUERIES = {
     'mumbai': 'Gateway of India Mumbai',
     'delhi': 'India Gate New Delhi',
     'new delhi': 'India Gate New Delhi',
-    'bangalore': 'Vidhana Soudha Bangalore',
-    'bengaluru': 'Vidhana Soudha Bangalore',
     'chennai': 'Marina Beach Chennai',
+    'bangalore': 'Vidhana Soudha',
+    'bengaluru': 'Vidhana Soudha',
     'kolkata': 'Victoria Memorial Kolkata',
-    'jaipur': 'Hawa Mahal Jaipur',
-    'goa': 'Baga Beach Goa',
+    'jaipur': 'Hawa Mahal',
     'agra': 'Taj Mahal',
     'varanasi': 'Varanasi Ghats',
+    'goa': 'Baga Beach Goa',
     'udaipur': 'Lake Palace Udaipur',
-    'pune': 'Shaniwar Wada Pune',
-    'kerala': 'Kerala backwaters',
-    'manali': 'Solang Valley Manali',
-    'shimla': 'The Ridge Shimla',
-    'darjeeling': 'Tiger Hill Darjeeling',
-    'araku': 'Araku Valley',
     'mysore': 'Mysore Palace',
-    'srinagar': 'Dal Lake Srinagar',
-    'rishikesh': 'Lakshman Jhula Rishikesh',
+    'mysuru': 'Mysore Palace',
     'pondicherry': 'Promenade Beach Pondicherry',
+    'amritsar': 'Golden Temple',
+    'darjeeling': 'Darjeeling tea garden',
+    'shimla': 'Ridge Shimla',
+    'manali': 'Solang Valley',
+    'leh': 'Pangong Lake',
+    'ladakh': 'Pangong Lake',
+    'rishikesh': 'Lakshman Jhula',
+    'tirupati': 'Tirumala Venkateswara Temple',
+    'hampi': 'Virupaksha Temple Hampi',
     'ooty': 'Ooty Lake',
-    'paris': 'Eiffel Tower Paris',
-    'london': 'Tower Bridge London',
-    'tokyo': 'Tokyo Tower',
+    'kodaikanal': 'Kodaikanal Lake',
+    'munnar': 'Munnar tea gardens',
+    'alleppey': 'Kerala houseboat',
+    'kochi': 'Chinese fishing nets Kochi',
+    'paris': 'Eiffel Tower',
+    'london': 'Big Ben London',
     'new york': 'Statue of Liberty',
-    'dubai': 'Burj Khalifa Dubai',
-    'singapore': 'Marina Bay Sands Singapore',
+    'new york city': 'Statue of Liberty',
+    'tokyo': 'Shibuya Crossing',
+    'dubai': 'Burj Khalifa',
+    'singapore': 'Marina Bay Sands',
     'bali': 'Tanah Lot Bali',
     'rome': 'Colosseum Rome',
     'sydney': 'Sydney Opera House',
@@ -53,31 +67,15 @@ const LANDMARK_QUERIES = {
     'venice': 'Grand Canal Venice',
     'kyoto': 'Fushimi Inari Kyoto',
     'prague': 'Charles Bridge Prague',
-    'seoul': 'Gyeongbokgung Palace Seoul',
-    'lisbon': 'Belem Tower Lisbon',
-    'hong kong': 'Victoria Harbour Hong Kong',
-    'kuala lumpur': 'Petronas Towers',
-    'moscow': 'Saint Basil Cathedral Moscow',
-    'san francisco': 'Golden Gate Bridge',
+    'lisbon': 'Belém Tower Lisbon',
+    'vienna': 'Schönbrunn Palace',
+    'berlin': 'Brandenburg Gate',
+    'athens': 'Parthenon Athens',
+    'moscow': 'Saint Basil Cathedral',
+    'petra': 'Al-Khazneh Petra',
     'machu picchu': 'Machu Picchu',
-    'los angeles': 'Hollywood Sign',
-    'athens': 'Acropolis Athens',
-    'berlin': 'Brandenburg Gate Berlin',
-    'vienna': 'Schonbrunn Palace Vienna',
-    'zurich': 'Lake Zurich',
-    'lucknow': 'Bara Imambara Lucknow',
-    'ahmedabad': 'Sabarmati Ashram',
-    'jodhpur': 'Mehrangarh Fort Jodhpur',
-    'amritsar': 'Golden Temple Amritsar',
-    'tirupati': 'Tirumala Venkateswara Temple',
-    'hampi': 'Hampi ruins',
-    'coorg': 'Abbey Falls Coorg',
-    'munnar': 'Munnar tea plantations',
-    'kodaikanal': 'Kodaikanal lake',
-    'leh': 'Pangong Lake Ladakh',
-    'andaman': 'Radhanagar Beach Andaman',
-    // Additional popular destinations
-    'banff': 'Banff National Park',
+    'angkor wat': 'Angkor Wat',
+    'great wall': 'Great Wall of China',
     'toronto': 'CN Tower Toronto',
     'vancouver': 'Stanley Park Vancouver',
     'santorini': 'Santorini Greece',
@@ -85,37 +83,16 @@ const LANDMARK_QUERIES = {
     'phuket': 'Phi Phi Islands',
     'hanoi': 'Ha Long Bay',
     'ho chi minh': 'Ho Chi Minh City',
-    'cairo': 'Pyramids of Giza',
     'marrakech': 'Jemaa el-Fnaa Marrakech',
     'cape town': 'Table Mountain Cape Town',
     'nairobi': 'Nairobi National Park',
     'rio de janeiro': 'Christ the Redeemer Rio',
     'buenos aires': 'La Boca Buenos Aires',
     'cusco': 'Machu Picchu',
-    'cancun': 'Chichen Itza',
-    'havana': 'Old Havana Cuba',
-    'reykjavik': 'Hallgrimskirkja Reykjavik',
-    'edinburgh': 'Edinburgh Castle',
-    'dublin': 'Temple Bar Dublin',
-    'florence': 'Florence Cathedral',
-    'milan': 'Milan Cathedral',
-    'salzburg': 'Salzburg Austria',
-    'budapest': 'Hungarian Parliament Building',
-    'copenhagen': 'The Little Mermaid Copenhagen',
-    'stockholm': 'Stockholm Old Town',
-    'oslo': 'Oslo Opera House',
-    'helsinki': 'Helsinki Cathedral',
-    'warsaw': 'Warsaw Old Town',
-    'krakow': 'Wawel Castle Krakow',
-    'petra': 'Petra Jordan',
-    'jerusalem': 'Western Wall Jerusalem',
-    'maui': 'Haleakala National Park Maui',
-    'hawaii': 'Waikiki Beach Hawaii',
-    'fiji': 'Fiji beach resort',
-    'tahiti': 'Bora Bora',
-    'new zealand': 'Milford Sound New Zealand',
-    'queenstown': 'Queenstown New Zealand',
-    'medellin': 'Medellin Colombia',
+    'queenstown': 'Milford Sound',
+    'banff': 'Lake Louise',
+    'kerala': 'Kerala backwaters',
+    'araku valley': 'Borra Caves',
     'cartagena': 'Cartagena Colombia',
     'zanzibar': 'Zanzibar beach',
     'kathmandu': 'Swayambhunath Kathmandu',
@@ -126,6 +103,7 @@ const LANDMARK_QUERIES = {
     'chiang mai': 'Doi Suthep Chiang Mai',
 };
 
+// ─── Cache helpers ─────────────────────────────────────────────────
 function getCache() {
     try {
         const raw = localStorage.getItem(CACHE_KEY);
@@ -134,9 +112,7 @@ function getCache() {
         const now = Date.now();
         const cleaned = {};
         for (const [key, entry] of Object.entries(parsed)) {
-            if (now - entry.ts < CACHE_TTL) {
-                cleaned[key] = entry;
-            }
+            if (now - entry.ts < CACHE_TTL) cleaned[key] = entry;
         }
         return cleaned;
     } catch {
@@ -152,9 +128,41 @@ function setCache(key, url) {
     } catch { /* quota exceeded */ }
 }
 
-/**
- * Search Wikimedia Commons for tourism/landmark images of a destination.
- */
+// ─── Wikipedia REST API: article summary → image ───────────────────
+async function fetchFromWikipedia(query) {
+    try {
+        const res = await fetch(
+            `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`,
+            { headers: { 'Accept': 'application/json' } }
+        );
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data.originalimage?.source || data.thumbnail?.source || null;
+    } catch {
+        return null;
+    }
+}
+
+// ─── Wikipedia opensearch: find the closest article title ──────────
+async function findWikipediaTitle(query) {
+    try {
+        const params = new URLSearchParams({
+            action: 'opensearch',
+            search: query,
+            limit: '5',
+            format: 'json',
+            origin: '*',
+        });
+        const res = await fetch(`https://en.wikipedia.org/w/api.php?${params}`);
+        if (!res.ok) return [];
+        const data = await res.json();
+        return data[1] || [];
+    } catch {
+        return [];
+    }
+}
+
+// ─── Wikimedia Commons: search for images ──────────────────────────
 async function fetchFromWikimediaCommons(query) {
     try {
         const params = new URLSearchParams({
@@ -190,24 +198,7 @@ async function fetchFromWikimediaCommons(query) {
     }
 }
 
-/**
- * Fetch image from Wikipedia article summary.
- */
-async function fetchFromWikipedia(query) {
-    try {
-        const res = await fetch(
-            `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`,
-            { headers: { 'Accept': 'application/json' } }
-        );
-        if (!res.ok) return null;
-        const data = await res.json();
-        return data.originalimage?.source || data.thumbnail?.source || null;
-    } catch {
-        return null;
-    }
-}
-
-// Gradient colors for fallback
+// ─── Gradient placeholder (always works) ───────────────────────────
 const GRADIENT_COLORS = [
     ['#667eea', '#764ba2'],
     ['#f093fb', '#f5576c'],
@@ -217,6 +208,8 @@ const GRADIENT_COLORS = [
     ['#a18cd1', '#fbc2eb'],
     ['#0575E6', '#021B79'],
     ['#e0c3fc', '#8ec5fc'],
+    ['#FF6B6B', '#ee5a24'],
+    ['#10ac84', '#1dd1a1'],
 ];
 
 export function getFallbackImage(destination) {
@@ -240,19 +233,18 @@ export function getFallbackImage(destination) {
     return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
 
-/**
- * Load destination image dynamically.
- * Strategy:
- *   1. Check cache
- *   2. If landmark is known, fetch Wikipedia article for the landmark
- *   3. Try "Tourism in {destination}" Wikipedia page
- *   4. Search Wikimedia Commons for landmark/tourism photos
- *   5. Fall back to gradient placeholder
- */
-export async function loadDestinationImage(destination, setUrl) {
-    if (!destination) return;
 
-    const key = destination.toLowerCase().trim();
+// ─── MAIN: load image with aggressive multi-strategy approach ──────
+/**
+ * Load an image for any attraction, cuisine, or destination.
+ *
+ * @param {string} query   – e.g. "Hawa Mahal", "Dal Baati Churma food dish"
+ * @param {function} setUrl – React state setter
+ */
+export async function loadDestinationImage(query, setUrl) {
+    if (!query) return;
+
+    const key = query.toLowerCase().trim();
 
     // 1. Check cache
     const cache = getCache();
@@ -261,9 +253,8 @@ export async function loadDestinationImage(destination, setUrl) {
         return;
     }
 
-    // 2. Check if we know a famous landmark for this destination
+    // 2. Check if we have a known landmark mapping
     const landmarkQuery = LANDMARK_QUERIES[key];
-
     if (landmarkQuery) {
         const url = await fetchFromWikipedia(landmarkQuery);
         if (url) {
@@ -273,29 +264,53 @@ export async function loadDestinationImage(destination, setUrl) {
         }
     }
 
-    // 3. Try plain destination name on Wikipedia  
-    const plainUrl = await fetchFromWikipedia(destination);
-    if (plainUrl) {
-        setCache(key, plainUrl);
-        setUrl(plainUrl);
+    // 3. Try the query directly on Wikipedia
+    const directUrl = await fetchFromWikipedia(query);
+    if (directUrl) {
+        setCache(key, directUrl);
+        setUrl(directUrl);
         return;
     }
 
-    // 4. Try "Tourism in {destination}"
-    const tourismUrl = await fetchFromWikipedia(`Tourism in ${destination}`);
+    // 4. Extract just the first meaningful part (before " food", " dish", etc.)
+    const cleanedQuery = query
+        .replace(/\s+(food|dish|cuisine|meal|drink|dessert|sweet|snack)\b/gi, '')
+        .trim();
+    if (cleanedQuery !== query) {
+        const cleanUrl = await fetchFromWikipedia(cleanedQuery);
+        if (cleanUrl) {
+            setCache(key, cleanUrl);
+            setUrl(cleanUrl);
+            return;
+        }
+    }
+
+    // 5. Use Wikipedia opensearch to find the closest article title
+    const titles = await findWikipediaTitle(cleanedQuery || query);
+    for (const title of titles) {
+        const url = await fetchFromWikipedia(title);
+        if (url) {
+            setCache(key, url);
+            setUrl(url);
+            return;
+        }
+    }
+
+    // 6. Try "Tourism in {query}" on Wikipedia
+    const tourismUrl = await fetchFromWikipedia(`Tourism in ${cleanedQuery || query}`);
     if (tourismUrl) {
         setCache(key, tourismUrl);
         setUrl(tourismUrl);
         return;
     }
 
-    // 5. Search Wikimedia Commons
-    const commonsUrl = await fetchFromWikimediaCommons(destination);
+    // 7. Search Wikimedia Commons
+    const commonsUrl = await fetchFromWikimediaCommons(cleanedQuery || query);
     if (commonsUrl) {
         setCache(key, commonsUrl);
         setUrl(commonsUrl);
         return;
     }
 
-    // Gradient fallback remains
+    // 8. Fallback: gradient remains (no broken external URL)
 }
