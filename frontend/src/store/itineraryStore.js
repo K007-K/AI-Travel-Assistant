@@ -262,6 +262,7 @@ const useItineraryStore = create((set, get) => ({
 
     // ── Lifecycle Orchestration State ─────────────────────────────────
     allocation: null,          // Budget allocation from Phase 1
+    reconciliation: null,      // Budget reconciliation from Phase 10
     dailySummary: [],          // Per-day cost breakdown from Phase 8
     bookingOptions: {},        // Booking suggestions keyed by segment_id (Phase 7)
     hiddenGems: [],            // Isolated hidden gems (Phase 9)
@@ -710,6 +711,7 @@ const useItineraryStore = create((set, get) => ({
                 t.id === tripId ? { ...t, days: rebuiltDays, _hasSegments: true } : t
             ),
             allocation: result.allocation,
+            reconciliation: result.reconciliation,
             dailySummary: result.daily_summary,
             bookingOptions: bookingOptions,
             hiddenGems: result.hidden_gems,

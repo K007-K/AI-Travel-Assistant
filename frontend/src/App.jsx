@@ -10,7 +10,8 @@ import ProtectedRoute from './components/layout/ProtectedRoute';
 // ─── Lazy-loaded pages (code-split per route) ───
 const Home = lazy(() => import('./pages/Home'));
 const Chat = lazy(() => import('./pages/Chat'));
-const AICenter = lazy(() => import('./pages/AICenter'));
+const AIControlCenter = lazy(() => import('./pages/AIControlCenter'));
+import AICompanion from './components/companion/AICompanion';
 const Discover = lazy(() => import('./pages/Discover'));
 const About = lazy(() => import('./pages/About'));
 const Login = lazy(() => import('./pages/Login'));
@@ -73,11 +74,11 @@ function App() {
               <Suspense fallback={<PageLoader />}>
                 <Routes>
                   <Route path="/" element={<Home />} />
-                  <Route path="/chat" element={<AICenter />} />
+                  <Route path="/chat" element={<AIControlCenter />} />
                   <Route path="/chat/session" element={<Chat />} />
 
                   {/* AI CONTROL CENTER ROUTES */}
-                  <Route path="/ai" element={<AICenter />} />
+                  <Route path="/ai" element={<AIControlCenter />} />
                   <Route path="/ai/chat" element={<Chat />} />
                   <Route path="/ai/translate" element={<TranslationPage />} />
                   <Route path="/ai/emergency" element={<EmergencyPage />} />
@@ -166,6 +167,7 @@ function App() {
             </ErrorBoundary>
           </main>
           <Footer />
+          <AICompanion />
         </div>
       </Router>
     </ThemeProvider>
