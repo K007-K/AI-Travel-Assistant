@@ -5,6 +5,7 @@ import { Wallet, Plus, Trash2, DollarSign, TrendingUp, AlertCircle, ShoppingBag,
 import useBudgetStore from '../store/budgetStore';
 import useItineraryStore from '../store/itineraryStore';
 import BudgetHealthBadge from '../components/ui/BudgetHealthBadge';
+import { useTheme } from '../providers/ThemeProvider';
 
 const CATEGORIES = [
     { id: 'transport', label: 'Transport', icon: Plane, color: '#3b82f6' },
@@ -22,6 +23,8 @@ const CATEGORIES = [
 const CATEGORY_COLORS = Object.fromEntries(CATEGORIES.map(c => [c.id, c.color]));
 
 const Budget = () => {
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
     const {
         costEvents, budgetSummary, addExpense, deleteExpense,
         fetchCostEvents, fetchBudgetSummary, currency: globalCurrency
@@ -102,25 +105,25 @@ const Budget = () => {
     if (tripsLoading || (trips.length === 0 && !selectedTripId)) {
         if (tripsLoading) {
             return (
-                <div className="min-h-screen pt-32 flex flex-col items-center justify-center text-center">
-                    <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin mb-4" />
-                    <p className="text-slate-500 text-sm">Loading your trips…</p>
+                <div className="min-h-screen pt-32 flex flex-col items-center justify-center text-center bg-slate-50 dark:bg-[#0a0a0a] transition-colors duration-300">
+                    <div className="w-10 h-10 border-4 border-blue-200 dark:border-blue-800 border-t-blue-500 rounded-full animate-spin mb-4" />
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">Loading your trips…</p>
                 </div>
             );
         }
         return (
-            <div className="min-h-screen pt-32 container-custom text-center">
-                <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="min-h-screen pt-32 container-custom text-center bg-slate-50 dark:bg-[#0a0a0a] transition-colors duration-300">
+                <div className="w-20 h-20 bg-slate-100 dark:bg-white/[0.03] rounded-full flex items-center justify-center mx-auto mb-6">
                     <Wallet className="w-10 h-10 text-slate-400" />
                 </div>
-                <h2 className="text-2xl font-bold mb-4">No trips created yet</h2>
-                <p className="text-slate-500 mb-8">Create a trip first to manage your travel budget.</p>
+                <h2 className="text-2xl font-bold mb-4 text-slate-900 dark:text-slate-100">No trips created yet</h2>
+                <p className="text-slate-500 dark:text-slate-400 mb-8">Create a trip first to manage your travel budget.</p>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen pt-24 pb-16 bg-slate-50 dark:bg-[#0a0a0a]">
+        <div className="min-h-screen pt-24 pb-16 bg-slate-50 dark:bg-[#0a0a0a] transition-colors duration-300">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
                 {/* Header */}
@@ -137,7 +140,7 @@ const Budget = () => {
                         <select
                             value={selectedTripId}
                             onChange={(e) => setSelectedTripId(e.target.value)}
-                            className="flex-1 md:flex-none p-2.5 pr-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium outline-none focus:ring-2 focus:ring-primary-500/20 min-w-[180px]"
+                            className="flex-1 md:flex-none p-2.5 pr-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-white/[0.03] text-sm font-medium outline-none focus:ring-2 focus:ring-primary-500/20 min-w-[180px]"
                         >
                             {trips.map(trip => (
                                 <option key={trip.id} value={trip.id}>{trip.title}</option>
@@ -181,7 +184,7 @@ const Budget = () => {
                         initial={{ opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.05 }}
-                        className="rounded-2xl p-5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm"
+                        className="rounded-2xl p-5 bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-slate-700 shadow-sm"
                     >
                         <div className="flex items-center gap-2.5 mb-3">
                             <div className="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg"><TrendingUp className="w-4 h-4 text-rose-600 dark:text-rose-400" /></div>
@@ -196,7 +199,7 @@ const Budget = () => {
                         initial={{ opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
-                        className="rounded-2xl p-5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm"
+                        className="rounded-2xl p-5 bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-slate-700 shadow-sm"
                     >
                         <div className="flex items-center gap-2.5 mb-3">
                             <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg"><DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /></div>
@@ -232,7 +235,7 @@ const Budget = () => {
                         initial={{ opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.15 }}
-                        className="rounded-2xl p-5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col"
+                        className="rounded-2xl p-5 bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col"
                     >
                         <BudgetHealthBadge percentUsed={percentageUsed} forecastPercent={forecastPercent} size="md" />
                         {aiEstimatedTotal > 0 && (
@@ -253,7 +256,7 @@ const Budget = () => {
                             initial={{ opacity: 0, y: 16 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2 }}
-                            className="rounded-2xl p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm"
+                            className="rounded-2xl p-6 bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-slate-700 shadow-sm"
                         >
                             <h3 className="text-base font-bold mb-4 text-slate-800 dark:text-slate-100 flex items-center gap-2">
                                 <BarChart3 className="w-4 h-4 text-slate-400" /> Spending Breakdown
@@ -274,7 +277,14 @@ const Budget = () => {
                                                 ))}
                                             </Pie>
                                             <Tooltip
-                                                contentStyle={{ backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', fontSize: '13px' }}
+                                                contentStyle={{
+                                                    backgroundColor: isDark ? 'rgba(30,30,30,0.95)' : 'rgba(255,255,255,0.95)',
+                                                    color: isDark ? '#e2e8f0' : '#1e293b',
+                                                    borderRadius: '12px',
+                                                    border: isDark ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                                                    boxShadow: isDark ? '0 4px 12px rgba(0,0,0,0.4)' : '0 4px 12px rgba(0,0,0,0.08)',
+                                                    fontSize: '13px'
+                                                }}
                                                 formatter={(value) => [`${currency} ${value.toLocaleString()}`, '']}
                                             />
                                             <Legend
@@ -302,7 +312,7 @@ const Budget = () => {
                                 initial={{ opacity: 0, y: 16 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.25 }}
-                                className="rounded-2xl p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm"
+                                className="rounded-2xl p-6 bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-slate-700 shadow-sm"
                             >
                                 <h3 className="text-base font-bold mb-4 text-slate-800 dark:text-slate-100">Cost Sources</h3>
                                 <div className="space-y-3">
@@ -348,7 +358,7 @@ const Budget = () => {
                         initial={{ opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="lg:col-span-2 rounded-2xl p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm"
+                        className="lg:col-span-2 rounded-2xl p-6 bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-slate-700 shadow-sm"
                     >
                         <div className="flex items-center justify-between mb-5">
                             <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
@@ -430,7 +440,7 @@ const Budget = () => {
                                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                                className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md p-6"
+                                className="relative bg-white dark:bg-white/[0.03] rounded-2xl shadow-2xl w-full max-w-md p-6"
                             >
                                 <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-5">Add Expense</h2>
                                 <form onSubmit={handleAddSubmit} className="space-y-4">

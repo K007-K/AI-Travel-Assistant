@@ -27,7 +27,9 @@ const Navbar = () => {
 
     // ── Dynamic: detect if the background behind the navbar is dark ──
     const isOverDark = useBackgroundBrightness(navRef);
-    const isLight = isOverDark || isDark; // white text when over dark background OR in dark mode
+    // For authenticated pages, always follow the theme directly.
+    // Only use brightness detection for the unauthenticated landing page (hero images).
+    const isLight = user ? isDark : (isOverDark || isDark);
 
     // Fallback for display name
     const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Traveler';

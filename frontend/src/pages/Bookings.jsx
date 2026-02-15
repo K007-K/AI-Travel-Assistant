@@ -106,7 +106,7 @@ const Bookings = () => {
     };
 
     return (
-        <div className="min-h-screen pt-20 pb-12 bg-slate-50 dark:bg-[#0a0a0a] transition-colors">
+        <div className="min-h-screen pt-20 pb-12 bg-slate-50 dark:bg-[#0a0a0a] transition-colors duration-300">
             {/* Hero Section */}
             <div className="bg-primary-600 pb-32 pt-12 px-6 md:px-8 relative">
                 {/* Header Actions */}
@@ -148,7 +148,7 @@ const Bookings = () => {
                 <motion.div
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-black/30 border border-slate-100 dark:border-slate-700 overflow-hidden"
+                    className="bg-white dark:bg-white/[0.03] rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-black/30 border border-slate-100 dark:border-slate-700 overflow-hidden"
                 >
                     {/* Tabs */}
                     <div className="flex border-b border-slate-100 dark:border-slate-700">
@@ -195,7 +195,7 @@ const Bookings = () => {
                                             />
                                         </div>
                                         <div className="lg:col-span-1">
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Departure</label>
+                                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Departure</label>
                                             <div className="relative">
                                                 <Calendar className="absolute left-3 top-3.5 w-5 h-5 text-slate-400" />
                                                 <input type="date" required min={today} className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
@@ -204,7 +204,7 @@ const Bookings = () => {
                                             </div>
                                         </div>
                                         <div className="lg:col-span-1">
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Travelers & Class</label>
+                                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Travelers & Class</label>
                                             <div className="flex gap-2">
                                                 <div className="relative flex-1">
                                                     <User className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
@@ -240,7 +240,7 @@ const Bookings = () => {
                                             />
                                         </div>
                                         <div className="lg:col-span-1">
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Check-in</label>
+                                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Check-in</label>
                                             <div className="relative">
                                                 <Calendar className="absolute left-3 top-3.5 w-5 h-5 text-slate-400" />
                                                 <input type="date" required min={today} className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
@@ -249,7 +249,7 @@ const Bookings = () => {
                                             </div>
                                         </div>
                                         <div className="lg:col-span-1">
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Guests & Rooms</label>
+                                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Guests & Rooms</label>
                                             <div className="relative">
                                                 <User className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
                                                 <select className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 appearance-none"
@@ -285,7 +285,7 @@ const Bookings = () => {
                                             />
                                         </div>
                                         <div className="lg:col-span-1">
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Travel Date</label>
+                                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Travel Date</label>
                                             <div className="relative">
                                                 <Calendar className="absolute left-3 top-3.5 w-5 h-5 text-slate-400" />
                                                 <input type="date" required min={today} className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
@@ -294,7 +294,7 @@ const Bookings = () => {
                                             </div>
                                         </div>
                                         <div className="lg:col-span-1">
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Class</label>
+                                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Class</label>
                                             <div className="relative">
                                                 <Briefcase className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
                                                 <select className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 appearance-none"
@@ -342,7 +342,7 @@ const Bookings = () => {
                                 <select
                                     value={sortBy}
                                     onChange={(e) => setSortBy(e.target.value)}
-                                    className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold outline-none focus:ring-2 focus:ring-primary-500"
+                                    className="px-4 py-2 bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold outline-none focus:ring-2 focus:ring-primary-500"
                                 >
                                     <option value="recommended">Recommended</option>
                                     <option value="price_low">Price: Low to High</option>
@@ -357,7 +357,7 @@ const Bookings = () => {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: index * 0.1 }}
-                                    className={`bg-white dark:bg-slate-800 rounded-2xl shadow-sm border overflow-hidden hover:shadow-lg transition-all group ${item.isBest ? 'border-emerald-400 ring-2 ring-emerald-100 dark:ring-emerald-900/30' : 'border-slate-200 dark:border-slate-700'}`}
+                                    className={`bg-white dark:bg-white/[0.03] rounded-2xl shadow-sm border overflow-hidden hover:shadow-lg transition-all group ${item.isBest ? 'border-emerald-400 ring-2 ring-emerald-100 dark:ring-emerald-900/30' : 'border-slate-200 dark:border-slate-700'}`}
                                 >
                                     {/* Best Pick Badge */}
                                     {item.isBest && (
@@ -524,7 +524,7 @@ const Bookings = () => {
                         exit={{ opacity: 0, scale: 0.9 }}
                         className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
                     >
-                        <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-2xl border-2 border-emerald-500 flex flex-col items-center">
+                        <div className="bg-white dark:bg-white/[0.03] p-8 rounded-3xl shadow-2xl border-2 border-emerald-500 flex flex-col items-center">
                             <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mb-4 text-emerald-500 animate-bounce">
                                 <CheckCircle className="w-8 h-8" />
                             </div>

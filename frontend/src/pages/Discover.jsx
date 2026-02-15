@@ -79,7 +79,7 @@ const Discover = () => {
                             onClick={() => setFilter(cat)}
                             className={`px-6 py-2 rounded-full font-medium transition-all ${filter === cat
                                 ? 'bg-primary-500 text-white shadow-lg'
-                                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                : 'bg-white dark:bg-white/[0.03] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                                 }`}
                         >
                             {cat}
@@ -106,7 +106,7 @@ const Discover = () => {
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, scale: 0.9 }}
                                     transition={{ delay: index * 0.1 }}
-                                    className="group bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 dark:border-slate-800"
+                                    className="group bg-white dark:bg-white/[0.03] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 dark:border-slate-800"
                                 >
                                     <div className="relative h-64 overflow-hidden">
                                         <img

@@ -43,7 +43,7 @@ const HighlightCard = ({ highlight, index, destinationName }) => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: index * 0.1, duration: 0.45 }}
-            className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+            className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-slate-700"
         >
             <div className="h-44 overflow-hidden relative">
                 <img
@@ -113,7 +113,7 @@ const TipCard = ({ tip, index }) => {
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ delay: index * 0.07, duration: 0.35 }}
-            className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all duration-300"
+            className="p-4 rounded-xl bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all duration-300"
         >
             <div className={`w-9 h-9 rounded-lg ${colors[index % colors.length]} flex items-center justify-center mb-2.5`}>
                 <TipIcon className="w-4 h-4" />
@@ -205,7 +205,7 @@ export default function DestinationDetail() {
             <div className="relative -mt-8 z-20 max-w-5xl mx-auto px-6">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-                    className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 px-8 py-5 grid grid-cols-2 md:grid-cols-4 gap-6"
+                    className="bg-white dark:bg-white/[0.03] rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 px-8 py-5 grid grid-cols-2 md:grid-cols-4 gap-6"
                 >
                     {statItems.map((s, i) => (
                         <div key={i} className="flex items-center gap-3">
@@ -278,7 +278,7 @@ export default function DestinationDetail() {
                             <p className="text-xl font-bold mb-0.5">{dest.bestTimeToVisit?.season}</p>
                             <p className="text-xs text-white/70 uppercase tracking-wider font-semibold">Recommended</p>
                         </div>
-                        <div className="flex-1 p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center shadow-sm">
+                        <div className="flex-1 p-5 rounded-2xl bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-slate-700 flex items-center shadow-sm">
                             <p className="text-base text-slate-700 dark:text-slate-200 leading-relaxed">{dest.bestTimeToVisit?.note}</p>
                         </div>
                     </div>

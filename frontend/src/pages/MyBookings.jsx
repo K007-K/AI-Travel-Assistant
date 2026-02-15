@@ -177,7 +177,7 @@ const MyBookings = () => {
     };
 
     return (
-        <div className="min-h-screen pt-24 pb-12 bg-slate-50 dark:bg-[#0a0a0a] px-4">
+        <div className="min-h-screen pt-24 pb-12 bg-slate-50 dark:bg-[#0a0a0a] px-4 transition-colors duration-300">
             <div className="container-custom max-w-5xl">
                 <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
                     <div>
@@ -196,7 +196,7 @@ const MyBookings = () => {
                             onClick={() => setActiveTab(tab)}
                             className={`px-6 py-2.5 rounded-full text-sm font-bold capitalize transition-all whitespace-nowrap ${activeTab === tab
                                 ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
-                                : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                : 'bg-white dark:bg-white/[0.03] text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
                                 }`}
                         >
                             {tab}
@@ -210,7 +210,7 @@ const MyBookings = () => {
                         <p className="text-slate-500">Loading your journeys...</p>
                     </div>
                 ) : filteredBookings.length === 0 ? (
-                    <div className="text-center py-20 bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700">
+                    <div className="text-center py-20 bg-white dark:bg-white/[0.03] rounded-3xl border border-slate-100 dark:border-slate-700">
                         <div className="w-20 h-20 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
                             <Search className="w-10 h-10" />
                         </div>
@@ -228,16 +228,16 @@ const MyBookings = () => {
                             <motion.div
                                 key={booking.id}
                                 variants={item}
-                                className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden hover:shadow-md transition-shadow group"
+                                className="bg-white dark:bg-white/[0.03] rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden hover:shadow-md transition-shadow group"
                             >
                                 <div className="p-6">
                                     <div className="flex flex-col md:flex-row justify-between gap-6">
 
                                         {/* Icon & Title */}
                                         <div className="flex gap-4">
-                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${booking.type === 'flight' ? 'bg-blue-100 text-blue-600' :
-                                                booking.type === 'hotel' ? 'bg-purple-100 text-purple-600' :
-                                                    'bg-orange-100 text-orange-600'
+                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${booking.type === 'flight' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' :
+                                                booking.type === 'hotel' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' :
+                                                    'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
                                                 }`}>
                                                 {booking.type === 'flight' && <Plane className="w-6 h-6" />}
                                                 {booking.type === 'hotel' && <Hotel className="w-6 h-6" />}
@@ -245,7 +245,7 @@ const MyBookings = () => {
                                             </div>
                                             <div>
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase ${booking.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                                    <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase ${booking.status === 'confirmed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                                                         }`}>
                                                         {booking.status}
                                                     </span>
@@ -288,7 +288,7 @@ const MyBookings = () => {
                                                 className="btn btn-outline p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700"
                                                 title="Download Ticket"
                                             >
-                                                <Download className="w-5 h-5 text-slate-600" />
+                                                <Download className="w-5 h-5 text-slate-600 dark:text-slate-400" />
                                             </button>
                                         </div>
                                     </div>
@@ -297,12 +297,12 @@ const MyBookings = () => {
                                     {(booking.details?.addons?.insurance || booking.details?.addons?.meal) && (
                                         <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex gap-4">
                                             {booking.details.addons.insurance && (
-                                                <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded flex items-center gap-1">
+                                                <span className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2 py-1 rounded flex items-center gap-1">
                                                     🛡️ Insurance Added
                                                 </span>
                                             )}
                                             {booking.details.addons.meal && (
-                                                <span className="text-xs bg-orange-50 text-orange-600 px-2 py-1 rounded flex items-center gap-1">
+                                                <span className="text-xs bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 px-2 py-1 rounded flex items-center gap-1">
                                                     🍱 Meal Included
                                                 </span>
                                             )}

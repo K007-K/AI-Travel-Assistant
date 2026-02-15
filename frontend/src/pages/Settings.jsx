@@ -104,13 +104,13 @@ const Settings = () => {
                         animate={{ opacity: 1, y: 0 }}
                         className="lg:col-span-1 space-y-6"
                     >
-                        <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-slate-100 dark:border-slate-700">
+                        <div className="bg-white dark:bg-white/[0.03] rounded-3xl p-6 shadow-xl shadow-slate-200/50 dark:shadow-black/30 border border-slate-100 dark:border-white/[0.06]">
                             <div className="flex flex-col items-center text-center">
                                 <div className="relative mb-4">
                                     <img
                                         src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.name}`}
                                         alt={user?.name}
-                                        className="w-24 h-24 rounded-full border-4 border-white dark:border-slate-700 shadow-md"
+                                        className="w-24 h-24 rounded-full border-4 border-white dark:border-white/[0.1] shadow-md"
                                     />
                                     <button className="absolute bottom-0 right-0 p-2 bg-primary-600 rounded-full text-white shadow-lg hover:bg-primary-700 transition-colors">
                                         <User className="w-4 h-4" />
@@ -158,7 +158,7 @@ const Settings = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.1 }}
-                            className="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700"
+                            className="bg-white dark:bg-white/[0.03] rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-white/[0.06]"
                         >
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
@@ -277,7 +277,7 @@ const Settings = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2 }}
-                            className="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700"
+                            className="bg-white dark:bg-white/[0.03] rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-white/[0.06]"
                         >
                             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-6 flex items-center gap-2">
                                 Your Travel Stats
@@ -306,7 +306,7 @@ const Settings = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.3 }}
-                            className="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700"
+                            className="bg-white dark:bg-white/[0.03] rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-white/[0.06]"
                         >
                             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-6">Preferences</h3>
                             <div className="space-y-4">

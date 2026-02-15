@@ -124,7 +124,7 @@ const BookingReview = () => {
                         <motion.div
                             key="step1"
                             initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-                            className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8"
+                            className="bg-white dark:bg-white/[0.03] rounded-2xl shadow-xl p-8"
                         >
                             <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
                                 <ArrowLeft className="cursor-pointer" onClick={() => navigate(-1)} />
@@ -169,8 +169,8 @@ const BookingReview = () => {
                                     {/* Budget Impact Indicator */}
                                     {selectedTripId && budgetSummary && tripBudget > 0 && (
                                         <div className={`mt-3 p-3 rounded-xl border text-sm ${willOverspend
-                                                ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
-                                                : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
+                                            ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                                            : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
                                             }`}>
                                             <p className="font-semibold text-slate-800 dark:text-slate-200">
                                                 This booking: {formatPrice(bookingTotal)} → uses <strong>{bookingPct}%</strong> of trip budget
@@ -233,7 +233,7 @@ const BookingReview = () => {
                         <motion.div
                             key="step2"
                             initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-                            className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8"
+                            className="bg-white dark:bg-white/[0.03] rounded-2xl shadow-xl p-8"
                         >
                             <h2 className="text-2xl font-bold mb-6">Traveler Details</h2>
                             <form onSubmit={(e) => { e.preventDefault(); setStep(3); }} className="space-y-4">
@@ -275,7 +275,7 @@ const BookingReview = () => {
                         <motion.div
                             key="step3"
                             initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-                            className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8"
+                            className="bg-white dark:bg-white/[0.03] rounded-2xl shadow-xl p-8"
                         >
                             <h2 className="text-2xl font-bold mb-6">Payment</h2>
                             <div className="bg-slate-50 dark:bg-slate-700/50 p-6 rounded-xl mb-6 flex justify-between items-center">
@@ -313,8 +313,8 @@ const BookingReview = () => {
                             <div className="flex gap-4">
                                 <button onClick={() => setStep(2)} className="btn btn-outline flex-1">Back</button>
                                 <button onClick={handleConfirm} disabled={isProcessing} className={`btn flex-1 flex items-center justify-center gap-2 ${selectedTripId && willOverspend
-                                        ? 'bg-amber-500 hover:bg-amber-600 text-white'
-                                        : 'btn-primary'
+                                    ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                                    : 'btn-primary'
                                     }`}>
                                     {isProcessing ? <Loader2 className="animate-spin" /> : (
                                         selectedTripId && willOverspend ? 'Confirm (Over Budget)' : 'Pay & Confirm'
@@ -329,7 +329,7 @@ const BookingReview = () => {
                         <motion.div
                             key="step4"
                             initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                            className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-12 text-center"
+                            className="bg-white dark:bg-white/[0.03] rounded-2xl shadow-xl p-12 text-center"
                         >
                             <div className="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
                                 <CheckCircle className="w-10 h-10" />

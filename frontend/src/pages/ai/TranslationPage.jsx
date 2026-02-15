@@ -154,7 +154,7 @@ export const TranslationPage = () => {
         >
             <div className="space-y-6">
                 {/* Language Selector Bar */}
-                <div className="bg-white dark:bg-white/[0.03] dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-white/[0.06] dark:border-slate-700 p-4 shadow-sm">
+                <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-slate-200 dark:border-white/[0.06] p-4 shadow-sm">
                     <div className="flex items-center justify-between gap-2">
                         {/* Source Language */}
                         <div className="flex-1">
@@ -201,8 +201,8 @@ export const TranslationPage = () => {
                 {/* Translation Area */}
                 <div className="grid md:grid-cols-2 gap-6">
                     {/* Input */}
-                    <div className="bg-white dark:bg-white/[0.03] dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-white/[0.06] dark:border-slate-700 shadow-sm overflow-hidden">
-                        <div className="p-4 border-b border-slate-100 dark:border-white/[0.06] dark:border-slate-700 flex items-center justify-between">
+                    <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-slate-200 dark:border-white/[0.06] shadow-sm overflow-hidden">
+                        <div className="p-4 border-b border-slate-100 dark:border-white/[0.06] flex items-center justify-between">
                             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                                 {sourceLanguage?.flag} {sourceLanguage?.name}
                             </span>
@@ -218,7 +218,7 @@ export const TranslationPage = () => {
                             placeholder="Type or paste text to translate..."
                             className="w-full h-48 p-5 text-lg bg-transparent text-slate-800 dark:text-slate-200 dark:text-slate-100 focus:outline-none resize-none placeholder:text-slate-300 dark:placeholder:text-slate-600"
                         />
-                        <div className="p-4 border-t border-slate-100 dark:border-white/[0.06] dark:border-slate-700 flex items-center justify-between">
+                        <div className="p-4 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 {input.trim() && (
                                     <button
@@ -246,8 +246,8 @@ export const TranslationPage = () => {
                     </div>
 
                     {/* Output */}
-                    <div className="bg-white dark:bg-white/[0.03] dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-white/[0.06] dark:border-slate-700 shadow-sm overflow-hidden">
-                        <div className="p-4 border-b border-slate-100 dark:border-white/[0.06] dark:border-slate-700 flex items-center justify-between">
+                    <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-slate-200 dark:border-white/[0.06] shadow-sm overflow-hidden">
+                        <div className="p-4 border-b border-slate-100 dark:border-white/[0.06] flex items-center justify-between">
                             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                                 {targetLanguage?.flag} {targetLanguage?.name}
                             </span>
@@ -307,7 +307,7 @@ export const TranslationPage = () => {
                             </AnimatePresence>
                         </div>
 
-                        <div className="p-4 border-t border-slate-100 dark:border-white/[0.06] dark:border-slate-700 flex items-center justify-between">
+                        <div className="p-4 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between">
                             <div className="flex items-center gap-1">
                                 {result?.translated_text && (
                                     <>
@@ -377,7 +377,7 @@ export const TranslationPage = () => {
                 </AnimatePresence>
 
                 {/* Quick Travel Phrases */}
-                <div className="bg-white dark:bg-white/[0.03] dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-white/[0.06] dark:border-slate-700 p-6 shadow-sm">
+                <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-slate-200 dark:border-white/[0.06] p-6 shadow-sm">
                     <div className="flex items-center gap-2 mb-4">
                         <MessageSquare className="w-4 h-4 text-indigo-500" />
                         <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 uppercase tracking-wider">Quick Travel Phrases</h3>
@@ -397,7 +397,7 @@ export const TranslationPage = () => {
 
                 {/* Translation History */}
                 {history.length > 0 && (
-                    <div className="bg-white dark:bg-white/[0.03] dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-white/[0.06] dark:border-slate-700 p-6 shadow-sm">
+                    <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-slate-200 dark:border-white/[0.06] p-6 shadow-sm">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 uppercase tracking-wider">Recent Translations</h3>
                             <button
