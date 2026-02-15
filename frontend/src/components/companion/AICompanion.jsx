@@ -122,9 +122,6 @@ const AICompanion = () => {
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
 
-    // Don't render on public pages (not logged in)
-    if (!isAuthenticated) return null;
-
     // Auto-scroll to bottom
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -153,6 +150,9 @@ const AICompanion = () => {
     const handleQuickAction = (text) => {
         sendMessage(text);
     };
+
+    // Don't render on public pages (not logged in) — MUST be after all hooks
+    if (!isAuthenticated) return null;
 
     return (
         <>
