@@ -8,6 +8,7 @@
 import { create } from 'zustand';
 import { routeMessage } from '../engine/intentRouter';
 import useItineraryStore from './itineraryStore';
+import { allocateBudget, reconcileBudget } from '../engine/budgetAllocator';
 
 // ── Groq API fallback ────────────────────────────────────────────────
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
@@ -44,6 +45,57 @@ async function callGroq(message, systemPrompt) {
     }
 }
 
+/**
+ * Re-derive allocation + reconciliation from trip data.
+ * This mirrors what AIControlCenter does so the Companion always has data.
+ */
+function deriveFromTrip(trip) {
+    if (!trip || !trip._hasSegments || !trip.budget) return { allocation: null, reconciliation: null };
+
+    try {
+        const totalDays = trip.days?.length || 1;
+        const totalNights = Math.max(0, totalDays - 1);
+
+        const allocation = allocateBudget(trip.budget, {
+            travelStyle: trip.travel_style || '',
+            budgetTier: trip.accommodation_preference || 'mid-range',
+            totalDays,
+            totalNights,
+            travelers: trip.travelers || 1,
+            hasOwnVehicle: trip.has_own_vehicle || false,
+        });
+
+        // Flatten segments from days
+        const allActivities = trip.days?.flatMap(d => d.activities || []) || [];
+        const flatSegments = allActivities.map(a => ({
+            type: a.segmentType || 'activity',
+            estimated_cost: a.estimated_cost || 0,
+        }));
+
+        // Deduct used from remaining
+        const categoryMap = {
+            intercity: ['outbound_travel', 'return_travel', 'intercity_travel'],
+            accommodation: ['accommodation'],
+            local_transport: ['local_transport'],
+            activity: ['activity', 'gem'],
+        };
+        for (const [cat, types] of Object.entries(categoryMap)) {
+            const used = flatSegments
+                .filter(s => types.includes(s.type))
+                .reduce((sum, s) => sum + (parseFloat(s.estimated_cost) || 0), 0);
+            if (allocation[`${cat}_remaining`] !== undefined) {
+                allocation[`${cat}_remaining`] = Math.max(0, allocation[cat] - Math.round(used));
+            }
+        }
+
+        const reconciliation = reconcileBudget(allocation, flatSegments);
+        return { allocation, reconciliation };
+    } catch (err) {
+        console.error('[Companion] Error deriving budget:', err);
+        return { allocation: null, reconciliation: null };
+    }
+}
+
 // ── Store ────────────────────────────────────────────────────────────
 
 const useCompanionStore = create((set, get) => ({
@@ -55,15 +107,25 @@ const useCompanionStore = create((set, get) => ({
     toggleOpen: () => set(state => ({ isOpen: !state.isOpen })),
     setOpen: (open) => set({ isOpen: open }),
 
-    // Build context from itineraryStore
+    // Build context from itineraryStore — re-derives budget if needed
     _getContext: () => {
         const itStore = useItineraryStore.getState();
         const trip = itStore.trips.find(t => t.id === itStore.currentTrip) || itStore.trips[0];
 
+        // Use store allocation if available (freshly generated), otherwise re-derive from trip
+        let allocation = itStore.allocation;
+        let reconciliation = itStore.reconciliation;
+
+        if (!allocation && trip) {
+            const derived = deriveFromTrip(trip);
+            allocation = derived.allocation;
+            reconciliation = derived.reconciliation;
+        }
+
         return {
-            allocation: itStore.allocation,
-            reconciliation: itStore.reconciliation,
-            dailySummary: itStore.dailySummary,
+            allocation,
+            reconciliation,
+            dailySummary: itStore.dailySummary || [],
             destination: trip?.destination || '',
             currentLocation: trip?.destination || '',
             currency: trip?.currency || 'USD',
