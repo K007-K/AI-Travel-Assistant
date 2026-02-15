@@ -148,7 +148,7 @@ const Bookings = () => {
                 <motion.div
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    className="bg-white dark:bg-white/[0.03] rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-black/30 border border-slate-100 dark:border-slate-700 overflow-hidden"
+                    className="bg-white dark:bg-[#141414] rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-black/30 border border-slate-100 dark:border-white/[0.06] overflow-hidden"
                 >
                     {/* Tabs */}
                     <div className="flex border-b border-slate-100 dark:border-slate-700">
