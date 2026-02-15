@@ -93,7 +93,6 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
             if (!form.travel_style) e.travel_style = 'Choose a travel style';
             if (!form.start_location.trim()) e.start_location = 'Start location is required';
             if (form.segments.some(seg => !seg.location.trim())) e.segments = 'All destinations must be filled';
-            if (!form.startDate) e.startDate = 'Start date is required';
         }
         if (s === 2) {
             if (!form.budget || parseFloat(form.budget) <= 0) e.budget = 'Budget must be greater than 0';
@@ -111,9 +110,15 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
         if (!validateStep(2)) return;
 
         const totalDuration = form.segments.reduce((s, seg) => s + seg.days, 0);
-        const start = new Date(form.startDate);
-        const end = new Date(start);
-        end.setDate(start.getDate() + totalDuration - 1);
+
+        let startDate = form.startDate || null;
+        let endDate = null;
+        if (startDate) {
+            const start = new Date(startDate);
+            const end = new Date(start);
+            end.setDate(start.getDate() + totalDuration - 1);
+            endDate = end.toISOString();
+        }
 
         onSubmit({
             title: form.title.trim(),
@@ -121,8 +126,8 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
             start_location: form.start_location.trim(),
             return_location: form.return_same ? form.start_location.trim() : form.return_location.trim(),
             segments: form.segments,
-            startDate: form.startDate,
-            endDate: end.toISOString(),
+            startDate,
+            endDate,
             duration: totalDuration,
             destination: form.segments[0].location,
             travelers: form.travelers,
