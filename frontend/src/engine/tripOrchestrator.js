@@ -399,7 +399,7 @@ export async function orchestrateTrip(trip, callbacks = {}) {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // PHASE 2: Outbound Travel
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    onPhase?.(2, 'Outbound Travel');
+    onPhase?.(2, 'Outbound + Intercity Travel');
 
     const outbound = buildOutboundSegment(trip, allocation, currencyRate);
     if (outbound) {
@@ -600,11 +600,42 @@ export async function orchestrateTrip(trip, callbacks = {}) {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     onPhase?.(10, 'Budget Reconciliation');
 
-    const reconciliation = reconcileBudget(allocation, allSegments);
+    let reconciliation = reconcileBudget(allocation, allSegments);
+
+    // Auto-correct: if overshoot detected, progressively trim non-essential segments
+    if (!reconciliation.balanced && reconciliation.overshoot > 0) {
+        console.warn(
+            `[Orchestrator] Phase 10 — Budget overshoot detected: ${reconciliation.overshoot} ${currency}. Auto-correcting...`
+        );
+
+        // Trimmable types in priority order (least essential first)
+        const trimmableTypes = ['local_transport', 'activity'];
+        let remaining = reconciliation.overshoot;
+
+        for (const type of trimmableTypes) {
+            if (remaining <= 0) break;
+
+            // Find segments of this type, sorted cheapest first (trim small ones first)
+            const candidates = allSegments
+                .filter(s => s.type === type)
+                .sort((a, b) => (a.estimated_cost || 0) - (b.estimated_cost || 0));
+
+            for (const seg of candidates) {
+                if (remaining <= 0) break;
+                remaining -= (seg.estimated_cost || 0);
+                const idx = allSegments.indexOf(seg);
+                if (idx !== -1) allSegments.splice(idx, 1);
+            }
+        }
+
+        // Re-reconcile after auto-correction
+        reconciliation = reconcileBudget(allocation, allSegments);
+        console.log(`[Orchestrator] Phase 10 — After auto-correction: balanced=${reconciliation.balanced}, total=${reconciliation.total}`);
+    }
 
     if (!reconciliation.balanced) {
         console.warn(
-            `[Orchestrator] Phase 10 — Budget ISSUE: overshoot=${reconciliation.overshoot} ${currency}, violations=`,
+            `[Orchestrator] Phase 10 — Budget ISSUE (post-correction): overshoot=${reconciliation.overshoot} ${currency}, violations=`,
             reconciliation.category_violations
         );
     } else {

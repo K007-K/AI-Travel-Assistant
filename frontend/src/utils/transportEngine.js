@@ -613,6 +613,10 @@ export function buildAccommodationSegments(trip, allocation, currencyRate, dayLo
             ? allocation.accommodation_per_night
             : calculateAccommodationCost(accomPref, currency);
 
+        // Guard: skip if accommodation envelope is exhausted
+        const accomRemaining = allocation?.accommodation_remaining ?? Infinity;
+        if (accomRemaining <= 0) continue;
+
         // Fix Group 2: Deduct from accommodation envelope
         if (allocation?.accommodation_remaining !== undefined) {
             allocation.accommodation_remaining = Math.max(0, allocation.accommodation_remaining - nightCost);
@@ -728,6 +732,10 @@ export function insertPairwiseLocalTransport(activities, tripId, dayNumber, budg
         }
 
         if (distKm > 2) {
+            // Guard: skip if local transport envelope is exhausted
+            const localRemaining = allocation?.local_transport_remaining ?? Infinity;
+            if (localRemaining <= 0) continue;
+
             const cost = calculateLocalTripCost(distKm, budgetTier, currency);
 
             // Fix Group 2: Deduct from local_transport envelope
