@@ -4,6 +4,70 @@ import { generateTransportSegments, CURRENCY_MULTIPLIERS } from '../utils/transp
 import { orchestrateTrip } from '../engine/tripOrchestrator';
 import { generateAllBookingSuggestions } from '../engine/bookingSuggestionEngine';
 
+// ── Time Scheduling Utilities ────────────────────────────────────────
+
+function timeToMinutes(t) {
+    const [h, m] = (t || '09:00').split(':').map(Number);
+    return h * 60 + m;
+}
+
+function minutesToTime(mins) {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+/**
+ * Redistribute activity times evenly across the day window.
+ * Only affects non-logistics activities (transport/accommodation keep their times).
+ * Persists updated times to the database.
+ *
+ * @param {object[]} activities — All activities for the day
+ * @param {string} dayStart — Day window start (default '08:00')
+ * @param {string} dayEnd — Day window end (default '20:00')
+ * @param {boolean} persist — If true, persist time changes to DB
+ * @returns {object[]} Activities with redistributed times
+ */
+async function redistributeTimes(activities, dayStart = '08:00', dayEnd = '20:00', persist = true) {
+    const schedulable = activities.filter(a => !a.isLogistics);
+    const logistics = activities.filter(a => a.isLogistics);
+
+    if (schedulable.length === 0) return activities;
+
+    const startMin = timeToMinutes(dayStart);
+    const endMin = timeToMinutes(dayEnd);
+    const totalWindow = endMin - startMin;
+    const gap = Math.floor(totalWindow / Math.max(schedulable.length, 1));
+
+    // Assign evenly spaced times
+    schedulable.forEach((act, i) => {
+        act.time = minutesToTime(startMin + (i * gap));
+    });
+
+    // Persist to DB if requested
+    if (persist) {
+        const updates = schedulable.map(act =>
+            supabase
+                .from('trip_segments')
+                .select('metadata')
+                .eq('id', act.id)
+                .single()
+                .then(({ data: seg }) =>
+                    supabase
+                        .from('trip_segments')
+                        .update({ metadata: { ...(seg?.metadata || {}), time: act.time } })
+                        .eq('id', act.id)
+                )
+        );
+        await Promise.all(updates);
+    }
+
+    // Return merged and sorted by time
+    return [...logistics, ...schedulable].sort((a, b) =>
+        timeToMinutes(a.time || '09:00') - timeToMinutes(b.time || '09:00')
+    );
+}
+
 // ── Rule 5: Strict Budget Guard ──────────────────────────────────────
 
 /**
@@ -545,7 +609,7 @@ const useItineraryStore = create((set, get) => ({
             .eq('day_number', dayNumber)
             .eq('title', '__placeholder__');
 
-        // Optimistic UI update
+        // Build new activity object
         const newActivity = {
             id: inserted.id,
             title: activity.title,
@@ -559,6 +623,11 @@ const useItineraryStore = create((set, get) => ({
             rating: 0,
         };
 
+        // Redistribute all activities (including new one) evenly across the day
+        const allActivities = [...(day?.activities || []), newActivity];
+        const redistributed = await redistributeTimes(allActivities);
+
+        // Optimistic UI update with redistributed times
         set(state => ({
             trips: state.trips.map(t => {
                 if (t.id !== tripId) return t;
@@ -566,7 +635,7 @@ const useItineraryStore = create((set, get) => ({
                     ...t,
                     days: t.days.map(d => {
                         if (d.id !== dayId) return d;
-                        return { ...d, activities: [...d.activities, newActivity] };
+                        return { ...d, activities: redistributed };
                     }),
                 };
             }),
@@ -768,7 +837,14 @@ const useItineraryStore = create((set, get) => ({
             return;
         }
 
-        // Optimistic UI update
+        // Get remaining activities and redistribute times
+        const store = get();
+        const trip = store.trips.find(t => t.id === tripId);
+        const day = trip?.days?.find(d => d.id === dayId);
+        const remaining = (day?.activities || []).filter(a => a.id !== activityId);
+        const redistributed = await redistributeTimes(remaining);
+
+        // Optimistic UI update with redistributed times
         set(state => ({
             trips: state.trips.map(t => {
                 if (t.id !== tripId) return t;
@@ -778,7 +854,7 @@ const useItineraryStore = create((set, get) => ({
                         if (d.id !== dayId) return d;
                         return {
                             ...d,
-                            activities: d.activities.filter(a => a.id !== activityId),
+                            activities: redistributed,
                         };
                     }),
                 };
