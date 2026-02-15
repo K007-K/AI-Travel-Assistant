@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     User, Mail, Phone, Save, CreditCard, Plane, Hotel, Train,
-    Moon, Sun, Monitor, Shield, MapPin, FileText, Globe,
+    Moon, Sun, Monitor, Shield, MapPin, Globe,
     Loader, Trash2, AlertTriangle, Check, Eye, EyeOff, Lock,
     DollarSign, Palette
 } from 'lucide-react';
@@ -32,7 +32,6 @@ const Settings = () => {
         email: user?.email || '',
         mobile: authProfile?.mobile || '',
         location: authProfile?.location || '',
-        bio: authProfile?.bio || '',
         travel_style: authProfile?.website || '',
     });
 
@@ -64,7 +63,6 @@ const Settings = () => {
                 name: authProfile.full_name || prev.name,
                 mobile: authProfile.mobile || prev.mobile,
                 location: authProfile.location || prev.location,
-                bio: authProfile.bio || prev.bio,
                 travel_style: authProfile.website || prev.travel_style,
             }));
         }
@@ -108,7 +106,6 @@ const Settings = () => {
                 full_name: profile.name,
                 mobile: profile.mobile,
                 location: profile.location,
-                bio: profile.bio,
                 website: profile.travel_style,
             });
             setIsEditing(false);
@@ -303,16 +300,7 @@ const Settings = () => {
                                                 className={inputClass} placeholder="Adventure, Budget, Luxury..." />
                                         </div>
                                     </div>
-                                    <div className="space-y-2 md:col-span-2">
-                                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Bio</label>
-                                        <div className="relative">
-                                            <FileText className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
-                                            <textarea disabled={!isEditing} value={profile.bio}
-                                                onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                                                rows={3} className={`${inputClass} resize-none`}
-                                                placeholder="Tell us about your travel dreams..." />
-                                        </div>
-                                    </div>
+
                                     <div className="space-y-2 md:col-span-2">
                                         <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Email Address</label>
                                         <div className="relative">
