@@ -177,8 +177,8 @@ const MyBookings = () => {
     };
 
     return (
-        <div className="min-h-screen pt-24 pb-12 bg-slate-50 dark:bg-[#0a0a0a] px-4 transition-colors duration-300">
-            <div className="container-custom max-w-5xl">
+        <div className="min-h-screen pt-28 pb-16 bg-slate-50 dark:bg-[#0a0a0a] px-6 md:px-8 transition-colors duration-300">
+            <div className="max-w-6xl mx-auto">
                 <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
                     <div>
                         <h1 className="text-3xl font-bold font-display text-slate-900 dark:text-slate-100 mb-2">My Bookings</h1>
