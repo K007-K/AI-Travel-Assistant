@@ -22,8 +22,8 @@ const Navbar = () => {
     const { user, profile, logout } = useAuthStore();
     const location = useLocation();
     const navRef = useRef(null);
-    const { theme, setTheme } = useTheme();
-    const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const { theme, resolvedTheme, setTheme } = useTheme();
+    const isDark = resolvedTheme === 'dark';
 
     // ── Dynamic: detect if the background behind the navbar is dark ──
     const isOverDark = useBackgroundBrightness(navRef);

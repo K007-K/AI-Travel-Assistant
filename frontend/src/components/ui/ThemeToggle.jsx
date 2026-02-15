@@ -3,10 +3,11 @@ import { useTheme } from '../../providers/ThemeProvider';
 import { motion } from 'framer-motion';
 
 const ThemeToggle = () => {
-    const { theme, setTheme } = useTheme();
+    const { resolvedTheme, setTheme } = useTheme();
+    const isDark = resolvedTheme === 'dark';
 
     const toggleTheme = () => {
-        setTheme(theme === 'dark' ? 'light' : 'dark');
+        setTheme(isDark ? 'light' : 'dark');
     };
 
     return (
@@ -19,10 +20,10 @@ const ThemeToggle = () => {
         >
             <motion.div
                 initial={false}
-                animate={{ rotate: theme === 'dark' ? 180 : 0 }}
+                animate={{ rotate: isDark ? 180 : 0 }}
                 transition={{ duration: 0.3 }}
             >
-                {theme === 'dark' ? (
+                {isDark ? (
                     <Moon className="w-5 h-5 text-slate-100" />
                 ) : (
                     <Sun className="w-5 h-5 text-slate-900" />

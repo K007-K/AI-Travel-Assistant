@@ -23,8 +23,8 @@ const CATEGORIES = [
 const CATEGORY_COLORS = Object.fromEntries(CATEGORIES.map(c => [c.id, c.color]));
 
 const Budget = () => {
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
+    const { resolvedTheme } = useTheme();
+    const isDark = resolvedTheme === 'dark';
     const {
         costEvents, budgetSummary, addExpense, deleteExpense,
         fetchCostEvents, fetchBudgetSummary, currency: globalCurrency

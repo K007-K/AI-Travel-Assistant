@@ -2,8 +2,13 @@ import { createContext, useContext, useEffect, useState } from "react";
 
 const ThemeProviderContext = createContext({
     theme: "system",
+    resolvedTheme: "light",
     setTheme: () => null,
 });
+
+function getSystemTheme() {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
 
 export function ThemeProvider({
     children,
@@ -11,40 +16,55 @@ export function ThemeProvider({
     storageKey = "vite-ui-theme",
     ...props
 }) {
-    const [theme, setTheme] = useState(
+    const [theme, setThemeState] = useState(
         () => localStorage.getItem(storageKey) || defaultTheme
     );
+    const [resolvedTheme, setResolvedTheme] = useState(
+        () => (localStorage.getItem(storageKey) || defaultTheme) === "system" ? getSystemTheme() : (localStorage.getItem(storageKey) || defaultTheme)
+    );
 
+    // Apply theme class to <html> and listen for OS changes when in "system" mode
     useEffect(() => {
         const root = window.document.documentElement;
 
-        // Add transition class for smooth theme switch
-        root.classList.add("theme-transition");
+        const applyTheme = (resolved) => {
+            root.classList.add("theme-transition");
+            root.classList.remove("light", "dark");
+            root.classList.add(resolved);
+            setResolvedTheme(resolved);
+            const timeout = setTimeout(() => root.classList.remove("theme-transition"), 350);
+            return timeout;
+        };
 
-        root.classList.remove("light", "dark");
-
+        let timeout;
         if (theme === "system") {
-            const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-                .matches
-                ? "dark"
-                : "light";
+            timeout = applyTheme(getSystemTheme());
 
-            root.classList.add(systemTheme);
+            // Listen for real-time OS theme changes
+            const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+            const handleChange = (e) => {
+                applyTheme(e.matches ? "dark" : "light");
+            };
+            mediaQuery.addEventListener("change", handleChange);
+            return () => {
+                clearTimeout(timeout);
+                mediaQuery.removeEventListener("change", handleChange);
+            };
         } else {
-            root.classList.add(theme);
+            timeout = applyTheme(theme);
+            return () => clearTimeout(timeout);
         }
-
-        // Remove transition class after animation completes
-        const timeout = setTimeout(() => root.classList.remove("theme-transition"), 350);
-        return () => clearTimeout(timeout);
     }, [theme]);
 
+    const setTheme = (newTheme) => {
+        localStorage.setItem(storageKey, newTheme);
+        setThemeState(newTheme);
+    };
+
     const value = {
-        theme,
-        setTheme: (theme) => {
-            localStorage.setItem(storageKey, theme);
-            setTheme(theme);
-        },
+        theme,           // raw preference: "light" | "dark" | "system"
+        resolvedTheme,   // actual applied: "light" | "dark"
+        setTheme,
     };
 
     return (
