@@ -308,7 +308,7 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-semibold text-foreground mb-2">
-                                        <Calendar className="w-4 h-4 inline mr-1" />Start Date <span className="text-red-500">*</span>
+                                        <Calendar className="w-4 h-4 inline mr-1" />Start Date
                                     </label>
                                     <input
                                         type="date"
