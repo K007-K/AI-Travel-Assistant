@@ -6,6 +6,7 @@ import {
     AlertTriangle, ChevronDown
 } from 'lucide-react';
 import useCompanionStore from '../../store/companionStore';
+import useAuthStore from '../../store/authStore';
 
 // ── Intent badge colors ──────────────────────────────────────────────
 const INTENT_STYLES = {
@@ -50,8 +51,8 @@ const MessageBubble = ({ message }) => {
         >
             {/* Avatar */}
             <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-1 ${isUser
-                    ? 'bg-blue-600'
-                    : 'bg-gradient-to-br from-violet-500 to-indigo-600'
+                ? 'bg-blue-600'
+                : 'bg-gradient-to-br from-violet-500 to-indigo-600'
                 }`}>
                 {isUser
                     ? <User className="w-3.5 h-3.5 text-white" />
@@ -71,10 +72,10 @@ const MessageBubble = ({ message }) => {
 
                 {/* Bubble */}
                 <div className={`px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed ${isUser
-                        ? 'bg-blue-600 text-white rounded-br-md'
-                        : message.type === 'emergency'
-                            ? 'bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-900 dark:text-red-200 rounded-bl-md'
-                            : 'bg-white dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-slate-200 rounded-bl-md'
+                    ? 'bg-blue-600 text-white rounded-br-md'
+                    : message.type === 'emergency'
+                        ? 'bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-900 dark:text-red-200 rounded-bl-md'
+                        : 'bg-white dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-slate-200 rounded-bl-md'
                     }`}>
                     <div dangerouslySetInnerHTML={{ __html: formatText(message.text) }} />
                 </div>
@@ -116,9 +117,13 @@ const TypingIndicator = () => (
 // ── Main Companion Component ─────────────────────────────────────────
 const AICompanion = () => {
     const { messages, isProcessing, isOpen, toggleOpen, sendMessage, clearMessages } = useCompanionStore();
+    const isAuthenticated = useAuthStore(s => s.isAuthenticated);
     const [input, setInput] = useState('');
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
+
+    // Don't render on public pages (not logged in)
+    if (!isAuthenticated) return null;
 
     // Auto-scroll to bottom
     useEffect(() => {

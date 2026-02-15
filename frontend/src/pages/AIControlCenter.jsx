@@ -9,6 +9,7 @@ import {
     CircleDollarSign, Layers, Shield, Gauge, Zap
 } from 'lucide-react';
 import useItineraryStore from '../store/itineraryStore';
+import { allocateBudget, reconcileBudget } from '../engine/budgetAllocator';
 
 // ── Envelope category config ─────────────────────────────────────────
 const ENVELOPE_CONFIG = [
@@ -192,29 +193,146 @@ const DecisionCard = ({ segment }) => {
 
 // ── Main Component ───────────────────────────────────────────────────
 const AIControlCenter = () => {
-    const { trips, currentTrip, allocation, reconciliation, dailySummary } = useItineraryStore();
-    const trip = trips.find(t => t.id === currentTrip) || trips[0];
+    const { trips, currentTrip, fetchTrips } = useItineraryStore();
+    const [selectedTripId, setSelectedTripId] = useState(currentTrip || null);
+    const [allocation, setAllocation] = useState(null);
+    const [reconciliation, setReconciliation] = useState(null);
+    const [dailySummary, setDailySummary] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Pick the selected trip object
+    const trip = trips.find(t => t.id === selectedTripId) || trips[0];
     const currency = trip?.currency || 'USD';
 
-    // Gather logistics segments for decision logs
+    // Fetch trips on mount if not already loaded
+    useEffect(() => {
+        if (trips.length === 0) {
+            fetchTrips();
+        }
+    }, [trips.length, fetchTrips]);
+
+    // Auto-select first trip when trips load
+    useEffect(() => {
+        if (!selectedTripId && trips.length > 0) {
+            setSelectedTripId(trips[0].id);
+        }
+    }, [trips, selectedTripId]);
+
+    // Re-derive allocation + reconciliation when trip changes
+    useEffect(() => {
+        if (!trip || !trip._hasSegments) {
+            setAllocation(null);
+            setReconciliation(null);
+            setDailySummary([]);
+            setIsLoading(false);
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            // 1. Re-derive allocation from trip params (deterministic)
+            const totalDays = trip.days?.length || 1;
+            const totalNights = Math.max(0, totalDays - 1);
+            const budgetTier = trip.accommodation_preference || 'mid-range';
+
+            const derivedAllocation = allocateBudget(trip.budget || 0, {
+                travelStyle: trip.travel_style || '',
+                budgetTier,
+                totalDays,
+                totalNights,
+                travelers: trip.travelers || 1,
+                hasOwnVehicle: trip.has_own_vehicle || false,
+            });
+
+            // 2. Flatten segments from trip.days to compute reconciliation
+            const allActivities = trip.days?.flatMap(d => d.activities || []) || [];
+            const flatSegments = allActivities.map(a => ({
+                type: a.segmentType || 'activity',
+                estimated_cost: a.estimated_cost || 0,
+                title: a.title,
+                day_number: 0,
+                metadata: {
+                    transport_mode: a.transportMode,
+                },
+            }));
+
+            // Deduct used amounts from remaining envelopes
+            const categoryMap = {
+                intercity: ['outbound_travel', 'return_travel', 'intercity_travel'],
+                accommodation: ['accommodation'],
+                local_transport: ['local_transport'],
+                activity: ['activity', 'gem'],
+            };
+
+            for (const [category, types] of Object.entries(categoryMap)) {
+                const used = flatSegments
+                    .filter(s => types.includes(s.type))
+                    .reduce((sum, s) => sum + (parseFloat(s.estimated_cost) || 0), 0);
+                if (derivedAllocation[`${category}_remaining`] !== undefined) {
+                    derivedAllocation[`${category}_remaining`] = Math.max(0, derivedAllocation[category] - Math.round(used));
+                }
+            }
+
+            // 3. Reconcile
+            const derivedReconciliation = reconcileBudget(derivedAllocation, flatSegments);
+
+            // 4. Build daily summary from days
+            const summary = (trip.days || []).map(day => {
+                const acts = day.activities || [];
+                const activityCost = acts
+                    .filter(a => a.segmentType === 'activity' || a.segmentType === 'gem' || (!a.isLogistics && !['outbound_travel', 'return_travel', 'intercity_travel', 'accommodation', 'local_transport'].includes(a.segmentType)))
+                    .reduce((s, a) => s + (a.estimated_cost || 0), 0);
+                const travelCost = acts
+                    .filter(a => ['outbound_travel', 'return_travel', 'intercity_travel'].includes(a.segmentType))
+                    .reduce((s, a) => s + (a.estimated_cost || 0), 0);
+                const stayCost = acts
+                    .filter(a => a.segmentType === 'accommodation')
+                    .reduce((s, a) => s + (a.estimated_cost || 0), 0);
+                const localCost = acts
+                    .filter(a => a.segmentType === 'local_transport')
+                    .reduce((s, a) => s + (a.estimated_cost || 0), 0);
+
+                return {
+                    day_number: day.dayNumber,
+                    location: day.location,
+                    activity_cost: Math.round(activityCost),
+                    travel_cost: Math.round(travelCost),
+                    stay_cost: Math.round(stayCost),
+                    local_transport_cost: Math.round(localCost),
+                    total_day_cost: Math.round(activityCost + travelCost + stayCost + localCost),
+                };
+            });
+
+            setAllocation(derivedAllocation);
+            setReconciliation(derivedReconciliation);
+            setDailySummary(summary);
+        } catch (err) {
+            console.error('[AIControlCenter] Error deriving data:', err);
+            setAllocation(null);
+            setReconciliation(null);
+            setDailySummary([]);
+        }
+
+        setIsLoading(false);
+    }, [trip?.id, trip?._hasSegments]);
+
+    // Gather transport segments for decision logs from trip.days
     const logisticsTypes = ['outbound_travel', 'return_travel', 'intercity_travel'];
     const allActivities = trip?.days?.flatMap(d => d.activities || []) || [];
-    const logisticsSegments = allActivities.filter(a => logisticsTypes.includes(a.logistics?.segmentType));
-
-    // Also get raw segments from trip if available
     const rawSegments = allActivities
-        .filter(a => a.logistics?.segmentType && logisticsTypes.includes(a.logistics.segmentType))
+        .filter(a => logisticsTypes.includes(a.segmentType))
         .map(a => ({
             title: a.title,
             estimated_cost: a.estimated_cost,
-            type: a.logistics?.segmentType,
+            type: a.segmentType,
             metadata: {
-                transport_mode: a.logistics?.transportMode,
-                from: a.logistics?.from,
-                to: a.logistics?.to,
-                distance_tier: a.logistics?.distanceTier,
-                per_person: a.logistics?.perPerson,
-                adjusted_for_budget: a.logistics?.adjustedForBudget,
+                transport_mode: a.transportMode,
+                from: a.location,
+                to: a.notes || '',
+                distance_tier: a.transportMode || '',
+                per_person: a.estimated_cost ? Math.round(a.estimated_cost / (trip?.travelers || 1)) : 0,
+                adjusted_for_budget: false,
             }
         }));
 
@@ -254,7 +372,6 @@ const AIControlCenter = () => {
             </div>
 
             <div className="pt-10 px-6 max-w-7xl mx-auto">
-                {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -271,10 +388,35 @@ const AIControlCenter = () => {
                     <p className="text-slate-500 dark:text-slate-400 text-lg ml-[52px]">
                         Engine governance dashboard — real-time orchestration intelligence
                     </p>
+
+                    {/* Trip Selector */}
+                    {trips.length > 1 && (
+                        <div className="mt-4 ml-[52px]">
+                            <select
+                                value={selectedTripId || ''}
+                                onChange={(e) => setSelectedTripId(e.target.value)}
+                                className="bg-white dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] rounded-xl px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all cursor-pointer min-w-[250px]"
+                            >
+                                {trips.map(t => (
+                                    <option key={t.id} value={t.id}>
+                                        {t.name || t.destination || 'Untitled Trip'} {t._hasSegments ? '✓' : '(no itinerary)'}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                 </motion.div>
 
-                {/* No trip state */}
-                {!allocation && (
+                {/* Loading state */}
+                {isLoading && (
+                    <div className="text-center py-20">
+                        <div className="w-12 h-12 rounded-full border-3 border-blue-200 border-t-blue-600 animate-spin mx-auto mb-4" />
+                        <p className="text-sm text-slate-400">Loading orchestration data...</p>
+                    </div>
+                )}
+
+                {/* No trip / no generated itinerary state */}
+                {!isLoading && !allocation && (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -282,8 +424,15 @@ const AIControlCenter = () => {
                     >
                         <div className="p-6 rounded-2xl bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.06] max-w-md mx-auto">
                             <Gauge className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-                            <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-2">No Orchestration Data</h3>
-                            <p className="text-sm text-slate-400 mb-6">Generate an itinerary first to see engine intelligence here.</p>
+                            <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-2">
+                                {trips.length === 0 ? 'No Trips Found' : 'No Itinerary Generated'}
+                            </h3>
+                            <p className="text-sm text-slate-400 mb-6">
+                                {trips.length === 0
+                                    ? 'Create a trip first, then generate an itinerary.'
+                                    : `Trip "${trip?.name || trip?.destination || 'Selected trip'}" doesn't have a generated itinerary yet.`
+                                }
+                            </p>
                             <Link
                                 to="/itinerary"
                                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors"
@@ -294,7 +443,7 @@ const AIControlCenter = () => {
                     </motion.div>
                 )}
 
-                {allocation && (
+                {!isLoading && allocation && (
                     <div className="space-y-8">
                         {/* Budget Overview Stats */}
                         <motion.div
