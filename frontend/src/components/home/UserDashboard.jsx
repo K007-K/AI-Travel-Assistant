@@ -171,7 +171,10 @@ const UserDashboard = () => {
 
 // Sub-component for Explore Cards
 const ExploreCard = ({ title, subtitle, image }) => (
-    <div className="group relative h-64 rounded-3xl overflow-hidden cursor-pointer shadow-md hover:shadow-xl transition-all duration-500">
+    <Link
+        to={`/itinerary?destination=${encodeURIComponent(title.split(',')[0].trim())}`}
+        className="group relative h-64 rounded-3xl overflow-hidden cursor-pointer shadow-md hover:shadow-xl transition-all duration-500 block"
+    >
         <img
             src={image}
             alt={title}
@@ -182,7 +185,7 @@ const ExploreCard = ({ title, subtitle, image }) => (
             <h3 className="text-white font-bold text-lg mb-1">{title}</h3>
             <p className="text-white/80 text-sm font-medium">{subtitle}</p>
         </div>
-    </div>
+    </Link>
 );
 
 export default UserDashboard;
