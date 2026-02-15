@@ -698,6 +698,7 @@ export function generateTransportSegments(trip) {
 export function insertPairwiseLocalTransport(activities, tripId, dayNumber, budgetTier, currency, allocation) {
     const localSegments = [];
     const FALLBACK_DISTANCE_KM = 5; // Used when one activity lacks coordinates
+    const MAX_LOCAL_DISTANCE_KM = 50; // Same-day activities can't be >50km apart
 
     for (let i = 0; i < activities.length - 1; i++) {
         const a = activities[i];
@@ -708,7 +709,7 @@ export function insertPairwiseLocalTransport(activities, tripId, dayNumber, budg
         const aFailed = a.metadata?.geocode_failed;
         const bFailed = b.metadata?.geocode_failed;
 
-        // Fix Group 1: Skip ONLY when BOTH activities have geocode_failed
+        // Skip when BOTH activities have geocode_failed
         if (aFailed && bFailed) continue;
 
         let distKm;
@@ -717,6 +718,10 @@ export function insertPairwiseLocalTransport(activities, tripId, dayNumber, budg
                 parseFloat(a.latitude), parseFloat(a.longitude),
                 parseFloat(b.latitude), parseFloat(b.longitude)
             );
+            // Cap: same-day activities realistically can't be >50km apart
+            if (distKm > MAX_LOCAL_DISTANCE_KM) {
+                distKm = FALLBACK_DISTANCE_KM;
+            }
         } else {
             // One has coordinates, one doesn't — use fallback distance
             distKm = FALLBACK_DISTANCE_KM;

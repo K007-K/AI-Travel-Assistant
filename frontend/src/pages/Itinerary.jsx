@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Calendar, MapPin, ArrowRight, Trash2, Clock, CheckCircle2, Pin, X } from 'lucide-react';
 import useItineraryStore from '../store/itineraryStore';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { getFallbackImage, loadDestinationImage } from '../utils/destinationImages';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
@@ -35,7 +35,19 @@ const Itinerary = () => {
     const [isCreating, setIsCreating] = useState(false);
     const [tripToDelete, setTripToDelete] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [selectedTrips, setSelectedTrips] = useState(new Set()); // Set of IDs
+    const [selectedTrips, setSelectedTrips] = useState(new Set());
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [initialDestination, setInitialDestination] = useState(null);
+
+    // Auto-open create form if ?destination= query param is present
+    useEffect(() => {
+        const dest = searchParams.get('destination');
+        if (dest) {
+            setInitialDestination(dest);
+            setIsCreating(true);
+            setSearchParams({}, { replace: true });
+        }
+    }, [searchParams, setSearchParams]);
 
     const toggleSelection = (id) => {
         const newSelected = new Set(selectedTrips);
@@ -295,7 +307,8 @@ const Itinerary = () => {
                             >
                                 <CreateTripForm
                                     onSubmit={handleTripSubmit}
-                                    onCancel={() => setIsCreating(false)}
+                                    onCancel={() => { setIsCreating(false); setInitialDestination(null); }}
+                                    initialDestination={initialDestination}
                                 />
                             </motion.div>
                         </div>

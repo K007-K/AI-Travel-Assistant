@@ -38,24 +38,24 @@ const VEHICLE_OPTS = [
     { id: 'bike', label: 'Bike', icon: Bike },
 ];
 
-const CreateTripForm = ({ onSubmit, onCancel }) => {
+const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
     const [step, setStep] = useState(0); // 0: Basics, 1: Constraints, 2: Budget
     const [errors, setErrors] = useState({});
 
     const [form, setForm] = useState({
-        title: '',
+        title: initialDestination ? `Trip to ${initialDestination}` : '',
         travel_style: '',
         start_location: '',
         return_location: '',
         return_same: true,
-        segments: [{ location: '', days: 3 }],
+        segments: [{ location: initialDestination || '', days: 3 }],
         startDate: '',
         travelers: 1,
         travel_preference: 'any',
         accommodation_preference: 'mid-range',
         own_vehicle_type: 'none',
         budget: '',
-        currency: 'USD',
+        currency: initialDestination ? getCurrencyForDestination(initialDestination) : 'USD',
     });
 
     const update = (key, val) => {

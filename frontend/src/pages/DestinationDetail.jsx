@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { getDestinationById } from '../api/places';
 import { loadDestinationImage, getFallbackImage } from '../utils/destinationImages';
-import BudgetSelectionModal from '../components/ui/BudgetSelectionModal';
+
 
 /* ─── Reusable section wrapper ──────────────────────────────────── */
 const Section = ({ icon: Icon, title, children, delay = 0 }) => (
@@ -132,7 +132,7 @@ export default function DestinationDetail() {
     const dest = getDestinationById(id);
 
     const [heroImg, setHeroImg] = useState(null);
-    const [isBudgetOpen, setIsBudgetOpen] = useState(false);
+
     const [liked, setLiked] = useState(false);
 
     const heroRef = useRef(null);
@@ -314,7 +314,7 @@ export default function DestinationDetail() {
                                 Let our AI craft your perfect itinerary — with accommodation, activities, and budget tailored to your style.
                             </p>
                             <button
-                                onClick={() => setIsBudgetOpen(true)}
+                                onClick={() => navigate(`/itinerary?destination=${encodeURIComponent(dest.name)}`)}
                                 className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-white text-primary-700 rounded-2xl font-bold text-base shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
                             >
                                 <Plane className="w-5 h-5" />
@@ -326,12 +326,7 @@ export default function DestinationDetail() {
                 </motion.div>
             </div>
 
-            {/* Budget Modal */}
-            <BudgetSelectionModal
-                isOpen={isBudgetOpen}
-                onClose={() => setIsBudgetOpen(false)}
-                destination={dest}
-            />
+
         </div>
     );
 }

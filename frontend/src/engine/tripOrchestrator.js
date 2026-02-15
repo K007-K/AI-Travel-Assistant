@@ -41,93 +41,122 @@ import {
 } from '../utils/transportEngine.js';
 import { generateTripPlan, getHiddenGems } from '../api/groq.js';
 
-// ── Deterministic Geocoder (Phase 4c) ────────────────────────────────
+// ── Geocoder (Phase 4c) — Nominatim API + local cache ────────────────
+
+// In-memory cache for the current session
+const _geocodeMemCache = {};
+
+// localStorage cache helpers (30-day TTL)
+const GEO_CACHE_KEY = 'geocode_cache_v1';
+function _getGeoCache() {
+    try {
+        const raw = localStorage.getItem(GEO_CACHE_KEY);
+        if (!raw) return {};
+        const parsed = JSON.parse(raw);
+        // Purge entries older than 30 days
+        const now = Date.now();
+        const TTL = 30 * 24 * 60 * 60 * 1000;
+        for (const key of Object.keys(parsed)) {
+            if (now - (parsed[key]?.ts || 0) > TTL) delete parsed[key];
+        }
+        return parsed;
+    } catch { return {}; }
+}
+function _setGeoCache(key, coords) {
+    try {
+        const cache = _getGeoCache();
+        cache[key] = { ...coords, ts: Date.now() };
+        localStorage.setItem(GEO_CACHE_KEY, JSON.stringify(cache));
+    } catch { /* quota exceeded — ignore */ }
+}
+
+// Common cities for instant (no-network) lookups
+const KNOWN_CITIES = {
+    'paris': { latitude: 48.8566, longitude: 2.3522 },
+    'london': { latitude: 51.5074, longitude: -0.1278 },
+    'new york': { latitude: 40.7128, longitude: -74.0060 },
+    'tokyo': { latitude: 35.6762, longitude: 139.6503 },
+    'dubai': { latitude: 25.2048, longitude: 55.2708 },
+    'mumbai': { latitude: 19.0760, longitude: 72.8777 },
+    'delhi': { latitude: 28.6139, longitude: 77.2090 },
+    'new delhi': { latitude: 28.6139, longitude: 77.2090 },
+    'bangalore': { latitude: 12.9716, longitude: 77.5946 },
+    'bengaluru': { latitude: 12.9716, longitude: 77.5946 },
+    'hyderabad': { latitude: 17.3850, longitude: 78.4867 },
+    'chennai': { latitude: 13.0827, longitude: 80.2707 },
+    'kolkata': { latitude: 22.5726, longitude: 88.3639 },
+    'goa': { latitude: 15.2993, longitude: 74.1240 },
+    'jaipur': { latitude: 26.9124, longitude: 75.7873 },
+    'visakhapatnam': { latitude: 17.6868, longitude: 83.2185 },
+    'vizag': { latitude: 17.6868, longitude: 83.2185 },
+};
 
 /**
- * Deterministic coordinate lookup for a location string.
- * Uses a simple city-name hash to generate plausible coordinates.
- * No external API — fast and offline-capable.
- *
- * @param {string} location — City or place name
- * @returns {{ latitude: number, longitude: number } | null}
+ * Fetch coordinates from OpenStreetMap Nominatim API.
+ * Free, no API key, works for any place worldwide.
+ * Rate-limited to ~1 req/sec by Nominatim policy.
  */
-function geocodeLocation(location, activityHint = '') {
+async function _fetchFromNominatim(query) {
+    try {
+        const params = new URLSearchParams({
+            q: query,
+            format: 'json',
+            limit: '1',
+            addressdetails: '0',
+        });
+        const res = await fetch(
+            `https://nominatim.openstreetmap.org/search?${params}`,
+            { headers: { 'User-Agent': 'AITravelAssistant/1.0' } }
+        );
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (data.length > 0) {
+            return {
+                latitude: parseFloat(data[0].lat),
+                longitude: parseFloat(data[0].lon),
+            };
+        }
+        return null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Geocode a location string. Strategy:
+ *   1. In-memory cache (instant)
+ *   2. localStorage cache (instant, persists across sessions)
+ *   3. KNOWN_CITIES exact/partial match (instant, no network)
+ *   4. Nominatim API (any place worldwide, cached after first call)
+ *   5. cityContext fallback — retry with parent city name
+ *
+ * @param {string} location — Place name (e.g., "Rishikonda Beach")
+ * @param {string} activityHint — Used for deterministic ±1km offset
+ * @param {string} cityContext — Parent city for the day (e.g., "Visakhapatnam")
+ * @returns {Promise<{ latitude: number, longitude: number } | null>}
+ */
+async function geocodeLocation(location, activityHint = '', cityContext = '') {
     if (!location || typeof location !== 'string') return null;
 
-    // Well-known city coordinates for common destinations
-    const KNOWN_CITIES = {
-        'paris': { latitude: 48.8566, longitude: 2.3522 },
-        'london': { latitude: 51.5074, longitude: -0.1278 },
-        'new york': { latitude: 40.7128, longitude: -74.0060 },
-        'tokyo': { latitude: 35.6762, longitude: 139.6503 },
-        'dubai': { latitude: 25.2048, longitude: 55.2708 },
-        'mumbai': { latitude: 19.0760, longitude: 72.8777 },
-        'delhi': { latitude: 28.6139, longitude: 77.2090 },
-        'new delhi': { latitude: 28.6139, longitude: 77.2090 },
-        'bangalore': { latitude: 12.9716, longitude: 77.5946 },
-        'bengaluru': { latitude: 12.9716, longitude: 77.5946 },
-        'hyderabad': { latitude: 17.3850, longitude: 78.4867 },
-        'chennai': { latitude: 13.0827, longitude: 80.2707 },
-        'kolkata': { latitude: 22.5726, longitude: 88.3639 },
-        'goa': { latitude: 15.2993, longitude: 74.1240 },
-        'jaipur': { latitude: 26.9124, longitude: 75.7873 },
-        'agra': { latitude: 27.1767, longitude: 78.0081 },
-        'varanasi': { latitude: 25.3176, longitude: 82.9739 },
-        'udaipur': { latitude: 24.5854, longitude: 73.7125 },
-        'shimla': { latitude: 31.1048, longitude: 77.1734 },
-        'manali': { latitude: 32.2396, longitude: 77.1887 },
-        'pune': { latitude: 18.5204, longitude: 73.8567 },
-        'coorg': { latitude: 12.3375, longitude: 75.8069 },
-        'mysore': { latitude: 12.2958, longitude: 76.6394 },
-        'mysuru': { latitude: 12.2958, longitude: 76.6394 },
-        'kochi': { latitude: 9.9312, longitude: 76.2673 },
-        'bangkok': { latitude: 13.7563, longitude: 100.5018 },
-        'singapore': { latitude: 1.3521, longitude: 103.8198 },
-        'bali': { latitude: -8.3405, longitude: 115.0920 },
-        'rome': { latitude: 41.9028, longitude: 12.4964 },
-        'barcelona': { latitude: 41.3874, longitude: 2.1686 },
-        'amsterdam': { latitude: 52.3676, longitude: 4.9041 },
-        'sydney': { latitude: -33.8688, longitude: 151.2093 },
-        'san francisco': { latitude: 37.7749, longitude: -122.4194 },
-        'los angeles': { latitude: 34.0522, longitude: -118.2437 },
-        'istanbul': { latitude: 41.0082, longitude: 28.9784 },
-        'cairo': { latitude: 30.0444, longitude: 31.2357 },
-        'cape town': { latitude: -33.9249, longitude: 18.4241 },
-        'rio de janeiro': { latitude: -22.9068, longitude: -43.1729 },
-        'berlin': { latitude: 52.5200, longitude: 13.4050 },
-        'vienna': { latitude: 48.2082, longitude: 16.3738 },
-        'prague': { latitude: 50.0755, longitude: 14.4378 },
-        'seoul': { latitude: 37.5665, longitude: 126.9780 },
-        'kuala lumpur': { latitude: 3.1390, longitude: 101.6869 },
-        'hong kong': { latitude: 22.3193, longitude: 114.1694 },
-        'lisbon': { latitude: 38.7223, longitude: -9.1393 },
-        'athens': { latitude: 37.9838, longitude: 23.7275 },
-        'zurich': { latitude: 47.3769, longitude: 8.5417 },
-        'vancouver': { latitude: 49.2827, longitude: -123.1207 },
-        'toronto': { latitude: 43.6532, longitude: -79.3832 },
-        'miami': { latitude: 25.7617, longitude: -80.1918 },
-        'hawaii': { latitude: 19.8968, longitude: -155.5828 },
-        'maldives': { latitude: 3.2028, longitude: 73.2207 },
-        'switzerland': { latitude: 46.8182, longitude: 8.2275 },
-        'kerala': { latitude: 10.8505, longitude: 76.2711 },
-        'kashmir': { latitude: 34.0837, longitude: 74.7973 },
-        'rishikesh': { latitude: 30.0869, longitude: 78.2676 },
-        'pondicherry': { latitude: 11.9416, longitude: 79.8083 },
-        'mysore': { latitude: 12.2958, longitude: 76.6394 },
-        'kochi': { latitude: 9.9312, longitude: 76.2673 },
-        'leh': { latitude: 34.1526, longitude: 77.5771 },
-        'ladakh': { latitude: 34.1526, longitude: 77.5771 },
-        'ooty': { latitude: 11.4102, longitude: 76.6950 },
-        'darjeeling': { latitude: 27.0410, longitude: 88.2663 },
-    };
-
     const normalized = location.toLowerCase().trim();
+    const cacheKey = normalized;
 
-    // Look up base coordinates (exact or partial match)
-    let baseCoords = null;
-    if (KNOWN_CITIES[normalized]) {
-        baseCoords = KNOWN_CITIES[normalized];
-    } else {
+    // 1. In-memory cache
+    if (_geocodeMemCache[cacheKey]) {
+        return _applyOffset(_geocodeMemCache[cacheKey], activityHint || normalized);
+    }
+
+    // 2. localStorage cache
+    const diskCache = _getGeoCache();
+    if (diskCache[cacheKey]?.latitude) {
+        const coords = { latitude: diskCache[cacheKey].latitude, longitude: diskCache[cacheKey].longitude };
+        _geocodeMemCache[cacheKey] = coords;
+        return _applyOffset(coords, activityHint || normalized);
+    }
+
+    // 3. KNOWN_CITIES (instant, no network)
+    let baseCoords = KNOWN_CITIES[normalized] || null;
+    if (!baseCoords) {
         for (const [city, coords] of Object.entries(KNOWN_CITIES)) {
             if (normalized.includes(city) || city.includes(normalized)) {
                 baseCoords = coords;
@@ -137,45 +166,78 @@ function geocodeLocation(location, activityHint = '') {
     }
 
     if (baseCoords) {
-        // Fix Group 3: Deterministic offset for same-city variation
-        // Uses activity hint (title + time) to create ±0.01° (~1km) offset
-        const hintStr = activityHint || normalized;
-        let hintHash = 0;
-        for (let i = 0; i < hintStr.length; i++) {
-            hintHash = ((hintHash << 5) - hintHash + hintStr.charCodeAt(i)) | 0;
+        _geocodeMemCache[cacheKey] = baseCoords;
+        _setGeoCache(cacheKey, baseCoords);
+        return _applyOffset(baseCoords, activityHint || normalized);
+    }
+
+    // 4. Nominatim API — works for any place in the world
+    const nominatimResult = await _fetchFromNominatim(location);
+    if (nominatimResult) {
+        _geocodeMemCache[cacheKey] = nominatimResult;
+        _setGeoCache(cacheKey, nominatimResult);
+        return _applyOffset(nominatimResult, activityHint || normalized);
+    }
+
+    // 5. Try with city context (e.g., "Rishikonda Beach, Visakhapatnam")
+    if (cityContext) {
+        const withCity = await _fetchFromNominatim(`${location}, ${cityContext}`);
+        if (withCity) {
+            _geocodeMemCache[cacheKey] = withCity;
+            _setGeoCache(cacheKey, withCity);
+            return _applyOffset(withCity, activityHint || normalized);
         }
-        const latOffset = ((hintHash % 20) - 10) / 1000; // ±0.010°
-        const lngOffset = (((hintHash >> 8) % 20) - 10) / 1000;
 
-        return {
-            latitude: Math.round((baseCoords.latitude + latOffset) * 10000) / 10000,
-            longitude: Math.round((baseCoords.longitude + lngOffset) * 10000) / 10000,
-        };
+        // Last resort: use the city itself
+        const cityKey = cityContext.toLowerCase().trim();
+        if (!_geocodeMemCache[cityKey]) {
+            const cityCoords = KNOWN_CITIES[cityKey]
+                || await _fetchFromNominatim(cityContext);
+            if (cityCoords) {
+                _geocodeMemCache[cityKey] = cityCoords;
+                _setGeoCache(cityKey, cityCoords);
+            }
+        }
+        if (_geocodeMemCache[cityKey]) {
+            _geocodeMemCache[cacheKey] = _geocodeMemCache[cityKey];
+            return _applyOffset(_geocodeMemCache[cityKey], activityHint || normalized);
+        }
     }
 
-    // Deterministic hash fallback — generate plausible coords from string
-    let hash = 0;
-    for (let i = 0; i < normalized.length; i++) {
-        hash = ((hash << 5) - hash + normalized.charCodeAt(i)) | 0;
-    }
-    // Map hash to plausible lat/lng range (avoiding oceans)
-    const lat = ((hash & 0xFFFF) / 0xFFFF) * 120 - 40;  // -40 to 80
-    const lng = (((hash >> 16) & 0xFFFF) / 0xFFFF) * 300 - 120; // -120 to 180
+    return null;
+}
 
-    return { latitude: Math.round(lat * 10000) / 10000, longitude: Math.round(lng * 10000) / 10000 };
+/**
+ * Apply deterministic ±0.01° (~1km) offset to base coords.
+ * Ensures activities at the same city don't stack at identical points.
+ */
+function _applyOffset(baseCoords, hintStr) {
+    let hintHash = 0;
+    for (let i = 0; i < hintStr.length; i++) {
+        hintHash = ((hintHash << 5) - hintHash + hintStr.charCodeAt(i)) | 0;
+    }
+    const latOffset = ((hintHash % 20) - 10) / 1000; // ±0.010°
+    const lngOffset = (((hintHash >> 8) % 20) - 10) / 1000;
+    return {
+        latitude: Math.round((baseCoords.latitude + latOffset) * 10000) / 10000,
+        longitude: Math.round((baseCoords.longitude + lngOffset) * 10000) / 10000,
+    };
 }
 
 /**
  * Phase 4c: Enrich AI activities with geocoded coordinates.
+ * Now async to support Nominatim API lookups for unknown locations.
  *
  * @param {object[]} activitySegments — Activity segments from AI conversion
- * @returns {object[]} — Same array, mutated with latitude/longitude in metadata
+ * @param {object[]} dayLocations — Array of { dayNumber, location }
+ * @returns {Promise<object[]>} — Same array, mutated with latitude/longitude
  */
-function enrichActivitiesWithCoordinates(activitySegments) {
+async function enrichActivitiesWithCoordinates(activitySegments, dayLocations = []) {
     for (const seg of activitySegments) {
-        // Fix Group 3: Pass activity title as hint for deterministic offset
         const hint = (seg.title || '') + '|' + (seg.metadata?.time_of_day || '') + '|' + (seg.order_index || 0);
-        const coords = geocodeLocation(seg.location, hint);
+        const dayLoc = dayLocations.find(dl => dl.dayNumber === seg.day_number);
+        const cityContext = dayLoc?.location || '';
+        const coords = await geocodeLocation(seg.location, hint, cityContext);
         if (coords) {
             seg.latitude = coords.latitude;
             seg.longitude = coords.longitude;
@@ -441,7 +503,7 @@ export async function orchestrateTrip(trip, callbacks = {}) {
 
     // ── Phase 4c: Geocoding (Fix Group 1) ──
     onPhase?.(4.5, 'Geocoding Activities');
-    enrichActivitiesWithCoordinates(activitySegments);
+    await enrichActivitiesWithCoordinates(activitySegments, dayLocations);
 
     const geocodedCount = activitySegments.filter(s => s.latitude && s.longitude).length;
     const failedCount = activitySegments.filter(s => s.metadata?.geocode_failed).length;
