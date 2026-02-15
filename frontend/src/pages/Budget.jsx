@@ -73,12 +73,13 @@ const Budget = () => {
     const forecastPercent = totalBudget > 0 ? Math.round((forecastTotal / totalBudget) * 100 * 10) / 10 : 0;
     const aiEstimatePercent = totalBudget > 0 ? Math.min((aiEstimatedTotal / totalBudget) * 100, 100 - Math.min(percentageUsed, 100)) : 0;
 
-    // Chart data
+    // Chart data — only actual spending (manual + bookings), NOT AI estimates
     const chartData = (budgetSummary?.category_breakdown || []).map(cat => {
         const knownCat = CATEGORIES.find(c => c.id === cat.category);
+        const actualSpent = (cat.by_source?.manual || 0) + (cat.by_source?.booking || 0);
         return {
             name: knownCat?.label || cat.category,
-            value: cat.total,
+            value: actualSpent,
             color: CATEGORY_COLORS[cat.category] || '#94a3b8'
         };
     }).filter(d => d.value > 0);
@@ -307,7 +308,7 @@ const Budget = () => {
                         </motion.div>
 
                         {/* Category Source Split */}
-                        {(budgetSummary?.category_breakdown || []).length > 0 && (
+                        {(budgetSummary?.category_breakdown || []).some(cat => ((cat.by_source?.manual || 0) + (cat.by_source?.booking || 0)) > 0) && (
                             <motion.div
                                 initial={{ opacity: 0, y: 16 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -320,8 +321,7 @@ const Budget = () => {
                                         const knownCat = CATEGORIES.find(c => c.id === cat.category);
                                         const manual = cat.by_source?.manual || 0;
                                         const booking = cat.by_source?.booking || 0;
-                                        const aiEst = cat.by_source?.ai_estimate || 0;
-                                        const catTotal = manual + booking + aiEst;
+                                        const catTotal = manual + booking;
                                         if (catTotal <= 0) return null;
                                         const CatIcon = knownCat?.icon || AlertCircle;
                                         return (
@@ -337,7 +337,6 @@ const Budget = () => {
                                                     <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden flex">
                                                         {manual > 0 && <div className="h-full bg-blue-500" style={{ width: `${(manual / catTotal) * 100}%` }} />}
                                                         {booking > 0 && <div className="h-full bg-emerald-500" style={{ width: `${(booking / catTotal) * 100}%` }} />}
-                                                        {aiEst > 0 && <div className="h-full bg-violet-400" style={{ width: `${(aiEst / catTotal) * 100}%` }} />}
                                                     </div>
                                                 </div>
                                             </div>
@@ -347,7 +346,6 @@ const Budget = () => {
                                 <div className="flex items-center gap-4 mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 text-[10px] text-slate-400">
                                     <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" /> Manual</span>
                                     <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" /> Booking</span>
-                                    <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-violet-400 inline-block" /> AI Est.</span>
                                 </div>
                             </motion.div>
                         )}
