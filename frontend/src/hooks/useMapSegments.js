@@ -76,7 +76,7 @@ export default function useMapSegments(trip) {
                 id: `route-${a.id}`,
                 segmentId: a.id,
                 geometry: a.route_geometry,
-                transportMode: a.segmentType || a.type || 'car',
+                transportMode: a.transportMode || a.segmentType || a.type || 'car',
                 distance: a.route_distance,
                 duration: a.route_duration,
             }));
@@ -145,6 +145,7 @@ export default function useMapSegments(trip) {
                         lng,
                         type: activity.type,
                         segmentType: activity.segmentType || null,
+                        transportMode: activity.transportMode || null,
                         isLogistics: !!activity.isLogistics,
                         dayNumber: activity.dayNumber,
                         orderIndex: activity.order_index ?? 0,

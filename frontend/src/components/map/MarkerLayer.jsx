@@ -2,14 +2,29 @@ import { useEffect, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 
 /**
- * Transport-type emoji and colors for marker icons.
+ * Transport-mode emoji and colors for marker icons.
+ * Uses the actual transport_mode (flight/train/bus/car) for correct icons.
  */
-const TRANSPORT_ICONS = {
-    outbound_travel: { emoji: '✈️', bg: '#14b8a6' },
+const TRANSPORT_MODE_ICONS = {
+    flight: { emoji: '✈️', bg: '#a855f7' },
+    train: { emoji: '🚆', bg: '#3b82f6' },
+    bus: { emoji: '🚌', bg: '#f59e0b' },
+    car: { emoji: '🚗', bg: '#22c55e' },
+    bike: { emoji: '🏍️', bg: '#f97316' },
+    auto: { emoji: '🛺', bg: '#06b6d4' },
+    walking: { emoji: '🚶', bg: '#9ca3af' },
+};
+
+/**
+ * Fallback icons when transport_mode is not available — by segment category.
+ */
+const SEGMENT_TYPE_ICONS = {
+    outbound_travel: { emoji: '🚀', bg: '#14b8a6' },
     intercity_travel: { emoji: '🚆', bg: '#14b8a6' },
-    return_travel: { emoji: '✈️', bg: '#14b8a6' },
+    return_travel: { emoji: '🏠', bg: '#14b8a6' },
     local_transport: { emoji: '🚗', bg: '#06b6d4' },
     accommodation: { emoji: '🏨', bg: '#6366f1' },
+    gem: { emoji: '💎', bg: '#eab308' },
 };
 
 const ACTIVITY_ICONS = [
@@ -23,10 +38,16 @@ const ACTIVITY_ICONS = [
     { match: ['relax', 'coffee'], emoji: '☕', bg: '#10b981' },
 ];
 
-function getMarkerConfig(type, segmentType) {
-    if (segmentType && TRANSPORT_ICONS[segmentType]) {
-        return TRANSPORT_ICONS[segmentType];
+function getMarkerConfig(type, segmentType, transportMode) {
+    // Priority 1: Use actual transport mode (most accurate for travel segments)
+    if (transportMode && TRANSPORT_MODE_ICONS[transportMode]) {
+        return TRANSPORT_MODE_ICONS[transportMode];
     }
+    // Priority 2: Use segment type category
+    if (segmentType && SEGMENT_TYPE_ICONS[segmentType]) {
+        return SEGMENT_TYPE_ICONS[segmentType];
+    }
+    // Priority 3: Match activity type keywords
     const t = (type || '').toLowerCase();
     for (const entry of ACTIVITY_ICONS) {
         if (entry.match.some(m => t.includes(m))) return entry;
@@ -50,7 +71,7 @@ export default function MarkerLayer({ map, markers, bounds, onPinClick }) {
         markerRefs.current = [];
 
         for (const marker of markers) {
-            const config = getMarkerConfig(marker.type, marker.segmentType);
+            const config = getMarkerConfig(marker.type, marker.segmentType, marker.transportMode);
 
             // Create custom HTML element
             const el = document.createElement('div');
