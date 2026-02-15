@@ -21,7 +21,7 @@ const ForgotPassword = () => {
     };
 
     return (
-        <div className="min-h-screen pt-20 pb-12 flex items-center justify-center bg-slate-50 dark:bg-slate-900 px-4">
+        <div className="min-h-screen pt-20 pb-12 flex items-center justify-center bg-slate-50 dark:bg-[#0a0a0a] px-4">
             <div className="w-full max-w-md">
                 <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-700 p-8">
                     {sent ? (

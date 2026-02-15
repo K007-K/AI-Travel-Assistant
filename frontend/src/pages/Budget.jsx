@@ -120,7 +120,7 @@ const Budget = () => {
     }
 
     return (
-        <div className="min-h-screen pt-24 pb-16 bg-slate-50 dark:bg-slate-900">
+        <div className="min-h-screen pt-24 pb-16 bg-slate-50 dark:bg-[#0a0a0a]">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
                 {/* Header */}

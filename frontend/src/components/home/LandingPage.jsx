@@ -56,42 +56,48 @@ const LandingPage = () => {
             title: "AI Travel Chatbot",
             description: "Get personalized travel recommendations and instant answers from our intelligent AI-powered assistant.",
             color: "text-blue-500",
-            bg: "bg-blue-50"
+            bg: "bg-blue-50",
+            darkBg: "dark:bg-blue-500/10"
         },
         {
             icon: Calendar,
             title: "Smart Itinerary Builder",
             description: "Create and customize perfect day-by-day travel plans with our intuitive drag-and-drop interface.",
             color: "text-purple-500",
-            bg: "bg-purple-50"
+            bg: "bg-purple-50",
+            darkBg: "dark:bg-purple-500/10"
         },
         {
             icon: MapPin,
             title: "Discover Hidden Gems",
             description: "Explore authentic local attractions and experiences that most tourists miss on their journey.",
             color: "text-orange-500",
-            bg: "bg-orange-50"
+            bg: "bg-orange-50",
+            darkBg: "dark:bg-orange-500/10"
         },
         {
             icon: Wallet,
             title: "Smart Budget Tracking",
             description: "Monitor your travel expenses in real-time and get accurate cost estimates to stay on budget.",
             color: "text-green-500",
-            bg: "bg-green-50"
+            bg: "bg-green-50",
+            darkBg: "dark:bg-green-500/10"
         },
         {
             icon: Shield,
             title: "Verified Recommendations",
             description: "Every place, restaurant, and hotel is verified to ensure quality, safety, and authenticity.",
             color: "text-teal-500",
-            bg: "bg-teal-50"
+            bg: "bg-teal-50",
+            darkBg: "dark:bg-teal-500/10"
         },
         {
             icon: Globe,
             title: "Translation & Communication",
             description: "Break language barriers with instant translation tools to communicate confidently anywhere.",
             color: "text-indigo-500",
-            bg: "bg-indigo-50"
+            bg: "bg-indigo-50",
+            darkBg: "dark:bg-indigo-500/10"
         }
     ];
 
@@ -112,25 +118,25 @@ const LandingPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-white overflow-x-hidden">
+        <div className="min-h-screen bg-white dark:bg-[#0a0a0a] overflow-x-hidden transition-colors duration-300">
             {/* Hero Section */}
-            <section className="relative pt-32 pb-20 flex flex-col items-center text-center px-4 bg-gradient-to-b from-white via-blue-50/20 to-white">
+            <section className="relative pt-32 pb-20 flex flex-col items-center text-center px-4 bg-gradient-to-b from-white via-blue-50/20 to-white dark:from-[#0a0a0a] dark:via-blue-950/10 dark:to-[#0a0a0a]">
                 <motion.div
                     initial="hidden"
                     animate="visible"
                     variants={containerVariants}
                     className="max-w-4xl mx-auto z-10"
                 >
-                    <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-blue-100 shadow-sm text-blue-600 text-sm font-medium mb-8 hover:scale-105 transition-transform cursor-default">
+                    <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white dark:bg-white/[0.05] border border-blue-100 dark:border-blue-500/20 shadow-sm dark:shadow-none text-blue-600 dark:text-blue-400 text-sm font-medium mb-8 hover:scale-105 transition-transform cursor-default">
                         <Sparkles className="w-4 h-4" />
                         <span>AI-Powered Travel Planning</span>
                     </motion.div>
 
-                    <motion.h1 variants={itemVariants} className="text-5xl md:text-7xl font-display font-bold mb-6 text-slate-900 tracking-tight leading-tight">
-                        Travel Without <span className="text-blue-600 inline-block">Stress</span>
+                    <motion.h1 variants={itemVariants} className="text-5xl md:text-7xl font-display font-bold mb-6 text-slate-900 dark:text-white tracking-tight leading-tight">
+                        Travel Without <span className="text-blue-600 dark:bg-clip-text dark:text-transparent dark:bg-gradient-to-r dark:from-blue-400 dark:to-cyan-400 inline-block">Stress</span>
                     </motion.h1>
 
-                    <motion.p variants={itemVariants} className="text-xl text-slate-500 mb-10 max-w-2xl mx-auto leading-relaxed">
+                    <motion.p variants={itemVariants} className="text-xl text-slate-500 dark:text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed">
                         From planning to exploring, experience seamless travel with AI-powered recommendations, smart budgeting, and cultural insights.
                     </motion.p>
 
@@ -138,12 +144,12 @@ const LandingPage = () => {
                         <Button
                             onClick={() => isAuthenticated ? navigate('/ai/chat') : navigate('/login')}
                             size="lg"
-                            className="text-lg px-8 h-12 w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-500/20 rounded-xl transition-all hover:scale-105 hover:-translate-y-0.5 active:scale-95 duration-300"
+                            className="text-lg px-8 h-12 w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-500/20 dark:shadow-blue-500/10 rounded-xl transition-all hover:scale-105 hover:-translate-y-0.5 active:scale-95 duration-300"
                         >
                             Start Planning <ArrowRight className="ml-2 w-5 h-5" />
                         </Button>
                         <a href="#destinations">
-                            <Button variant="outline" size="lg" className="text-lg px-8 h-12 w-full sm:w-auto border-slate-200 text-slate-600 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 rounded-xl transition-all hover:scale-105 duration-300">
+                            <Button variant="outline" size="lg" className="text-lg px-8 h-12 w-full sm:w-auto border-slate-200 dark:border-white/[0.08] text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-500/30 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-xl transition-all hover:scale-105 duration-300">
                                 Explore Destinations
                             </Button>
                         </a>
@@ -155,12 +161,12 @@ const LandingPage = () => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 1.5 }}
-                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-400/5 rounded-full blur-[120px] -z-0 pointer-events-none"
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-400/5 dark:bg-blue-500/[0.03] rounded-full blur-[120px] -z-0 pointer-events-none"
                 />
             </section>
 
             {/* Everything You Need Section (Features Loop) */}
-            <section id="features" className="pt-20 pb-12 bg-white relative overflow-hidden">
+            <section id="features" className="pt-20 pb-12 bg-white dark:bg-[#0a0a0a] relative overflow-hidden transition-colors duration-300">
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 mb-10 text-center">
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
@@ -168,10 +174,10 @@ const LandingPage = () => {
                         viewport={{ once: true, margin: "-100px" }}
                         transition={{ duration: 0.6 }}
                     >
-                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold mb-4 text-slate-900">
+                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold mb-4 text-slate-900 dark:text-white">
                             Everything You Need
                         </h2>
-                        <p className="text-lg sm:text-xl text-slate-500 max-w-2xl mx-auto">
+                        <p className="text-lg sm:text-xl text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
                             Powerful features designed to make your travel experience effortless.
                         </p>
                     </motion.div>
@@ -193,13 +199,13 @@ const LandingPage = () => {
                                 }}
                                 layout
                                 transition={{ type: "tween", duration: 0.1, ease: "easeOut" }}
-                                className="bg-white rounded-2xl p-6 border border-slate-100 shadow-md shadow-slate-200/40 w-[260px] mx-2 h-[300px] flex flex-col items-start justify-between text-left cursor-pointer"
+                                className="bg-white dark:bg-white/[0.03] rounded-2xl p-6 border border-slate-100 dark:border-white/[0.06] shadow-md shadow-slate-200/40 dark:shadow-none w-[260px] mx-2 h-[300px] flex flex-col items-start justify-between text-left cursor-pointer"
                             >
-                                <div className={`w-12 h-12 rounded-xl ${feature.bg} ${feature.color} flex items-center justify-center mb-4`}>
+                                <div className={`w-12 h-12 rounded-xl ${feature.bg} ${feature.darkBg} ${feature.color} flex items-center justify-center mb-4`}>
                                     <feature.icon className="w-6 h-6" />
                                 </div>
-                                <h3 className="text-base sm:text-lg font-bold mb-2 text-slate-900 leading-tight">{feature.title}</h3>
-                                <p className="text-slate-600 leading-relaxed text-xs sm:text-sm">
+                                <h3 className="text-base sm:text-lg font-bold mb-2 text-slate-900 dark:text-white leading-tight">{feature.title}</h3>
+                                <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-xs sm:text-sm">
                                     {feature.description}
                                 </p>
                             </motion.div>
@@ -209,7 +215,7 @@ const LandingPage = () => {
             </section>
 
             {/* Popular Destinations */}
-            <section id="destinations" className="pt-12 pb-20 relative bg-slate-50/50 overflow-hidden">
+            <section id="destinations" className="pt-12 pb-20 relative bg-slate-50/50 dark:bg-[#080808] overflow-hidden transition-colors duration-300">
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 mb-10 text-center">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -217,10 +223,10 @@ const LandingPage = () => {
                         viewport={{ once: true }}
                         transition={{ duration: 0.6 }}
                     >
-                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold mb-4 text-slate-900">
+                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold mb-4 text-slate-900 dark:text-white">
                             Popular Destinations
                         </h2>
-                        <p className="text-lg sm:text-xl text-slate-500 max-w-2xl mx-auto">
+                        <p className="text-lg sm:text-xl text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
                             Discover amazing places around the world.
                         </p>
                     </motion.div>
@@ -237,7 +243,7 @@ const LandingPage = () => {
                                 whileHover={{ y: -12, scale: 1.03 }}
                                 layout
                                 transition={{ type: "tween", duration: 0.1, ease: "easeOut" }}
-                                className="group relative overflow-hidden rounded-2xl w-[260px] sm:w-[280px] h-[380px] sm:h-[400px] mx-2 cursor-pointer shadow-lg hover:shadow-2xl bg-slate-800"
+                                className="group relative overflow-hidden rounded-2xl w-[260px] sm:w-[280px] h-[380px] sm:h-[400px] mx-2 cursor-pointer shadow-lg hover:shadow-2xl dark:shadow-black/50 bg-slate-800 dark:border dark:border-white/[0.06]"
                             >
                                 <div onClick={() => isAuthenticated ? navigate('/ai/chat') : navigate('/login')} className="block w-full h-full relative">
                                     <img
@@ -275,9 +281,9 @@ const LandingPage = () => {
             </section>
 
             {/* Final CTA Section */}
-            <section className="section py-32 relative overflow-hidden bg-white">
+            <section className="section py-32 relative overflow-hidden bg-white dark:bg-[#0a0a0a] transition-colors duration-300">
                 <div className="container-custom max-w-7xl mx-auto px-6 md:px-8">
-                    <div className="relative rounded-3xl overflow-hidden px-8 sm:px-12 py-20 text-center bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 shadow-2xl shadow-blue-900/30">
+                    <div className="relative rounded-3xl overflow-hidden px-8 sm:px-12 py-20 text-center bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 dark:from-blue-600 dark:via-indigo-600 dark:to-purple-700 shadow-2xl shadow-blue-900/30 dark:shadow-blue-900/50">
                         {/* Glossy overlay layers */}
                         <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-black/10"></div>
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.3)_0%,transparent_50%)]"></div>

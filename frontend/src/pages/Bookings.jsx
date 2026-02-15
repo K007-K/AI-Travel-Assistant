@@ -106,7 +106,7 @@ const Bookings = () => {
     };
 
     return (
-        <div className="min-h-screen pt-20 pb-12 bg-slate-50 dark:bg-slate-900 transition-colors">
+        <div className="min-h-screen pt-20 pb-12 bg-slate-50 dark:bg-[#0a0a0a] transition-colors">
             {/* Hero Section */}
             <div className="bg-primary-600 pb-32 pt-12 px-6 md:px-8 relative">
                 {/* Header Actions */}

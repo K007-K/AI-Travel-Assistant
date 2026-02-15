@@ -177,7 +177,7 @@ const MyBookings = () => {
     };
 
     return (
-        <div className="min-h-screen pt-24 pb-12 bg-slate-50 dark:bg-slate-900 px-4">
+        <div className="min-h-screen pt-24 pb-12 bg-slate-50 dark:bg-[#0a0a0a] px-4">
             <div className="container-custom max-w-5xl">
                 <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
                     <div>

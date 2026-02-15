@@ -33,7 +33,7 @@ export const WhatIfPage = () => {
             icon={<Shuffle className="w-6 h-6" />}
             color="cyan"
         >
-            <div className="max-w-3xl mx-auto flex flex-col h-[70vh] bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="max-w-3xl mx-auto flex flex-col h-[70vh] bg-white dark:bg-white/[0.03] rounded-2xl border border-slate-200 dark:border-white/[0.06] shadow-sm overflow-hidden">
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
                     {messages.length === 0 && (
                         <div className="text-center text-slate-400 mt-20">
@@ -44,8 +44,8 @@ export const WhatIfPage = () => {
                     {messages.map((msg, i) => (
                         <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                             <div className={`max-w-[80%] p-5 rounded-2xl ${msg.role === 'user'
-                                    ? 'bg-slate-100 text-slate-800 rounded-br-none'
-                                    : 'bg-cyan-50 border border-cyan-100 text-slate-800 rounded-bl-none'
+                                    ? 'bg-slate-100 dark:bg-white/[0.05] text-slate-800 dark:text-slate-200 rounded-br-none'
+                                    : 'bg-cyan-50 border border-cyan-100 text-slate-800 dark:text-slate-200 rounded-bl-none'
                                 }`}>
                                 <div className="whitespace-pre-wrap">{msg.content}</div>
                             </div>
@@ -53,19 +53,19 @@ export const WhatIfPage = () => {
                     ))}
                     {loading && (
                         <div className="flex justify-start">
-                            <div className="bg-slate-50 p-4 rounded-2xl rounded-bl-none flex gap-2 items-center text-slate-500 text-sm">
+                            <div className="bg-slate-50 dark:bg-[#0a0a0a] p-4 rounded-2xl rounded-bl-none flex gap-2 items-center text-slate-500 dark:text-slate-400 text-sm">
                                 <Loader2 className="w-4 h-4 animate-spin" /> Simulating parallel universe...
                             </div>
                         </div>
                     )}
                 </div>
-                <div className="p-4 border-t border-slate-100 bg-slate-50 grid grid-cols-[1fr,auto] gap-2">
+                <div className="p-4 border-t border-slate-100 dark:border-white/[0.06] bg-slate-50 dark:bg-[#0a0a0a] grid grid-cols-[1fr,auto] gap-2">
                     <input
                         value={input}
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && handleSend()}
                         placeholder="e.g. What if I upgrade to 5-star hotels?"
-                        className="px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        className="px-4 py-3 bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.06] rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
                     />
                     <button
                         onClick={handleSend}

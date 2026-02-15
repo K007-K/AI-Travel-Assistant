@@ -19,7 +19,7 @@ export const MemoryPage = () => {
         >
             <div className="max-w-2xl mx-auto space-y-6">
                 {memories.map(mem => (
-                    <div key={mem.id} className="bg-white p-6 rounded-2xl border border-slate-200 flex items-center justify-between shadow-sm">
+                    <div key={mem.id} className="bg-white dark:bg-white/[0.03] p-6 rounded-2xl border border-slate-200 dark:border-white/[0.06] flex items-center justify-between shadow-sm">
                         <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-xs uppercase">
                                 {mem.type[0]}

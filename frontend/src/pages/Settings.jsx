@@ -85,7 +85,7 @@ const Settings = () => {
     };
 
     return (
-        <div className="min-h-screen pt-28 pb-16 bg-slate-50 dark:bg-slate-900 transition-colors">
+        <div className="min-h-screen pt-28 pb-16 bg-slate-50 dark:bg-[#0a0a0a] transition-colors duration-300">
             <div className="container-custom max-w-6xl mx-auto px-6 md:px-8 space-y-10">
 
                 {/* Header */}

@@ -53,7 +53,7 @@ const HighlightCard = ({ highlight, index, destinationName }) => {
                     loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <span className="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-xs font-bold bg-white/90 dark:bg-slate-900/90 text-primary-600 dark:text-primary-400 backdrop-blur-sm shadow-sm">
+                <span className="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-xs font-bold bg-white/90 dark:bg-[#0a0a0a]/90 text-primary-600 dark:text-primary-400 backdrop-blur-sm shadow-sm">
                     #{index + 1}
                 </span>
             </div>
@@ -147,7 +147,7 @@ export default function DestinationDetail() {
 
     if (!dest) {
         return (
-            <div className="min-h-screen pt-20 flex flex-col items-center justify-center gap-4 bg-slate-50 dark:bg-slate-900">
+            <div className="min-h-screen pt-20 flex flex-col items-center justify-center gap-4 bg-slate-50 dark:bg-[#0a0a0a]">
                 <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Destination not found</h1>
                 <Link to="/discover" className="btn btn-primary">Browse Destinations</Link>
             </div>
@@ -162,7 +162,7 @@ export default function DestinationDetail() {
     ];
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+        <div className="min-h-screen bg-slate-50 dark:bg-[#0a0a0a]">
             {/* ── HERO ────────────────────────────────────────────── */}
             <div ref={heroRef} className="relative h-[70vh] min-h-[480px] overflow-hidden">
                 <motion.div style={{ y: heroY, opacity: heroOpacity }} className="absolute inset-0">

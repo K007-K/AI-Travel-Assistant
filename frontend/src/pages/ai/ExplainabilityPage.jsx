@@ -11,9 +11,9 @@ export const ExplainabilityPage = () => {
             icon={<Info className="w-6 h-6" />}
             color="teal"
         >
-            <div className="max-w-2xl mx-auto text-center py-20 text-slate-400 border-2 border-dashed border-slate-200 rounded-3xl">
+            <div className="max-w-2xl mx-auto text-center py-20 text-slate-400 border-2 border-dashed border-slate-200 dark:border-white/[0.06] rounded-3xl">
                 <Info className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                <h3 className="text-xl font-bold text-slate-700 mb-2">No Decisions to Explain Yet</h3>
+                <h3 className="text-xl font-bold text-slate-700 dark:text-slate-300 mb-2">No Decisions to Explain Yet</h3>
                 <p>Run a planning agent first, then come here to see the reasoning breakdown.</p>
             </div>
         </AIPageLayout>

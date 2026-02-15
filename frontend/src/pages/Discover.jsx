@@ -48,7 +48,7 @@ const Discover = () => {
         : destinations.filter(d => d.tags?.includes(filter) || d.type?.includes(filter.toLowerCase()));
 
     return (
-        <div className="min-h-screen pt-20 pb-12 bg-slate-50 dark:bg-slate-900">
+        <div className="min-h-screen pt-20 pb-12 bg-slate-50 dark:bg-[#0a0a0a] transition-colors duration-300">
             <div className="bg-primary-600 pb-24 pt-10 px-4 mb-[-60px]">
                 <div className="container-custom text-center text-white">
                     <h1 className="text-4xl font-display font-bold mb-4">Discover Your Next Adventure</h1>

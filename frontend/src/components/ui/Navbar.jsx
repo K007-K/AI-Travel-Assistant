@@ -8,28 +8,64 @@ import {
     Globe,
     Plane,
     LogOut,
-    Settings
+    Settings,
+    Moon,
+    Sun
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import useAuthStore from '../../store/authStore';
 import { Button } from '../ui/button';
 import useBackgroundBrightness from '../../hooks/useBackgroundBrightness';
+import { useTheme } from '../../providers/ThemeProvider';
 
 const Navbar = () => {
     const { user, profile, logout } = useAuthStore();
     const location = useLocation();
     const navRef = useRef(null);
+    const { theme, setTheme } = useTheme();
+    const isDark = theme === 'dark';
 
     // ── Dynamic: detect if the background behind the navbar is dark ──
     const isOverDark = useBackgroundBrightness(navRef);
-    const isLight = isOverDark; // white text when over dark background
+    const isLight = isOverDark || isDark; // white text when over dark background OR in dark mode
 
     // Fallback for display name
     const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Traveler';
 
     const isActive = (path) => location.pathname === path;
 
-    // ── Consistent glassmorphism background on ALL pages ──
-    const navBg = 'bg-white/40 backdrop-blur-2xl border-b border-white/30 shadow-sm supports-[backdrop-filter]:bg-white/20';
+    const toggleTheme = () => setTheme(isDark ? 'light' : 'dark');
+
+    // ── Glassmorphism background — adapts to dark mode ──
+    const navBg = isDark
+        ? 'bg-black/60 backdrop-blur-2xl border-b border-white/[0.06] shadow-[0_1px_30px_rgba(0,0,0,0.5)]'
+        : 'bg-white/40 backdrop-blur-2xl border-b border-white/30 shadow-sm supports-[backdrop-filter]:bg-white/20';
+
+    // Theme toggle button
+    const ThemeBtn = () => (
+        <motion.button
+            onClick={toggleTheme}
+            className={`p-2.5 rounded-full transition-all duration-300 ${isDark
+                ? 'bg-white/[0.06] hover:bg-white/[0.12] text-amber-400'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                }`}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.92 }}
+            aria-label="Toggle theme"
+        >
+            <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                    key={theme}
+                    initial={{ y: -12, opacity: 0, rotate: -90 }}
+                    animate={{ y: 0, opacity: 1, rotate: 0 }}
+                    exit={{ y: 12, opacity: 0, rotate: 90 }}
+                    transition={{ duration: 0.2 }}
+                >
+                    {isDark ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
+                </motion.div>
+            </AnimatePresence>
+        </motion.button>
+    );
 
     // -------------------------------------------------------------------------
     // RENDER: LANDING PAGE NAVBAR (Unauthenticated)
@@ -68,8 +104,9 @@ const Navbar = () => {
                         </Link>
                     </div>
 
-                    {/* Auth Buttons */}
+                    {/* Auth Buttons + Theme Toggle */}
                     <div className="flex items-center gap-3">
+                        <ThemeBtn />
                         <Link to="/login">
                             <Button variant="ghost" size="sm" className={`transition-colors duration-300 ${isLight ? 'hover:bg-white/10 text-white' : 'hover:bg-slate-100 text-slate-600'}`}>Log In</Button>
                         </Link>
@@ -112,26 +149,27 @@ const Navbar = () => {
                     <Link
                         to="/ai"
                         className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 shadow-sm ${isActive('/ai') || isActive('/chat')
-                            ? 'bg-gradient-to-r from-purple-50 to-blue-50 text-blue-700 ring-1 ring-blue-100/50'
+                            ? (isDark ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/30' : 'bg-gradient-to-r from-purple-50 to-blue-50 text-blue-700 ring-1 ring-blue-100/50')
                             : isLight
                                 ? 'bg-white/15 text-white hover:bg-white/25 ring-1 ring-white/20'
                                 : 'bg-white/80 text-slate-600 hover:bg-white hover:shadow-md ring-1 ring-slate-200/50'
                             }`}
                     >
-                        <Sparkles className={`w-4 h-4 ${isActive('/ai') || isActive('/chat') ? 'text-blue-600' : isLight ? 'text-white/70' : 'text-slate-400'}`} />
+                        <Sparkles className={`w-4 h-4 ${isActive('/ai') || isActive('/chat') ? (isDark ? 'text-blue-400' : 'text-blue-600') : isLight ? 'text-white/70' : 'text-slate-400'}`} />
                         AI
                     </Link>
 
                     <div className={`w-px h-6 mx-2 transition-colors duration-300 ${isLight ? 'bg-white/20' : 'bg-slate-200/50'}`}></div>
 
-                    <NavLink to="/my-trips" icon={<Map className="w-4 h-4" />} label="My Trips" active={isActive('/trips') || isActive('/my-trips')} isLight={isLight} />
-                    <NavLink to="/bookings" icon={<CreditCard className="w-4 h-4" />} label="Bookings" active={isActive('/bookings')} isLight={isLight} />
-                    <NavLink to="/budget" icon={<Wallet className="w-4 h-4" />} label="Budget" active={isActive('/budget')} isLight={isLight} />
-                    <NavLink to="/ai/translate" icon={<Globe className="w-4 h-4" />} label="Translate" active={isActive('/ai/translate')} isLight={isLight} />
+                    <NavLink to="/my-trips" icon={<Map className="w-4 h-4" />} label="My Trips" active={isActive('/trips') || isActive('/my-trips')} isLight={isLight} isDark={isDark} />
+                    <NavLink to="/bookings" icon={<CreditCard className="w-4 h-4" />} label="Bookings" active={isActive('/bookings')} isLight={isLight} isDark={isDark} />
+                    <NavLink to="/budget" icon={<Wallet className="w-4 h-4" />} label="Budget" active={isActive('/budget')} isLight={isLight} isDark={isDark} />
+                    <NavLink to="/ai/translate" icon={<Globe className="w-4 h-4" />} label="Translate" active={isActive('/ai/translate')} isLight={isLight} isDark={isDark} />
                 </div>
 
                 {/* Right Actions */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
+                    <ThemeBtn />
                     <div className={`flex items-center gap-3 pl-4 border-l group cursor-pointer relative py-2 transition-colors duration-300 ${isLight ? 'border-white/20' : 'border-slate-200/50'}`}>
                         <div className={`w-10 h-10 rounded-full border shadow-md flex items-center justify-center font-bold text-sm group-hover:shadow-lg transition-all duration-300 ${isLight
                             ? 'bg-white/20 border-white/30 text-white'
@@ -146,20 +184,23 @@ const Navbar = () => {
                             <span className={`text-xs font-medium transition-colors duration-300 ${isLight ? 'text-white/60' : 'text-slate-400'}`}>Traveler</span>
                         </div>
 
-                        {/* Dropdown Menu — always light for readability */}
-                        <div className="absolute right-0 top-full mt-2 w-56 py-2 bg-white/90 backdrop-blur-xl rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-white/20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50">
-                            <Link to="/settings" className="flex items-center gap-3 px-4 py-3 text-sm text-slate-600 hover:bg-blue-50/50 hover:text-blue-600 transition-colors">
-                                <div className="p-1.5 rounded-lg bg-slate-50 text-slate-400 group-hover:bg-blue-100 group-hover:text-blue-500 transition-colors">
+                        {/* Dropdown Menu */}
+                        <div className={`absolute right-0 top-full mt-2 w-56 py-2 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50 ${isDark
+                            ? 'bg-[#1a1a1a]/95 backdrop-blur-xl border-white/[0.06]'
+                            : 'bg-white/90 backdrop-blur-xl border-white/20'
+                            }`}>
+                            <Link to="/settings" className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors ${isDark ? 'text-slate-300 hover:bg-white/[0.06] hover:text-white' : 'text-slate-600 hover:bg-blue-50/50 hover:text-blue-600'}`}>
+                                <div className={`p-1.5 rounded-lg transition-colors ${isDark ? 'bg-white/[0.06] text-slate-400' : 'bg-slate-50 text-slate-400'}`}>
                                     <Settings className="w-4 h-4" />
                                 </div>
                                 Settings
                             </Link>
-                            <div className="h-px bg-slate-100 my-1 mx-4"></div>
+                            <div className={`h-px my-1 mx-4 ${isDark ? 'bg-white/[0.06]' : 'bg-slate-100'}`}></div>
                             <button
                                 onClick={() => logout()}
-                                className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50/50 flex items-center gap-3 transition-colors"
+                                className={`w-full text-left px-4 py-3 text-sm text-red-500 flex items-center gap-3 transition-colors ${isDark ? 'hover:bg-red-500/10' : 'hover:bg-red-50/50'}`}
                             >
-                                <div className="p-1.5 rounded-lg bg-red-50 text-red-500">
+                                <div className={`p-1.5 rounded-lg ${isDark ? 'bg-red-500/10 text-red-400' : 'bg-red-50 text-red-500'}`}>
                                     <LogOut className="w-4 h-4" />
                                 </div>
                                 Sign Out
@@ -172,11 +213,13 @@ const Navbar = () => {
     );
 };
 
-const NavLink = ({ to, icon, label, active, isLight }) => (
+const NavLink = ({ to, icon, label, active, isLight, isDark }) => (
     <Link
         to={to}
         className={`group flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-full transition-all duration-300 ${active
-            ? (isLight ? 'text-white bg-white/20 shadow-sm ring-1 ring-white/20' : 'text-slate-900 bg-white shadow-sm ring-1 ring-slate-100')
+            ? (isLight
+                ? (isDark ? 'text-white bg-white/[0.1] shadow-sm ring-1 ring-white/[0.08]' : 'text-white bg-white/20 shadow-sm ring-1 ring-white/20')
+                : 'text-slate-900 bg-white shadow-sm ring-1 ring-slate-100')
             : (isLight ? 'text-white/80 hover:text-white hover:bg-white/10' : 'text-slate-500 hover:text-slate-900 hover:bg-white/60')
             }`}
     >

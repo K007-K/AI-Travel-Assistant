@@ -41,7 +41,7 @@ export const VoicePage = () => {
                     )}
                     <button
                         onClick={() => setIsListening(!isListening)}
-                        className={`relative z-10 w-40 h-40 rounded-full flex items-center justify-center transition-all duration-500 shadow-2xl ${isListening ? 'bg-gradient-to-br from-pink-500 to-rose-600 scale-105' : 'bg-white hover:bg-slate-50'}`}
+                        className={`relative z-10 w-40 h-40 rounded-full flex items-center justify-center transition-all duration-500 shadow-2xl ${isListening ? 'bg-gradient-to-br from-pink-500 to-rose-600 scale-105' : 'bg-white dark:bg-white/[0.03] hover:bg-slate-50'}`}
                     >
                         {isListening ? (
                             <div className="flex items-center gap-1.5 h-10">
@@ -50,7 +50,7 @@ export const VoicePage = () => {
                                         key={i}
                                         animate={{ height: [10, 50, 10] }}
                                         transition={{ repeat: Infinity, duration: 0.8, delay: i * 0.1 }}
-                                        className="w-2 bg-white rounded-full"
+                                        className="w-2 bg-white dark:bg-white/[0.03] rounded-full"
                                     />
                                 ))}
                             </div>
@@ -64,7 +64,7 @@ export const VoicePage = () => {
                     {isListening ? 'Listening...' : 'Tap to Speak'}
                 </h2>
 
-                <p className="text-xl text-slate-500 max-w-md text-center h-20 transition-all">
+                <p className="text-xl text-slate-500 dark:text-slate-400 max-w-md text-center h-20 transition-all">
                     {isListening ? `"${transcript}"` : 'Try saying "Find me a cheap flight to Tokyo" or "What is the currency in Thailand?"'}
                 </p>
             </div>

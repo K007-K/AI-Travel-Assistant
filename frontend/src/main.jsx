@@ -4,9 +4,12 @@ import '@fontsource/geist-sans';
 import '@fontsource/geist-mono';
 import './index.css'
 import App from './App.jsx'
+import { ThemeProvider } from './providers/ThemeProvider'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <ThemeProvider defaultTheme="light" storageKey="roameo-theme">
+      <App />
+    </ThemeProvider>
   </StrictMode>,
 )

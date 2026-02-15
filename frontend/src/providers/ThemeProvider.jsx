@@ -18,6 +18,9 @@ export function ThemeProvider({
     useEffect(() => {
         const root = window.document.documentElement;
 
+        // Add transition class for smooth theme switch
+        root.classList.add("theme-transition");
+
         root.classList.remove("light", "dark");
 
         if (theme === "system") {
@@ -27,10 +30,13 @@ export function ThemeProvider({
                 : "light";
 
             root.classList.add(systemTheme);
-            return;
+        } else {
+            root.classList.add(theme);
         }
 
-        root.classList.add(theme);
+        // Remove transition class after animation completes
+        const timeout = setTimeout(() => root.classList.remove("theme-transition"), 350);
+        return () => clearTimeout(timeout);
     }, [theme]);
 
     const value = {

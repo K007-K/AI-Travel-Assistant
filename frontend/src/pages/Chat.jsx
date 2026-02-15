@@ -25,23 +25,23 @@ const MessageBubble = memo(({ message }) => {
             {/* Message Bubble */}
             <div
                 className={`max-w-[85%] rounded-2xl p-4 shadow-sm text-[15px] leading-relaxed relative ${isAi
-                    ? 'bg-white/80 backdrop-blur-md text-slate-800 border border-white/40 rounded-tl-none'
+                    ? 'bg-white/80 dark:bg-white/[0.05] backdrop-blur-md text-slate-800 dark:text-slate-200 border border-white/40 dark:border-white/[0.08] rounded-tl-none'
                     : 'bg-gradient-to-br from-blue-600 to-blue-500 text-white rounded-tr-none shadow-blue-500/20'
                     }`}
             >
-                <div className={`prose prose-sm max-w-none break-words ${isAi ? 'prose-slate' : 'prose-invert'}`}>
+                <div className={`prose prose-sm max-w-none break-words ${isAi ? 'prose-slate dark:prose-invert' : 'prose-invert'}`}>
                     <p className="whitespace-pre-wrap">{message.content}</p>
                 </div>
 
-                <span className={`text-[10px] absolute bottom-1 ${isAi ? 'right-3 text-slate-400' : 'left-3 text-blue-100/70'}`}>
+                <span className={`text-[10px] absolute bottom-1 ${isAi ? 'right-3 text-slate-400 dark:text-slate-500' : 'left-3 text-blue-100/70'}`}>
                     {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toLowerCase()}
                 </span>
             </div>
 
             {/* User Avatar */}
             {!isAi && (
-                <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0 mt-1">
-                    <User className="w-4 h-4 text-slate-500" />
+                <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-white/[0.08] flex items-center justify-center flex-shrink-0 mt-1">
+                    <User className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                 </div>
             )}
         </motion.div>
@@ -51,7 +51,7 @@ const MessageBubble = memo(({ message }) => {
 const SuggestionChip = ({ icon, label, onClick }) => (
     <button
         onClick={onClick}
-        className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm border border-slate-200/50 hover:border-blue-300 hover:bg-blue-50/50 rounded-full text-sm text-slate-600 transition-all cursor-pointer whitespace-nowrap shadow-sm hover:shadow-md"
+        className="flex items-center gap-2 px-4 py-2 bg-white/60 dark:bg-white/[0.05] backdrop-blur-sm border border-slate-200/50 dark:border-white/[0.08] hover:border-blue-300 dark:hover:border-blue-500/30 hover:bg-blue-50/50 dark:hover:bg-blue-500/10 rounded-full text-sm text-slate-600 dark:text-slate-300 transition-all cursor-pointer whitespace-nowrap shadow-sm hover:shadow-md dark:shadow-none"
     >
         {icon}
         {label}
@@ -110,24 +110,23 @@ const Chat = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-slate-50 pt-20 flex flex-col items-center">
+        <div className="min-h-screen bg-slate-50 dark:bg-[#0a0a0a] pt-20 flex flex-col items-center transition-colors duration-300">
             {/* Main Chat Container */}
             <div className="w-full max-w-3xl flex-1 flex flex-col relative h-[calc(100vh-5rem)]">
 
                 {/* Header (Minimal) */}
-                <div className="absolute top-0 left-0 right-0 z-10 px-6 py-4 flex items-center justify-between bg-gradient-to-b from-slate-50 via-slate-50/90 to-transparent">
+                <div className="absolute top-0 left-0 right-0 z-10 px-6 py-4 flex items-center justify-between bg-gradient-to-b from-slate-50 via-slate-50/90 to-transparent dark:from-[#0a0a0a] dark:via-[#0a0a0a]/90 dark:to-transparent">
                     <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                        <span className="text-xs font-semibold text-slate-500 tracking-wide uppercase">Travel Assistant Online</span>
+                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 tracking-wide uppercase">Travel Assistant Online</span>
                     </div>
                     {(messages.length > 0) && (
                         <button
                             onClick={() => {
                                 clearChat();
-                                // Manual force reset in local component state if needed, though store handles it
                                 setInput('');
                             }}
-                            className="p-2 text-slate-400 hover:text-red-500 transition-colors rounded-full hover:bg-red-50"
+                            className="p-2 text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors rounded-full hover:bg-red-50 dark:hover:bg-red-500/10"
                             title="Reset Chat"
                         >
                             <Trash2 className="w-4 h-4" />
@@ -156,9 +155,9 @@ const Chat = () => {
                             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-md">
                                 <Sparkles className="w-4 h-4 text-white" />
                             </div>
-                            <div className="bg-white/80 backdrop-blur-md px-4 py-3 rounded-2xl rounded-tl-none border border-white/40 shadow-sm flex items-center gap-2">
+                            <div className="bg-white/80 dark:bg-white/[0.05] backdrop-blur-md px-4 py-3 rounded-2xl rounded-tl-none border border-white/40 dark:border-white/[0.08] shadow-sm dark:shadow-none flex items-center gap-2">
                                 <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
-                                <span className="text-sm text-slate-500 font-medium">Planning your trip...</span>
+                                <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Planning your trip...</span>
                             </div>
                         </motion.div>
                     )}
@@ -169,7 +168,7 @@ const Chat = () => {
 
                 {/* Floating Input Area */}
                 <div className="absolute bottom-6 left-0 right-0 px-6">
-                    <div className="bg-white/70 backdrop-blur-2xl border border-white/50 shadow-lg shadow-slate-200/50 rounded-3xl p-2 relative overflow-hidden transition-all focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:bg-white/90 focus-within:shadow-xl">
+                    <div className="bg-white/70 dark:bg-white/[0.04] backdrop-blur-2xl border border-white/50 dark:border-white/[0.08] shadow-lg shadow-slate-200/50 dark:shadow-black/30 rounded-3xl p-2 relative overflow-hidden transition-all focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:bg-white/90 dark:focus-within:bg-white/[0.06] focus-within:shadow-xl dark:focus-within:shadow-blue-500/5">
 
                         {/* Suggestion Chips (Only if chat is short) */}
                         {messages.length <= 1 && !isLoading && (
@@ -192,7 +191,7 @@ const Chat = () => {
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 placeholder="Where do you want to start?"
-                                className="w-full bg-transparent border-none text-slate-800 placeholder:text-slate-400 resize-none max-h-[120px] py-3 px-4 focus:ring-0 text-[15px] leading-relaxed"
+                                className="w-full bg-transparent border-none text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none max-h-[120px] py-3 px-4 focus:ring-0 text-[15px] leading-relaxed"
                                 rows={1}
                             />
                             <button
@@ -200,7 +199,7 @@ const Chat = () => {
                                 disabled={!input.trim() || isLoading}
                                 className={`p-3 rounded-2xl flex-shrink-0 transition-all duration-300 ${input.trim() && !isLoading
                                     ? 'bg-blue-600 text-white shadow-lg hover:bg-blue-700 hover:scale-105 active:scale-95'
-                                    : 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                                    : 'bg-slate-100 dark:bg-white/[0.06] text-slate-300 dark:text-slate-600 cursor-not-allowed'
                                     }`}
                             >
                                 <Send className="w-5 h-5" />

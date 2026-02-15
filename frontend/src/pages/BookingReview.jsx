@@ -102,7 +102,7 @@ const BookingReview = () => {
     const formatPrice = (amount) => `${currency.symbol}${amount.toLocaleString()}`;
 
     return (
-        <div className="min-h-screen pt-24 pb-12 bg-slate-50 dark:bg-slate-900 px-4">
+        <div className="min-h-screen pt-24 pb-12 bg-slate-50 dark:bg-[#0a0a0a] px-4">
             <div className="max-w-3xl mx-auto">
                 <DemoBanner message="Demo Mode – No real payments are processed. Card details are not stored." />
                 {/* Stepper */}

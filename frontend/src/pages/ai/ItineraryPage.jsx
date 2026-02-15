@@ -33,40 +33,40 @@ export const ItineraryPage = () => {
         >
             <div className="grid lg:grid-cols-12 gap-8 items-start">
                 {/* Form Section */}
-                <div className="lg:col-span-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm sticky top-24">
-                    <h3 className="font-bold text-lg text-slate-800 mb-6">Trip Details</h3>
+                <div className="lg:col-span-4 bg-white dark:bg-white/[0.03] p-6 rounded-2xl border border-slate-200 dark:border-white/[0.06] shadow-sm sticky top-24">
+                    <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200 mb-6">Trip Details</h3>
                     <div className="space-y-5">
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Where to?</label>
+                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Where to?</label>
                             <div className="relative">
                                 <MapPin className="absolute left-4 top-3.5 w-5 h-5 text-emerald-500" />
                                 <input
                                     type="text"
                                     value={formData.dest}
                                     onChange={e => setFormData({ ...formData, dest: e.target.value })}
-                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 rounded-xl border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium"
+                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-[#0a0a0a] rounded-xl border-transparent focus:bg-white dark:bg-white/[0.03] focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium"
                                     placeholder="e.g. Kyoto, Japan"
                                 />
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Duration</label>
+                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Duration</label>
                                 <input
                                     type="text"
                                     value={formData.days}
                                     onChange={e => setFormData({ ...formData, days: e.target.value })}
-                                    className="w-full px-4 py-3 bg-slate-50 rounded-xl border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium"
+                                    className="w-full px-4 py-3 bg-slate-50 dark:bg-[#0a0a0a] rounded-xl border-transparent focus:bg-white dark:bg-white/[0.03] focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium"
                                     placeholder="e.g. 5 days"
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Budget</label>
+                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Budget</label>
                                 <input
                                     type="text"
                                     value={formData.budget}
                                     onChange={e => setFormData({ ...formData, budget: e.target.value })}
-                                    className="w-full px-4 py-3 bg-slate-50 rounded-xl border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium"
+                                    className="w-full px-4 py-3 bg-slate-50 dark:bg-[#0a0a0a] rounded-xl border-transparent focus:bg-white dark:bg-white/[0.03] focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium"
                                     placeholder="e.g. $2000"
                                 />
                             </div>
@@ -84,7 +84,7 @@ export const ItineraryPage = () => {
                 {/* Output Section */}
                 <div className="lg:col-span-8">
                     {!plan && !loading && (
-                        <div className="h-96 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 rounded-3xl">
+                        <div className="h-96 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 dark:border-white/[0.06] rounded-3xl">
                             <MapPin className="w-12 h-12 mb-4 opacity-50" />
                             <p>Enter details to generate your plan</p>
                         </div>
@@ -119,7 +119,7 @@ export const ItineraryPage = () => {
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: idx * 0.1 }}
                                         key={day}
-                                        className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
+                                        className="bg-white dark:bg-white/[0.03] p-6 rounded-2xl border border-slate-200 dark:border-white/[0.06] shadow-sm hover:shadow-md transition-shadow"
                                     >
                                         <h4 className="font-bold text-lg text-emerald-800 mb-4 capitalize flex items-center gap-2">
                                             <Calendar className="w-5 h-5" />
@@ -128,12 +128,12 @@ export const ItineraryPage = () => {
                                         <div className="space-y-6 relative before:absolute before:left-[19px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-100">
                                             {activities.map((act, i) => (
                                                 <div key={i} className="flex gap-6 relative">
-                                                    <div className="w-10 h-10 bg-white border-2 border-emerald-100 rounded-full flex items-center justify-center shrink-0 z-10 text-xs font-bold text-slate-500 shadow-sm">
+                                                    <div className="w-10 h-10 bg-white dark:bg-white/[0.03] border-2 border-emerald-100 rounded-full flex items-center justify-center shrink-0 z-10 text-xs font-bold text-slate-500 dark:text-slate-400 shadow-sm">
                                                         {act.time.split(' ')[0]}
                                                     </div>
                                                     <div>
-                                                        <h5 className="font-bold text-slate-900 text-lg">{act.activity}</h5>
-                                                        <p className="text-slate-500 flex items-center gap-1 text-sm mt-1">
+                                                        <h5 className="font-bold text-slate-900 dark:text-white text-lg">{act.activity}</h5>
+                                                        <p className="text-slate-500 dark:text-slate-400 flex items-center gap-1 text-sm mt-1">
                                                             <MapPin className="w-3 h-3" /> {act.location}
                                                         </p>
                                                     </div>
