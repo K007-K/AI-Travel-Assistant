@@ -147,16 +147,19 @@ const UserDashboard = () => {
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <ExploreCard
+                                destId="d16"
                                 title="Paris, France"
                                 subtitle="Art & Romance"
                                 image="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&q=80&w=800"
                             />
                             <ExploreCard
+                                destId="d17"
                                 title="Tokyo, Japan"
                                 subtitle="Future City"
                                 image="https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&q=80&w=800"
                             />
                             <ExploreCard
+                                destId="d18"
                                 title="Bali, Indonesia"
                                 subtitle="Tropical Paradise"
                                 image="https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&q=80&w=800"
@@ -170,9 +173,9 @@ const UserDashboard = () => {
 };
 
 // Sub-component for Explore Cards
-const ExploreCard = ({ title, subtitle, image }) => (
+const ExploreCard = ({ destId, title, subtitle, image }) => (
     <Link
-        to={`/itinerary?destination=${encodeURIComponent(title.split(',')[0].trim())}`}
+        to={`/destination/${destId}`}
         className="group relative h-64 rounded-3xl overflow-hidden cursor-pointer shadow-md hover:shadow-xl transition-all duration-500 block"
     >
         <img
