@@ -33,6 +33,7 @@ const Settings = () => {
         mobile: authProfile?.mobile || '',
         location: authProfile?.location || '',
         bio: authProfile?.bio || '',
+        travel_style: authProfile?.website || '',
     });
 
     const [isEditing, setIsEditing] = useState(false);
@@ -64,6 +65,7 @@ const Settings = () => {
                 mobile: authProfile.mobile || prev.mobile,
                 location: authProfile.location || prev.location,
                 bio: authProfile.bio || prev.bio,
+                travel_style: authProfile.website || prev.travel_style,
             }));
         }
     }, [authProfile]);
@@ -107,6 +109,7 @@ const Settings = () => {
                 mobile: profile.mobile,
                 location: profile.location,
                 bio: profile.bio,
+                website: profile.travel_style,
             });
             setIsEditing(false);
             setProfileToast({ type: 'success', message: 'Profile updated successfully' });
