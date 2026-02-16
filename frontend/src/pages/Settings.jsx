@@ -182,7 +182,7 @@ const Settings = () => {
         { value: 'system', label: 'System', icon: Monitor },
     ];
 
-    const inputClass = "w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none disabled:opacity-60 disabled:cursor-not-allowed transition-all";
+    const inputClass = "w-full pl-12 pr-12 py-3 bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none disabled:opacity-60 disabled:cursor-not-allowed transition-all";
 
     return (
         <div className="min-h-screen pt-28 pb-16 bg-slate-50 dark:bg-[#0a0a0a] transition-colors duration-300">
