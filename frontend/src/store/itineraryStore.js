@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabase';
 import { generateTransportSegments, CURRENCY_MULTIPLIERS } from '../utils/transportEngine';
 import { orchestrateTrip } from '../engine/tripOrchestrator';
 import { generateAllBookingSuggestions } from '../engine/bookingSuggestionEngine';
+import { checkStrictBudget, allocateBudget, reconcileBudget } from '../engine/budgetAllocator';
+import { getHiddenGems, validateTripBudget } from '../api/groq';
 
 // ── Time Scheduling Utilities ────────────────────────────────────────
 
@@ -58,6 +60,7 @@ async function redistributeTimes(activities, dayStart = '08:00', dayEnd = '20:00
                         .update({ metadata: { ...(seg?.metadata || {}), time: act.time } })
                         .eq('id', act.id)
                 )
+                .catch(err => console.error('[Schedule] Failed to persist time:', err))
         );
         await Promise.all(updates);
     }
@@ -68,46 +71,7 @@ async function redistributeTimes(activities, dayStart = '08:00', dayEnd = '20:00
     );
 }
 
-// ── Rule 5: Strict Budget Guard ──────────────────────────────────────
-
-/**
- * Check if adding a segment would exceed strict budget.
- * Returns { allowed: true } or { allowed: false, message: string }.
- */
-async function checkStrictBudget(tripId, newCost) {
-    // Fetch the trip to check budget_type
-    const { data: trip } = await supabase
-        .from('trips')
-        .select('budget, budget_type')
-        .eq('id', tripId)
-        .single();
-
-    if (!trip || trip.budget_type !== 'strict' || !trip.budget) {
-        return { allowed: true };
-    }
-
-    // Sum existing segment costs (exclude gems — Rule 7)
-    const { data: segments } = await supabase
-        .from('trip_segments')
-        .select('estimated_cost, type')
-        .eq('trip_id', tripId)
-        .neq('type', 'gem');
-
-    const cumulativeCost = (segments || []).reduce(
-        (sum, s) => sum + (parseFloat(s.estimated_cost) || 0), 0
-    );
-
-    const totalAfter = cumulativeCost + (parseFloat(newCost) || 0);
-
-    if (totalAfter > parseFloat(trip.budget)) {
-        return {
-            allowed: false,
-            message: `Budget exceeded in strict mode. Current: ${Math.round(cumulativeCost)}, Adding: ${Math.round(newCost)}, Limit: ${trip.budget}`,
-        };
-    }
-
-    return { allowed: true };
-}
+// checkStrictBudget moved to engine/budgetAllocator.js
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -247,7 +211,7 @@ async function migrateJsonbToSegments(tripId, days) {
 
     // days column has been dropped — data lives entirely in trip_segments
 
-    console.log(`Migrated ${rows.length} segments for trip ${tripId}`);
+    if (import.meta.env.DEV) console.log(`Migrated ${rows.length} segments for trip ${tripId}`);
     return data;
 }
 
@@ -993,6 +957,7 @@ const useItineraryStore = create((set, get) => ({
                                 })
                                 .eq('id', act.id)
                         )
+                        .catch(err => console.error('[Reorder] Failed to persist order:', err))
                 );
             }
         }
@@ -1030,6 +995,35 @@ const useItineraryStore = create((set, get) => ({
             .from('trip_segments')
             .update({ metadata: { ...(seg?.metadata || {}), rating } })
             .eq('id', activityId);
+    },
+
+    // ── Layer Gateway: AI & Budget Functions ──────────────────────────
+    // These expose engine/API functions through the store layer
+    // so UI components never import engines or APIs directly.
+
+    validateBudget: async (tripParams, budgetSummary) => {
+        return validateTripBudget(tripParams, budgetSummary);
+    },
+
+    fetchHiddenGems: async (destination, options = {}) => {
+        return getHiddenGems(destination, options);
+    },
+
+    deriveAllocation: (trip) => {
+        const totalDays = trip.days?.length || 1;
+        const totalNights = Math.max(0, totalDays - 1);
+        return allocateBudget(trip.budget || 0, {
+            travelStyle: trip.travel_style || '',
+            budgetTier: trip.accommodation_preference || 'mid-range',
+            totalDays,
+            totalNights,
+            travelers: trip.travelers || 1,
+            hasOwnVehicle: trip.own_vehicle_type && trip.own_vehicle_type !== 'none',
+        });
+    },
+
+    deriveReconciliation: (allocation, segments) => {
+        return reconcileBudget(allocation, segments);
     },
 }));
 

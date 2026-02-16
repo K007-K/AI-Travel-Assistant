@@ -13,7 +13,6 @@ import {
 import useItineraryStore from '../../store/itineraryStore';
 import useBudgetStore from '../../store/budgetStore';
 import BudgetHealthBadge from '../ui/BudgetHealthBadge';
-import { generateTripPlan, getHiddenGems, validateTripBudget } from '../../api/groq';
 import { getCurrencyForDestination, getCurrencySymbol } from '../../utils/currencyMap';
 // ReactMarkdown removed — Budget Analyzer now uses structured JSON
 import MapContainer from '../map/MapContainer';
@@ -56,6 +55,8 @@ const ItineraryBuilder = () => {
         dailySummary: storeDailySummary,
         bookingOptions: storeBookingOptions,
         hiddenGems: storeHiddenGems,
+        fetchHiddenGems,
+        validateBudget,
     } = useItineraryStore();
     const { syncAiEstimates, fetchBudgetSummary, budgetSummary, setTripBudget, deleteCostEventForActivity } = useBudgetStore();
 
@@ -125,12 +126,13 @@ const ItineraryBuilder = () => {
             // Load gems from store if orchestrator populated them, else fetch separately
             if (storeHiddenGems.length === 0 && hiddenGems.length === 0 && !isLoadingGems) {
                 setIsLoadingGems(true);
-                getHiddenGems(foundTrip.destination, {
+                fetchHiddenGems(foundTrip.destination, {
                     budgetTier: foundTrip.accommodation_preference || 'mid-range',
                     travelStyle: foundTrip.travel_style || '',
                     currency: foundTrip.currency || 'USD',
                 })
                     .then(gems => setHiddenGems(gems || []))
+                    .catch(err => console.error('[HiddenGems] Fetch failed:', err))
                     .finally(() => setIsLoadingGems(false));
             }
 
@@ -312,7 +314,7 @@ const ItineraryBuilder = () => {
             // Refresh RPC data first
             await fetchBudgetSummary(trip.id);
             const freshSummary = useBudgetStore.getState().budgetSummary;
-            const result = await validateTripBudget(
+            const result = await validateBudget(
                 { destination: trip.destination, days: trip.days.length, travelers: trip.travelers, budget: parseFloat(budgetInput), currency: currencyInput },
                 freshSummary
             );

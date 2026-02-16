@@ -8,7 +8,6 @@
 import { create } from 'zustand';
 import { routeMessage } from '../engine/intentRouter';
 import useItineraryStore from './itineraryStore';
-import { allocateBudget, reconcileBudget } from '../engine/budgetAllocator';
 
 // ── Groq API fallback ────────────────────────────────────────────────
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
@@ -47,23 +46,14 @@ async function callGroq(message, systemPrompt) {
 
 /**
  * Re-derive allocation + reconciliation from trip data.
- * This mirrors what AIControlCenter does so the Companion always has data.
+ * Delegates to itineraryStore gateway to avoid duplicating budget logic.
  */
 function deriveFromTrip(trip) {
     if (!trip || !trip._hasSegments || !trip.budget) return { allocation: null, reconciliation: null };
 
     try {
-        const totalDays = trip.days?.length || 1;
-        const totalNights = Math.max(0, totalDays - 1);
-
-        const allocation = allocateBudget(trip.budget, {
-            travelStyle: trip.travel_style || '',
-            budgetTier: trip.accommodation_preference || 'mid-range',
-            totalDays,
-            totalNights,
-            travelers: trip.travelers || 1,
-            hasOwnVehicle: trip.own_vehicle_type && trip.own_vehicle_type !== 'none',
-        });
+        const store = useItineraryStore.getState();
+        const allocation = store.deriveAllocation(trip);
 
         // Flatten segments from days
         const allActivities = trip.days?.flatMap(d => d.activities || []) || [];
@@ -88,7 +78,7 @@ function deriveFromTrip(trip) {
             }
         }
 
-        const reconciliation = reconcileBudget(allocation, flatSegments);
+        const reconciliation = store.deriveReconciliation(allocation, flatSegments);
         return { allocation, reconciliation };
     } catch (err) {
         console.error('[Companion] Error deriving budget:', err);

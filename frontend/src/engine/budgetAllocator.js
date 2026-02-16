@@ -3,9 +3,51 @@
  *
  * Splits total_budget into categorical envelopes BEFORE any generation.
  * No AI calls — pure algorithmic allocation.
+ * Also contains checkStrictBudget() for Rule 5 enforcement.
  *
  * @module engine/budgetAllocator
  */
+
+import { supabase } from '../lib/supabase';
+
+// ── Rule 5: Strict Budget Guard ──────────────────────────────────────
+
+/**
+ * Check if adding a segment would exceed strict budget.
+ * Returns { allowed: true } or { allowed: false, message: string }.
+ */
+export async function checkStrictBudget(tripId, newCost) {
+    const { data: trip } = await supabase
+        .from('trips')
+        .select('budget, budget_type')
+        .eq('id', tripId)
+        .single();
+
+    if (!trip || trip.budget_type !== 'strict' || !trip.budget) {
+        return { allowed: true };
+    }
+
+    const { data: segments } = await supabase
+        .from('trip_segments')
+        .select('estimated_cost, type')
+        .eq('trip_id', tripId)
+        .neq('type', 'gem');
+
+    const cumulativeCost = (segments || []).reduce(
+        (sum, s) => sum + (parseFloat(s.estimated_cost) || 0), 0
+    );
+
+    const totalAfter = cumulativeCost + (parseFloat(newCost) || 0);
+
+    if (totalAfter > parseFloat(trip.budget)) {
+        return {
+            allowed: false,
+            message: `Budget exceeded in strict mode. Current: ${Math.round(cumulativeCost)}, Adding: ${Math.round(newCost)}, Limit: ${trip.budget}`,
+        };
+    }
+
+    return { allowed: true };
+}
 
 // ── Default allocation ratios ────────────────────────────────────────
 

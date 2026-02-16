@@ -9,7 +9,6 @@ import {
     CircleDollarSign, Layers, Shield, Gauge, Zap
 } from 'lucide-react';
 import useItineraryStore from '../store/itineraryStore';
-import { allocateBudget, reconcileBudget } from '../engine/budgetAllocator';
 
 // ── Envelope category config ─────────────────────────────────────────
 const ENVELOPE_CONFIG = [
@@ -236,14 +235,7 @@ const AIControlCenter = () => {
             const totalNights = Math.max(0, totalDays - 1);
             const budgetTier = trip.accommodation_preference || 'mid-range';
 
-            const derivedAllocation = allocateBudget(trip.budget || 0, {
-                travelStyle: trip.travel_style || '',
-                budgetTier,
-                totalDays,
-                totalNights,
-                travelers: trip.travelers || 1,
-                hasOwnVehicle: trip.own_vehicle_type && trip.own_vehicle_type !== 'none',
-            });
+            const derivedAllocation = useItineraryStore.getState().deriveAllocation(trip);
 
             // 2. Flatten segments from trip.days to compute reconciliation
             const allActivities = trip.days?.flatMap(d => d.activities || []) || [];
@@ -275,7 +267,7 @@ const AIControlCenter = () => {
             }
 
             // 3. Reconcile
-            const derivedReconciliation = reconcileBudget(derivedAllocation, flatSegments);
+            const derivedReconciliation = useItineraryStore.getState().deriveReconciliation(derivedAllocation, flatSegments);
 
             // 4. Build daily summary from days
             const summary = (trip.days || []).map(day => {

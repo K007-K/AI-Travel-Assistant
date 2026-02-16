@@ -40,6 +40,7 @@ import {
     CURRENCY_MULTIPLIERS,
 } from '../utils/transportEngine.js';
 import { generateTripPlan, getHiddenGems } from '../api/groq.js';
+import { getCityCoordsLong, CITY_COORDINATES } from '../data/cityCoordinates.js';
 
 // ── Geocoder (Phase 4c) — Nominatim API + local cache ────────────────
 
@@ -70,26 +71,7 @@ function _setGeoCache(key, coords) {
     } catch { /* quota exceeded — ignore */ }
 }
 
-// Common cities for instant (no-network) lookups
-const KNOWN_CITIES = {
-    'paris': { latitude: 48.8566, longitude: 2.3522 },
-    'london': { latitude: 51.5074, longitude: -0.1278 },
-    'new york': { latitude: 40.7128, longitude: -74.0060 },
-    'tokyo': { latitude: 35.6762, longitude: 139.6503 },
-    'dubai': { latitude: 25.2048, longitude: 55.2708 },
-    'mumbai': { latitude: 19.0760, longitude: 72.8777 },
-    'delhi': { latitude: 28.6139, longitude: 77.2090 },
-    'new delhi': { latitude: 28.6139, longitude: 77.2090 },
-    'bangalore': { latitude: 12.9716, longitude: 77.5946 },
-    'bengaluru': { latitude: 12.9716, longitude: 77.5946 },
-    'hyderabad': { latitude: 17.3850, longitude: 78.4867 },
-    'chennai': { latitude: 13.0827, longitude: 80.2707 },
-    'kolkata': { latitude: 22.5726, longitude: 88.3639 },
-    'goa': { latitude: 15.2993, longitude: 74.1240 },
-    'jaipur': { latitude: 26.9124, longitude: 75.7873 },
-    'visakhapatnam': { latitude: 17.6868, longitude: 83.2185 },
-    'vizag': { latitude: 17.6868, longitude: 83.2185 },
-};
+// KNOWN_CITIES consolidated into data/cityCoordinates.js
 
 /**
  * Fetch coordinates from OpenStreetMap Nominatim API.
@@ -154,12 +136,12 @@ async function geocodeLocation(location, activityHint = '', cityContext = '') {
         return _applyOffset(coords, activityHint || normalized);
     }
 
-    // 3. KNOWN_CITIES (instant, no network)
-    let baseCoords = KNOWN_CITIES[normalized] || null;
+    // 3. Shared city coordinates (instant, no network)
+    let baseCoords = getCityCoordsLong(normalized);
     if (!baseCoords) {
-        for (const [city, coords] of Object.entries(KNOWN_CITIES)) {
+        for (const [city] of Object.entries(CITY_COORDINATES)) {
             if (normalized.includes(city) || city.includes(normalized)) {
-                baseCoords = coords;
+                baseCoords = getCityCoordsLong(city);
                 break;
             }
         }
@@ -191,7 +173,7 @@ async function geocodeLocation(location, activityHint = '', cityContext = '') {
         // Last resort: use the city itself
         const cityKey = cityContext.toLowerCase().trim();
         if (!_geocodeMemCache[cityKey]) {
-            const cityCoords = KNOWN_CITIES[cityKey]
+            const cityCoords = getCityCoordsLong(cityKey)
                 || await _fetchFromNominatim(cityContext);
             if (cityCoords) {
                 _geocodeMemCache[cityKey] = cityCoords;
@@ -282,7 +264,7 @@ function sanitizeAIActivities(days) {
         });
 
         if (day.activities.length < original) {
-            console.log(`[Sanitizer] Removed ${original - day.activities.length} rogue items from day`);
+            if (import.meta.env.DEV) console.log(`[Sanitizer] Removed ${original - day.activities.length} rogue items from day`);
         }
     }
 
@@ -382,7 +364,7 @@ export async function orchestrateTrip(trip, callbacks = {}) {
         hasOwnVehicle: trip.own_vehicle_type && trip.own_vehicle_type !== 'none',
     });
 
-    console.log('[Orchestrator] Phase 1 — Budget allocated:', allocation);
+    if (import.meta.env.DEV) console.log('[Orchestrator] Phase 1 — Budget allocated:', allocation);
 
     // ── Fix Group 4: Zero or insufficient budget guard ──
     if ((trip.budget || 0) <= 0) {
@@ -410,7 +392,7 @@ export async function orchestrateTrip(trip, callbacks = {}) {
     const intercity = buildIntercitySegments(trip, allocation, currencyRate);
     allSegments.push(...intercity);
 
-    console.log('[Orchestrator] Phase 2 — Travel segments:', 1 + intercity.length);
+    if (import.meta.env.DEV) console.log('[Orchestrator] Phase 2 — Travel segments:', 1 + intercity.length);
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // PHASE 3: Accommodation
@@ -420,7 +402,7 @@ export async function orchestrateTrip(trip, callbacks = {}) {
     const accommodation = buildAccommodationSegments(trip, allocation, currencyRate, dayLocations);
     allSegments.push(...accommodation);
 
-    console.log('[Orchestrator] Phase 3 — Accommodation:', accommodation.length, 'nights');
+    if (import.meta.env.DEV) console.log('[Orchestrator] Phase 3 — Accommodation:', accommodation.length, 'nights');
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // PHASE 4: Activity Generation (AI)
@@ -507,10 +489,10 @@ export async function orchestrateTrip(trip, callbacks = {}) {
 
     const geocodedCount = activitySegments.filter(s => s.latitude && s.longitude).length;
     const failedCount = activitySegments.filter(s => s.metadata?.geocode_failed).length;
-    console.log(`[Orchestrator] Phase 4c — Geocoded: ${geocodedCount}, Failed: ${failedCount}`);
+    if (import.meta.env.DEV) console.log(`[Orchestrator] Phase 4c — Geocoded: ${geocodedCount}, Failed: ${failedCount}`);
 
     allSegments.push(...activitySegments);
-    console.log('[Orchestrator] Phase 4 — Activities:', activitySegments.length);
+    if (import.meta.env.DEV) console.log('[Orchestrator] Phase 4 — Activities:', activitySegments.length);
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // PHASE 5: Local Transport (pairwise)
@@ -538,7 +520,7 @@ export async function orchestrateTrip(trip, callbacks = {}) {
     }
 
     allSegments.push(...localTransportSegments);
-    console.log('[Orchestrator] Phase 5 — Local transport:', localTransportSegments.length);
+    if (import.meta.env.DEV) console.log('[Orchestrator] Phase 5 — Local transport:', localTransportSegments.length);
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // PHASE 6: Return Travel
@@ -550,7 +532,7 @@ export async function orchestrateTrip(trip, callbacks = {}) {
         allSegments.push(returnSeg);
     }
 
-    console.log('[Orchestrator] Phase 6 — Return segment:', returnSeg ? 'added' : 'skipped');
+    if (import.meta.env.DEV) console.log('[Orchestrator] Phase 6 — Return segment:', returnSeg ? 'added' : 'skipped');
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // PHASE 7: (Booking Suggestions — moved to post-insert in store)
@@ -558,7 +540,7 @@ export async function orchestrateTrip(trip, callbacks = {}) {
     // in generateFullItinerary() after bulk insert + .select()
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     onPhase?.(7, 'Preparing Booking Data');
-    console.log('[Orchestrator] Phase 7 — Booking suggestions deferred to post-insert');
+    if (import.meta.env.DEV) console.log('[Orchestrator] Phase 7 — Booking suggestions deferred to post-insert');
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // PHASE 8: Daily Cost Summary
@@ -567,7 +549,7 @@ export async function orchestrateTrip(trip, callbacks = {}) {
 
     const dailySummary = computeDailySummary(allSegments, totalDays);
 
-    console.log('[Orchestrator] Phase 8 — Daily summaries:', dailySummary.length);
+    if (import.meta.env.DEV) console.log('[Orchestrator] Phase 8 — Daily summaries:', dailySummary.length);
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // PHASE 9: Hidden Gems (AI, isolated)
@@ -593,7 +575,7 @@ export async function orchestrateTrip(trip, callbacks = {}) {
         _isolated: true, // Flag: not part of budget or itinerary
     }));
 
-    console.log('[Orchestrator] Phase 9 — Hidden gems:', hiddenGems.length);
+    if (import.meta.env.DEV) console.log('[Orchestrator] Phase 9 — Hidden gems:', hiddenGems.length);
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // PHASE 10: Budget Reconciliation
@@ -630,7 +612,7 @@ export async function orchestrateTrip(trip, callbacks = {}) {
 
         // Re-reconcile after auto-correction
         reconciliation = reconcileBudget(allocation, allSegments);
-        console.log(`[Orchestrator] Phase 10 — After auto-correction: balanced=${reconciliation.balanced}, total=${reconciliation.total}`);
+        if (import.meta.env.DEV) console.log(`[Orchestrator] Phase 10 — After auto-correction: balanced=${reconciliation.balanced}, total=${reconciliation.total}`);
     }
 
     if (!reconciliation.balanced) {
@@ -639,7 +621,7 @@ export async function orchestrateTrip(trip, callbacks = {}) {
             reconciliation.category_violations
         );
     } else {
-        console.log('[Orchestrator] Phase 10 — Budget reconciled ✓');
+        if (import.meta.env.DEV) console.log('[Orchestrator] Phase 10 — Budget reconciled ✓');
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
