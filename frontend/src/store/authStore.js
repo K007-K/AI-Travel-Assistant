@@ -214,15 +214,16 @@ const useAuthStore = create((set, get) => ({
 
     // ── Update Password (after reset) ────────────────────────────────
     updatePassword: async (newPassword) => {
-        set({ isLoading: true, error: null });
+        // NOTE: Do NOT set global isLoading here — it causes a full-page flash.
+        // The Settings page manages its own passwordLoading local state.
+        set({ error: null });
         try {
             const { error } = await supabase.auth.updateUser({
                 password: newPassword,
             });
             if (error) throw error;
-            set({ isLoading: false });
         } catch (error) {
-            set({ isLoading: false, error: error.message });
+            set({ error: error.message });
             throw error;
         }
     },

@@ -470,7 +470,7 @@ const Settings = () => {
                                                 <div className="space-y-2">
                                                     <label className="text-sm font-medium text-slate-700 dark:text-slate-300">New Password</label>
                                                     <div className="relative">
-                                                        <Lock className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
+                                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                                         <input
                                                             type={showNewPw ? 'text' : 'password'}
                                                             value={passwords.newPassword}
@@ -481,7 +481,7 @@ const Settings = () => {
                                                             minLength={6}
                                                         />
                                                         <button type="button" onClick={() => setShowNewPw(!showNewPw)}
-                                                            className="absolute right-4 top-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                                                             {showNewPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                                         </button>
                                                     </div>
@@ -489,7 +489,7 @@ const Settings = () => {
                                                 <div className="space-y-2">
                                                     <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Confirm Password</label>
                                                     <div className="relative">
-                                                        <Lock className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
+                                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                                         <input
                                                             type={showConfirmPw ? 'text' : 'password'}
                                                             value={passwords.confirmPassword}
@@ -500,7 +500,7 @@ const Settings = () => {
                                                             minLength={6}
                                                         />
                                                         <button type="button" onClick={() => setShowConfirmPw(!showConfirmPw)}
-                                                            className="absolute right-4 top-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                                                             {showConfirmPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                                         </button>
                                                     </div>
