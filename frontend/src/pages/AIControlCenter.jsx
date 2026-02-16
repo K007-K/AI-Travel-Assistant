@@ -242,7 +242,7 @@ const AIControlCenter = () => {
                 totalDays,
                 totalNights,
                 travelers: trip.travelers || 1,
-                hasOwnVehicle: trip.has_own_vehicle || false,
+                hasOwnVehicle: trip.own_vehicle_type && trip.own_vehicle_type !== 'none',
             });
 
             // 2. Flatten segments from trip.days to compute reconciliation

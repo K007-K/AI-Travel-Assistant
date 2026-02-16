@@ -62,7 +62,7 @@ function deriveFromTrip(trip) {
             totalDays,
             totalNights,
             travelers: trip.travelers || 1,
-            hasOwnVehicle: trip.has_own_vehicle || false,
+            hasOwnVehicle: trip.own_vehicle_type && trip.own_vehicle_type !== 'none',
         });
 
         // Flatten segments from days
