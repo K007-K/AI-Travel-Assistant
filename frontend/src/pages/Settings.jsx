@@ -442,7 +442,6 @@ const Settings = () => {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <Toast toast={passwordToast} />
                                     {!showPasswordForm && (
                                         <button
                                             onClick={() => setShowPasswordForm(true)}
@@ -453,6 +452,8 @@ const Settings = () => {
                                     )}
                                 </div>
                             </div>
+                            {/* Password change success/error toast — full width, clearly visible */}
+                            <Toast toast={passwordToast} />
 
                             <AnimatePresence>
                                 {showPasswordForm && (
