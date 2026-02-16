@@ -245,8 +245,7 @@ async function migrateJsonbToSegments(tripId, days) {
         return [];
     }
 
-    // Clear the JSONB days column now that data lives in trip_segments
-    await supabase.from('trips').update({ days: null }).eq('id', tripId);
+    // days column has been dropped — data lives entirely in trip_segments
 
     console.log(`Migrated ${rows.length} segments for trip ${tripId}`);
     return data;
@@ -374,8 +373,6 @@ const useItineraryStore = create((set, get) => ({
                 currency: tripData.currency || 'USD',
                 travelers: tripData.travelers || 1,
                 pinned: false,
-                segments: segments,
-                days: null,  // No longer using JSONB days
                 // Constraint-driven fields
                 start_location: tripData.start_location || null,
                 return_location: tripData.return_location || null,
