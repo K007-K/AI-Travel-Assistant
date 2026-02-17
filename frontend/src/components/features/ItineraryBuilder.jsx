@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, Reorder, AnimatePresence } from 'framer-motion';
 import {
@@ -198,9 +198,9 @@ const ItineraryBuilder = () => {
         }
     };
 
-    // Compute active currency symbol
-    const activeCurrency = getCurrencyForDestination(trip?.destination);
-    const activeCurrencySymbol = getCurrencySymbol(trip?.currency || activeCurrency);
+    // Memoize currency derivation
+    const activeCurrency = useMemo(() => getCurrencyForDestination(trip?.destination), [trip?.destination]);
+    const activeCurrencySymbol = useMemo(() => getCurrencySymbol(trip?.currency || activeCurrency), [trip?.currency, activeCurrency]);
 
     const handleGenerateItinerary = async () => {
         if (!trip) return;
@@ -399,9 +399,11 @@ const ItineraryBuilder = () => {
         navigate('/itinerary');
     };
 
+    // Memoize derived trip data
+    const activeDay = useMemo(() => trip?.days?.find(d => d.id === selectedDay), [trip?.days, selectedDay]);
+    const allActivities = useMemo(() => trip?.days?.flatMap(d => d.activities) || [], [trip?.days]);
+
     if (!trip) return null;
-    const activeDay = trip.days.find(d => d.id === selectedDay);
-    const allActivities = trip.days.flatMap(d => d.activities);
 
     return (
         <div className="fixed inset-0 z-50 bg-background overflow-hidden flex flex-col">
