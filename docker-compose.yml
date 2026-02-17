@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Development Service
   web-dev:
@@ -7,19 +5,26 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.dev
     ports:
-      - "5173:5173"
+      - "6006:6006"
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    environment:
-      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
-      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
-    command: npm run dev -- --host
+    env_file:
+      - ./frontend/.env
+    command: npm run dev -- --host --port 6006
 
-  # Production Preview Service (Optional)
+  # Production Preview Service
   web-prod:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "8080:80"
+      - "3000:3000"
+    env_file:
+      - ./frontend/.env
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:3000/" ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s

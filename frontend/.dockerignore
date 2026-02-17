@@ -1,0 +1,13 @@
+node_modules
+dist
+.git
+.gitignore
+*.md
+.env*
+.vscode
+.DS_Store
+coverage
+tests
+*.test.js
+*.test.jsx
+vitest.config.js

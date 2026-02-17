@@ -5,6 +5,10 @@ import '@fontsource/geist-mono';
 import './index.css'
 import App from './App.jsx'
 import { ThemeProvider } from './providers/ThemeProvider'
+import { validateEnv } from './config/validateEnv'
+
+// Fast-fail if required env vars are missing
+validateEnv();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
