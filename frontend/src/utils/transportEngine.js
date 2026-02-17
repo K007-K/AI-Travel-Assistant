@@ -716,3 +716,13 @@ export function getSegmentTypeLabel(type) {
 export function isLogisticsSegment(type) {
     return ['outbound_travel', 'return_travel', 'intercity_travel', 'local_transport', 'accommodation'].includes(type);
 }
+
+// ── TEST EXPORTS (used by constraint compliance test harness) ────────
+export {
+    decideTransportMode as _decideTransportMode,
+    estimateDistanceTier as _estimateDistanceTier,
+    calculateTransportCost as _calculateTransportCost,
+    calculateAccommodationCost as _calculateAccommodationCost,
+    KM_ESTIMATES as _KM_ESTIMATES,
+    estimateDrivingTime as _estimateDrivingTime,
+};
