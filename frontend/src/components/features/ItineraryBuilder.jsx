@@ -7,7 +7,7 @@ import {
     Coffee, Camera, Utensils, Bed, Wallet,
     Landmark, Music, Sparkles, Map as MapIcon, Loader2,
     CheckCircle2, Circle, AlertCircle, AlertTriangle,
-    Plane, Train, Bus, Car, Bike, Hotel,
+    Plane, Train, Bus, Car, Bike, Hotel, Sun,
 } from 'lucide-react';
 import useItineraryStore from '../../store/itineraryStore';
 import useBudgetStore from '../../store/budgetStore';
