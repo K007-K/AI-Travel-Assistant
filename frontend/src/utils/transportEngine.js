@@ -339,7 +339,7 @@ export { CURRENCY_MULTIPLIERS };
  * @param {number} currencyRate — Currency multiplier (unused here, cost uses trip.currency)
  * @returns {object|null} — Segment row or null if no outbound needed
  */
-export function buildOutboundSegment(trip, allocation, currencyRate) {
+export function buildOutboundSegment(trip, allocation, _currencyRate) {
     const tripSegments = trip.segments || [];
     const startLoc = trip.start_location;
     const firstDest = tripSegments[0]?.location || trip.destination;
@@ -394,7 +394,7 @@ export function buildOutboundSegment(trip, allocation, currencyRate) {
  * @param {number} currencyRate
  * @returns {object[]} — Array of intercity segments
  */
-export function buildIntercitySegments(trip, allocation, currencyRate) {
+export function buildIntercitySegments(trip, allocation, _currencyRate) {
     const tripSegments = trip.segments || [];
     const travelers = trip.travelers || 1;
     const currency = trip.currency || 'USD';

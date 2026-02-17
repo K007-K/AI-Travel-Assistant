@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 // ── Stat Card ────────────────────────────────────────────────────────
+// eslint-disable-next-line no-unused-vars
 const StatCard = ({ label, value, icon: Icon, color, subtext }) => (
     <div className="bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-5 hover:shadow-md transition-shadow">
         <div className="flex items-center gap-3 mb-3">

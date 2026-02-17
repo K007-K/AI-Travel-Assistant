@@ -5,7 +5,7 @@ import { aiManager } from '../../api/aiManager';
 
 export const EmergencyPage = () => {
     const [step, setStep] = useState('select');
-    const [loading, setLoading] = useState(false);
+    const [, setLoading] = useState(false);
     const [advice, setAdvice] = useState(null);
 
     const handleEmergencyType = async (type) => {

@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { logger } from '../utils/logger';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
@@ -65,7 +66,7 @@ export const sendMessageToGemini = async (messages) => {
         return response.text();
 
     } catch (error) {
-        console.error("Gemini API Error:", error);
+        logger.error("Gemini API Error:", error);
 
         if (error.message.includes('429')) {
             return "I'm receiving too many requests right now. Please give me a moment to catch my breath! 😅";

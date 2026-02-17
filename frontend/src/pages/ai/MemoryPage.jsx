@@ -4,7 +4,7 @@ import { AIPageLayout } from './components/AIPageLayout';
 
 export const MemoryPage = () => {
     // Mock memory data
-    const [memories, setMemories] = useState([
+    const [memories] = useState([
         { id: 1, type: 'Preference', content: 'Prefers boutique hotels over chains' },
         { id: 2, type: 'Need', content: 'Requires vegan food options' },
         { id: 3, type: 'History', content: 'Visited Japan in 2023' },

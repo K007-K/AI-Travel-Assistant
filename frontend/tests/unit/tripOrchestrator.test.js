@@ -7,7 +7,7 @@
  * NOTE: orchestrateTrip() itself requires mocked Supabase + API calls,
  * so we test the exported pure utilities and the allocator+reconciler chain.
  */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest'; // eslint-disable-line no-unused-vars
 import { allocateBudget, reconcileBudget, deductFromEnvelope } from '@/engine/budgetAllocator.js';
 import {
     _decideTransportMode as decideTransportMode,

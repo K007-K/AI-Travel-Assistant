@@ -154,66 +154,8 @@ function getDayLocationFromTripSegments(tripSegments, dayNumber) {
     return null;
 }
 
-/**
- * One-time migration: convert legacy JSONB `days` array into trip_segments rows.
- * Called automatically when a trip with JSONB days but no trip_segments is opened.
- */
-async function migrateJsonbToSegments(tripId, days) {
-    if (!days || days.length === 0) return [];
-
-    const rows = [];
-    days.forEach(day => {
-        if (!day.activities || day.activities.length === 0) {
-            // Insert a placeholder so the day is still represented
-            rows.push({
-                trip_id: tripId,
-                type: 'activity',
-                title: '__placeholder__',
-                day_number: day.dayNumber,
-                location: day.location || null,
-                estimated_cost: 0,
-                order_index: 0,
-                metadata: { placeholder: true },
-            });
-        } else {
-            day.activities.forEach((act, idx) => {
-                rows.push({
-                    trip_id: tripId,
-                    type: 'activity',
-                    title: act.title,
-                    day_number: day.dayNumber,
-                    location: act.location || day.location || null,
-                    estimated_cost: parseFloat(act.estimated_cost) || 0,
-                    order_index: idx,
-                    metadata: {
-                        time: act.time || '09:00',
-                        activityType: act.type || 'sightseeing',
-                        notes: act.notes || '',
-                        safety_warning: act.safety_warning || null,
-                        isCompleted: act.isCompleted || false,
-                        rating: act.rating || 0,
-                        legacy_id: act.id, // preserve old UUID for cost_events linkage
-                    },
-                });
-            });
-        }
-    });
-
-    const { data, error } = await supabase
-        .from('trip_segments')
-        .insert(rows)
-        .select();
-
-    if (error) {
-        console.error('Migration to trip_segments failed:', error);
-        return [];
-    }
-
-    // days column has been dropped — data lives entirely in trip_segments
-
-    if (import.meta.env.DEV) console.log(`Migrated ${rows.length} segments for trip ${tripId}`);
-    return data;
-}
+// Legacy JSONB migration removed — trips.days column dropped in schema_remediation.sql
+// All trip data now lives exclusively in trip_segments table.
 
 // ── Store ────────────────────────────────────────────────────────────
 
@@ -271,18 +213,13 @@ const useItineraryStore = create((set, get) => ({
                 const tripSegs = segsByTrip[trip.id] || [];
                 if (tripSegs.length > 0) {
                     // Trip has segments — build days from them
-                    // Filter out placeholders for display
-                    const realSegs = tripSegs.filter(s => s.title !== '__placeholder__');
                     return {
                         ...trip,
                         days: buildDaysFromSegments(tripSegs, trip),
                         _hasSegments: true,
                     };
-                } else if (trip.days && trip.days.length > 0) {
-                    // Legacy trip — keep JSONB days, will migrate on open
-                    return { ...trip, _hasSegments: false };
                 } else {
-                    // Trip with no days and no segments
+                    // Trip with no segments
                     return { ...trip, days: [], _hasSegments: false };
                 }
             });
@@ -294,23 +231,12 @@ const useItineraryStore = create((set, get) => ({
         }
     },
 
-    // ── Ensure trip has segments (auto-migrate legacy JSONB) ──────────
+    // ── Ensure trip has segments ─────────────────────────────────────
     ensureSegments: async (tripId) => {
         const store = get();
         const trip = store.trips.find(t => t.id === tripId);
         if (!trip || trip._hasSegments) return;
-
-        if (trip.days && trip.days.length > 0) {
-            const newSegments = await migrateJsonbToSegments(tripId, trip.days);
-            if (newSegments.length > 0) {
-                const rebuiltDays = buildDaysFromSegments(newSegments, trip);
-                set(state => ({
-                    trips: state.trips.map(t =>
-                        t.id === tripId ? { ...t, days: rebuiltDays, _hasSegments: true } : t
-                    ),
-                }));
-            }
-        }
+        // No legacy migration needed — trips.days column dropped
     },
 
     // ── Create ───────────────────────────────────────────────────────
@@ -325,7 +251,7 @@ const useItineraryStore = create((set, get) => ({
             ];
 
             // Calculate total days
-            const totalDays = segments.reduce((sum, s) => sum + (s.days || 0), 0);
+            const _totalDays = segments.reduce((sum, s) => sum + (s.days || 0), 0);
 
             const newTrip = {
                 user_id: user.id,
@@ -471,7 +397,7 @@ const useItineraryStore = create((set, get) => ({
     // ── Update Trip metadata ─────────────────────────────────────────
     updateTrip: async (tripId, updates) => {
         try {
-            const { data, error } = await supabase
+            const { data: _data, error } = await supabase
                 .from('trips')
                 .update(updates)
                 .eq('id', tripId)

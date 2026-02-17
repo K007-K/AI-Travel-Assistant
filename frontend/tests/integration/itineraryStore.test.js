@@ -4,7 +4,7 @@
  * Tests the store → orchestrator → engine chain with mocked Supabase.
  * Validates that the integration between layers works correctly.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { allocateBudget, reconcileBudget, deductFromEnvelope } from '@/engine/budgetAllocator.js';
 import {
     _decideTransportMode as decideTransportMode,

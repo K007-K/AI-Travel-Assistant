@@ -21,7 +21,7 @@ const useChatStore = create(
             })),
 
             sendMessage: async (content) => {
-                const { messages, addMessage } = get();
+                const { addMessage } = get();
 
                 // Add user message
                 addMessage({ role: 'user', content });

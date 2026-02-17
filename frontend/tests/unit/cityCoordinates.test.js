@@ -15,21 +15,21 @@ describe('CITY_COORDINATES data', () => {
     });
 
     it('every entry should have numeric lat and lng', () => {
-        for (const [city, coords] of Object.entries(CITY_COORDINATES)) {
+        for (const [_city, coords] of Object.entries(CITY_COORDINATES)) {
             expect(typeof coords.lat).toBe('number');
             expect(typeof coords.lng).toBe('number');
         }
     });
 
     it('all latitudes should be in range [-90, 90]', () => {
-        for (const [city, coords] of Object.entries(CITY_COORDINATES)) {
+        for (const [_city, coords] of Object.entries(CITY_COORDINATES)) {
             expect(coords.lat).toBeGreaterThanOrEqual(-90);
             expect(coords.lat).toBeLessThanOrEqual(90);
         }
     });
 
     it('all longitudes should be in range [-180, 180]', () => {
-        for (const [city, coords] of Object.entries(CITY_COORDINATES)) {
+        for (const [_city, coords] of Object.entries(CITY_COORDINATES)) {
             expect(coords.lng).toBeGreaterThanOrEqual(-180);
             expect(coords.lng).toBeLessThanOrEqual(180);
         }
