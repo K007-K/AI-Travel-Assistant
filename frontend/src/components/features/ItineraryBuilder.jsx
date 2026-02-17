@@ -5,19 +5,24 @@ import {
     Calendar, MapPin, Clock, Plus, ArrowLeft,
     GripVertical, Trash2, Save, Share2,
     Coffee, Camera, Utensils, Bed, Wallet,
-    Landmark, Music, Sun, Sparkles, Map as MapIcon, Loader2,
-    CheckCircle2, Circle, AlertCircle, TrendingUp,
-    ShieldCheck, BarChart3, AlertTriangle, DollarSign, Lightbulb,
-    Plane, Train, Bus, Car, Bike, Hotel, PlusCircle
+    Landmark, Music, Sparkles, Map as MapIcon, Loader2,
+    CheckCircle2, Circle, AlertCircle, AlertTriangle,
+    Plane, Train, Bus, Car, Bike, Hotel,
 } from 'lucide-react';
 import useItineraryStore from '../../store/itineraryStore';
 import useBudgetStore from '../../store/budgetStore';
 import BudgetHealthBadge from '../ui/BudgetHealthBadge';
 import { getCurrencyForDestination, getCurrencySymbol } from '../../utils/currencyMap';
-// ReactMarkdown removed — Budget Analyzer now uses structured JSON
 import MapContainer from '../map/MapContainer';
 import { Button } from '../ui/Button';
-import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
+import { Card, CardContent } from '../ui/Card';
+
+// ── Sub-components (extracted from this monolith) ──
+import SegmentCard from './itinerary/SegmentCard';
+import DayExpenseSummary from './itinerary/DayExpenseSummary';
+import AllocationBreakdown from './itinerary/AllocationBreakdown';
+import HiddenGemsPanel from './itinerary/HiddenGemsPanel';
+import BudgetTab from './itinerary/BudgetTab';
 
 const ACTIVITY_TYPES = [
     { value: 'sightseeing', label: 'Sightseeing', icon: Camera, color: 'text-blue-500 bg-blue-50 dark:bg-blue-900/20' },
@@ -727,160 +732,29 @@ const ItineraryBuilder = () => {
                                             <Reorder.Group axis="y" values={activeDay?.activities || []} onReorder={(newOrder) => { reorderActivities(trip.id, activeDay.id, newOrder); setIsDirty(true); }} className="space-y-4">
                                                 {activeDay?.activities.map((activity) => {
                                                     const typeInfo = ACTIVITY_TYPES.find(t => t.value === activity.type) || ACTIVITY_TYPES[0];
-                                                    const Icon = typeInfo.icon;
-                                                    const isLogistics = activity.isLogistics;
                                                     return (
-                                                        <Reorder.Item key={activity.id} value={activity} className="relative" dragListener={!isLogistics}>
-                                                            <Card
-                                                                className={`border hover:border-primary/50 transition-all cursor-pointer ${focusedActivityId === activity.id ? 'border-primary ring-2 ring-primary/20 shadow-md' : ''} ${activity.safety_warning ? 'border-l-4 border-l-destructive' : ''} ${isLogistics ? 'border-l-4 border-l-teal-500 bg-teal-50/30 dark:bg-teal-900/10' : ''}`}
-                                                                onClick={() => setFocusedActivityId(focusedActivityId === activity.id ? null : activity.id)}
-                                                            >
-                                                                <div className="p-5 flex items-start gap-4">
-                                                                    {!isLogistics && <div className="mt-2 text-muted-foreground/50 cursor-grab hover:text-foreground"><GripVertical className="w-5 h-5" /></div>}
-                                                                    {!isLogistics && (
-                                                                        <button onClick={() => toggleActivityComplete(trip.id, activeDay.id, activity.id)} className={activity.isCompleted ? 'text-green-500 mt-2' : 'text-muted-foreground/50 mt-2 hover:text-muted-foreground transition-colors'}>
-                                                                            {activity.isCompleted ? <CheckCircle2 className="w-6 h-6" /> : <Circle className="w-6 h-6" />}
-                                                                        </button>
-                                                                    )}
-                                                                    <div className={`p-3 rounded-xl ${typeInfo.color}`}><Icon className="w-5 h-5" /></div>
-                                                                    <div className="flex-grow">
-                                                                        <div className="flex justify-between items-center mb-1">
-                                                                            <h3 className={`font-semibold text-lg ${activity.isCompleted ? 'text-muted-foreground line-through' : 'text-foreground'}`}>{activity.title}</h3>
-                                                                            <div className="flex items-center gap-3">
-                                                                                {activity.estimated_cost > 0 && (
-                                                                                    <span className="text-sm font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-lg">
-                                                                                        {activeCurrencySymbol}{activity.estimated_cost.toLocaleString()}
-                                                                                    </span>
-                                                                                )}
-                                                                                {!isLogistics && (
-                                                                                    <button onClick={() => handleDeleteActivity(trip.id, activeDay.id, activity.id)} className="p-2 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                        {activity.safety_warning && <p className="text-xs font-medium text-destructive bg-destructive/10 p-2.5 rounded-lg mb-3 flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {activity.safety_warning}</p>}
-                                                                        <div className="flex gap-4 text-sm text-muted-foreground">
-                                                                            {!isLogistics && <span className="flex gap-1 items-center bg-muted px-2 py-1 rounded text-xs"><Clock className="w-3 h-3" /> {activity.time}</span>}
-                                                                            {activity.location && <span className="flex gap-1 items-center"><MapPin className="w-3 h-3" /> {activity.location}</span>}
-                                                                            <span className="px-2 py-1 rounded bg-muted text-xs font-medium uppercase">{typeInfo.label}</span>
-                                                                        </div>
-                                                                        {activity.notes && <p className="mt-3 text-sm text-muted-foreground bg-muted/50 p-3 rounded-xl">{activity.notes}</p>}
-                                                                    </div>
-                                                                </div>
-                                                            </Card>
-                                                            {/* Booking Options — Fix Group 8 */}
-                                                            {activity.segmentId && storeBookingOptions?.[activity.segmentId] && (
-                                                                <div className="mx-5 mb-4 -mt-1">
-                                                                    <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                                                                        {storeBookingOptions[activity.segmentId].options?.map((opt, oi) => (
-                                                                            <div key={oi} className={`flex-shrink-0 px-3 py-2 rounded-xl border text-xs ${opt.tag === 'Upgrade Available'
-                                                                                ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20'
-                                                                                : opt.tag === 'Best'
-                                                                                    ? 'border-primary/40 bg-primary/5'
-                                                                                    : 'border-border bg-muted/30'
-                                                                                }`}>
-                                                                                <div className="flex items-center gap-1.5 mb-0.5">
-                                                                                    <span className="font-medium text-foreground">{opt.provider}</span>
-                                                                                    {opt.tag && (
-                                                                                        <span className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded-full ${opt.tag === 'Upgrade Available'
-                                                                                            ? 'bg-amber-200 text-amber-800 dark:bg-amber-800 dark:text-amber-200'
-                                                                                            : 'bg-primary/20 text-primary'
-                                                                                            }`}>{opt.tag}</span>
-                                                                                    )}
-                                                                                </div>
-                                                                                <span className="text-muted-foreground">{activeCurrencySymbol}{(opt.estimated_price || 0).toLocaleString()}</span>
-                                                                                {opt.rating && <span className="ml-1 text-yellow-600">★{opt.rating}</span>}
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                    {storeBookingOptions[activity.segmentId].demo_label && (
-                                                                        <p className="text-[10px] text-muted-foreground/60 mt-1">Demo booking data</p>
-                                                                    )}
-                                                                </div>
-                                                            )}
-                                                        </Reorder.Item>
+                                                        <SegmentCard
+                                                            key={activity.id}
+                                                            activity={activity}
+                                                            typeInfo={typeInfo}
+                                                            isLogistics={activity.isLogistics}
+                                                            isFocused={focusedActivityId === activity.id}
+                                                            activeCurrencySymbol={activeCurrencySymbol}
+                                                            storeBookingOptions={storeBookingOptions}
+                                                            onFocus={() => setFocusedActivityId(focusedActivityId === activity.id ? null : activity.id)}
+                                                            onToggleComplete={() => toggleActivityComplete(trip.id, activeDay.id, activity.id)}
+                                                            onDelete={() => handleDeleteActivity(trip.id, activeDay.id, activity.id)}
+                                                        />
                                                     );
                                                 })}
                                             </Reorder.Group>
 
-                                            {/* Daily Expense Summary — Uses orchestrator data when available (Fix Group 8) */}
-                                            {(() => {
-                                                const dayNum = activeDay?.dayNumber;
-                                                // Prefer orchestrator daily summary if available
-                                                const orchSummary = storeDailySummary?.find(s => s.day_number === dayNum);
-
-                                                let dayTotal, activityCost, transportCost, accomCost;
-
-                                                if (orchSummary) {
-                                                    dayTotal = orchSummary.total_day_cost || 0;
-                                                    activityCost = orchSummary.activity_cost || 0;
-                                                    transportCost = (orchSummary.travel_cost || 0) + (orchSummary.local_transport_cost || 0);
-                                                    accomCost = orchSummary.stay_cost || 0;
-                                                } else {
-                                                    // Fallback: UI-computed
-                                                    const acts = activeDay?.activities || [];
-                                                    const costSegments = acts.filter(a => !a.isGem);
-                                                    dayTotal = costSegments.reduce((s, a) => s + (a.estimated_cost || 0), 0);
-                                                    activityCost = costSegments.filter(a => !a.isLogistics).reduce((s, a) => s + (a.estimated_cost || 0), 0);
-                                                    transportCost = costSegments.filter(a => a.segmentType === 'outbound_travel' || a.segmentType === 'return_travel' || a.segmentType === 'intercity_travel' || a.segmentType === 'local_transport').reduce((s, a) => s + (a.estimated_cost || 0), 0);
-                                                    accomCost = costSegments.filter(a => a.segmentType === 'accommodation').reduce((s, a) => s + (a.estimated_cost || 0), 0);
-                                                }
-
-                                                const dailyBudget = trip.budget && trip.days.length ? Math.round(trip.budget / trip.days.length) : 0;
-                                                if (dayTotal === 0 && dailyBudget === 0) return null;
-                                                const pct = dailyBudget > 0 ? Math.min(100, Math.round((dayTotal / dailyBudget) * 100)) : 0;
-                                                const isOver = dayTotal > dailyBudget && dailyBudget > 0;
-                                                return (
-                                                    <Card className="mt-6 border-primary/20 bg-primary/5">
-                                                        <div className="p-5">
-                                                            <div className="flex items-center justify-between mb-4">
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className="p-2 rounded-xl bg-primary/10">
-                                                                        <Wallet className="w-5 h-5 text-primary" />
-                                                                    </div>
-                                                                    <div>
-                                                                        <h4 className="font-semibold text-foreground">Day {activeDay?.dayNumber} Expenses</h4>
-                                                                        <p className="text-xs text-muted-foreground">{orchSummary ? 'From lifecycle engine' : 'Estimated total (per person)'}</p>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="text-right">
-                                                                    <div className={`text-2xl font-bold ${isOver ? 'text-destructive' : 'text-primary'}`}>
-                                                                        {activeCurrencySymbol}{dayTotal.toLocaleString()}
-                                                                    </div>
-                                                                    {dailyBudget > 0 && (
-                                                                        <p className="text-xs text-muted-foreground">
-                                                                            of {activeCurrencySymbol}{dailyBudget.toLocaleString()} daily budget
-                                                                        </p>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                            {/* Progress bar */}
-                                                            {dailyBudget > 0 && (
-                                                                <div className="h-2 bg-muted rounded-full mb-4 overflow-hidden">
-                                                                    <div
-                                                                        className={`h-full rounded-full transition-all ${isOver ? 'bg-destructive' : 'bg-primary'}`}
-                                                                        style={{ width: `${Math.min(pct, 100)}%` }}
-                                                                    />
-                                                                </div>
-                                                            )}
-                                                            {/* Category breakdown */}
-                                                            <div className="grid grid-cols-3 gap-3 text-center">
-                                                                <div className="bg-background rounded-xl p-2.5">
-                                                                    <p className="text-xs text-muted-foreground mb-0.5">Activities</p>
-                                                                    <p className="text-sm font-semibold text-foreground">{activeCurrencySymbol}{activityCost.toLocaleString()}</p>
-                                                                </div>
-                                                                <div className="bg-background rounded-xl p-2.5">
-                                                                    <p className="text-xs text-muted-foreground mb-0.5">Transport</p>
-                                                                    <p className="text-sm font-semibold text-teal-600">{activeCurrencySymbol}{transportCost.toLocaleString()}</p>
-                                                                </div>
-                                                                <div className="bg-background rounded-xl p-2.5">
-                                                                    <p className="text-xs text-muted-foreground mb-0.5">Stay</p>
-                                                                    <p className="text-sm font-semibold text-indigo-600">{activeCurrencySymbol}{accomCost.toLocaleString()}</p>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </Card>
-                                                );
-                                            })()}
+                                            <DayExpenseSummary
+                                                activeDay={activeDay}
+                                                trip={trip}
+                                                storeDailySummary={storeDailySummary}
+                                                activeCurrencySymbol={activeCurrencySymbol}
+                                            />
                                         </>
                                     )}
                                 </div>
@@ -892,95 +766,20 @@ const ItineraryBuilder = () => {
                                             <MapContainer trip={trip} destination={trip.destination} focusedActivityId={focusedActivityId} onPinClick={(id) => setFocusedActivityId(id)} />
                                         </Card>
 
-                                        {/* Allocation Breakdown — Fix Group 8 */}
-                                        {storeAllocation && (
-                                            <Card className="rounded-3xl border-border">
-                                                <CardHeader>
-                                                    <CardTitle className="flex items-center gap-2 text-lg">
-                                                        <BarChart3 className="w-5 h-5 text-primary" /> Budget Allocation
-                                                    </CardTitle>
-                                                </CardHeader>
-                                                <CardContent className="space-y-2.5">
-                                                    {[
-                                                        { label: 'Intercity Travel', value: storeAllocation.intercity, color: 'bg-teal-500' },
-                                                        { label: 'Accommodation', value: storeAllocation.accommodation, color: 'bg-indigo-500' },
-                                                        { label: 'Activities', value: storeAllocation.activity, color: 'bg-primary' },
-                                                        { label: 'Local Transport', value: storeAllocation.local_transport, color: 'bg-amber-500' },
-                                                        { label: 'Buffer', value: storeAllocation.buffer, color: 'bg-muted-foreground' },
-                                                        ...(storeAllocation.upgrade_pool ? [{ label: 'Upgrade Pool', value: storeAllocation.upgrade_pool, color: 'bg-amber-400' }] : []),
-                                                    ].map((item, i) => (
-                                                        <div key={i}>
-                                                            <div className="flex justify-between text-xs mb-0.5">
-                                                                <span className="text-muted-foreground">{item.label}</span>
-                                                                <span className="font-medium text-foreground">{activeCurrencySymbol}{(item.value || 0).toLocaleString()}</span>
-                                                            </div>
-                                                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                                                                <div className={`h-full rounded-full ${item.color}`} style={{ width: `${storeAllocation.total_budget > 0 ? Math.round(((item.value || 0) / storeAllocation.total_budget) * 100) : 0}%` }} />
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                    <div className="pt-2 border-t border-border flex justify-between text-xs font-semibold">
-                                                        <span>Total Budget</span>
-                                                        <span>{activeCurrencySymbol}{(storeAllocation.total_budget || 0).toLocaleString()}</span>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        )}
+                                        <AllocationBreakdown
+                                            storeAllocation={storeAllocation}
+                                            activeCurrencySymbol={activeCurrencySymbol}
+                                        />
 
-                                        {/* Scrollable Hidden Gems — Fix Group 5: Read-only */}
-                                        <Card className="rounded-3xl border-border flex flex-col max-h-[calc(100vh-25rem)]">
-                                            <CardHeader>
-                                                <CardTitle className="flex items-center gap-2 text-lg">
-                                                    <Sun className="w-5 h-5 text-yellow-500" /> Hidden Gems
-                                                </CardTitle>
-                                            </CardHeader>
-                                            <CardContent className="space-y-3 overflow-y-auto pr-2 custom-scrollbar">
-                                                {isLoadingGems && (
-                                                    <div className="text-center py-4 text-muted-foreground text-sm">Loading gems…</div>
-                                                )}
-                                                <AnimatePresence>
-                                                    {(storeHiddenGems.length > 0 ? storeHiddenGems : hiddenGems)
-                                                        .filter(gem => !addedGemTitles.has(gem.title))
-                                                        .map((gem, i) => (
-                                                            <motion.div
-                                                                key={gem.title}
-                                                                initial={{ opacity: 1, height: 'auto' }}
-                                                                exit={{ opacity: 0, height: 0, marginBottom: 0, padding: 0, overflow: 'hidden' }}
-                                                                transition={{ duration: 0.4, ease: 'easeInOut' }}
-                                                                className="p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors shrink-0"
-                                                            >
-                                                                <div className="flex items-start justify-between gap-2">
-                                                                    <h4 className="text-sm font-medium text-foreground mb-1.5">{gem.title}</h4>
-                                                                    <button
-                                                                        onClick={() => handleAddGemToPlan(gem)}
-                                                                        className="shrink-0 p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
-                                                                        title={`Add to Day ${selectedDay?.replace('day-', '') || '1'}`}
-                                                                    >
-                                                                        <PlusCircle className="w-4 h-4" />
-                                                                    </button>
-                                                                </div>
-                                                                <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{gem.description}</p>
-                                                                <div className="flex gap-2 flex-wrap">
-                                                                    {gem.category && (
-                                                                        <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">{gem.category}</span>
-                                                                    )}
-                                                                    {gem.best_time && (
-                                                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">{gem.best_time}</span>
-                                                                    )}
-                                                                    {gem.estimated_cost > 0 && (
-                                                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
-                                                                            {activeCurrencySymbol}{gem.estimated_cost}
-                                                                        </span>
-                                                                    )}
-                                                                    {gem.estimated_cost === 0 && (
-                                                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Free</span>
-                                                                    )}
-                                                                </div>
-                                                            </motion.div>
-                                                        ))}
-                                                </AnimatePresence>
-                                            </CardContent>
-                                        </Card>
+                                        <HiddenGemsPanel
+                                            storeHiddenGems={storeHiddenGems}
+                                            hiddenGems={hiddenGems}
+                                            isLoadingGems={isLoadingGems}
+                                            addedGemTitles={addedGemTitles}
+                                            activeCurrencySymbol={activeCurrencySymbol}
+                                            selectedDay={selectedDay}
+                                            onAddGem={handleAddGemToPlan}
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -988,338 +787,19 @@ const ItineraryBuilder = () => {
 
                         {/* 2. BUDGET TAB */}
                         <div className={`transition-opacity duration-300 ${activeTab === 'budget' ? 'block' : 'hidden'}`}>
-                            <div className="max-w-5xl mx-auto">
-
-                                {/* Budget Input Card */}
-                                <Card className="rounded-3xl overflow-hidden border-border mb-6">
-                                    <div className="p-6 md:p-8 bg-gradient-to-br from-primary/5 via-background to-accent/5">
-                                        <div className="flex items-center gap-3 mb-1">
-                                            <div className="p-2.5 rounded-xl bg-primary/10">
-                                                <Wallet className="w-5 h-5 text-primary" />
-                                            </div>
-                                            <div>
-                                                <h2 className="text-2xl font-bold text-foreground">Trip Budget Planner</h2>
-                                            </div>
-                                        </div>
-                                        <p className="text-sm text-muted-foreground ml-[52px] mb-6">Set your per-person budget for {trip.destination} and let AI analyze your spending plan.</p>
-
-                                        <div className="flex flex-col sm:flex-row gap-3 items-end">
-                                            <div className="flex-grow">
-                                                <label className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">Budget per person</label>
-                                                <div className="relative">
-                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-primary">{currencyInput}</span>
-                                                    <input
-                                                        type="number"
-                                                        value={budgetInput}
-                                                        onChange={e => setBudgetInput(e.target.value)}
-                                                        className="flex h-12 w-full rounded-xl border border-input bg-background px-3 py-2 pl-14 text-lg font-semibold ring-offset-background placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary transition-all"
-                                                        placeholder="2000"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="w-full sm:w-32">
-                                                <label className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">Currency</label>
-                                                <select value={currencyInput} onChange={e => setCurrencyInput(e.target.value)} className="flex h-12 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary transition-all">
-                                                    {['USD', 'EUR', 'GBP', 'INR', 'AUD', 'JPY', 'CAD', 'SGD', 'THB', 'MXN'].map(c => <option key={c} value={c}>{c}</option>)}
-                                                </select>
-                                            </div>
-                                            <div className="flex gap-2 w-full sm:w-auto">
-                                                <Button onClick={handleAnalyzeBudget} disabled={isAnalyzing || !budgetInput} className="h-12 px-6 flex-1 sm:flex-none rounded-xl gap-2 font-semibold">
-                                                    {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />} Analyze
-                                                </Button>
-                                                <Button variant="outline" onClick={handleSaveBudget} className="h-12 px-5 rounded-xl font-semibold">
-                                                    <Save className="w-4 h-4 mr-1.5" /> Save
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Card>
-
-                                {/* ─── Financial Intelligence Panel ─── */}
-                                {(() => {
-                                    // Compute financial values from RPC data
-                                    const bs = budgetSummary || {};
-                                    const totalBudget = bs.total_budget || parseFloat(budgetInput) || 0;
-                                    const actualSpent = bs.total_spent || 0;
-                                    const aiEstimated = bs.ai_estimated_total || 0;
-                                    const forecastTotal = actualSpent + aiEstimated;
-                                    const forecastPercent = totalBudget > 0 ? Math.round((forecastTotal / totalBudget) * 100 * 10) / 10 : 0;
-                                    const remainingForecast = totalBudget - forecastTotal;
-                                    const categories = bs.category_breakdown || [];
-                                    const cur = currencyInput || bs.currency || 'USD';
-
-                                    // Risk level (deterministic)
-                                    const riskLevel = forecastPercent >= 100 ? 'CRITICAL' : forecastPercent >= 80 ? 'HIGH' : forecastPercent >= 60 ? 'MODERATE' : 'LOW';
-                                    const riskConfig = {
-                                        LOW: { color: 'text-emerald-600 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800', icon: <ShieldCheck className="w-5 h-5" />, label: 'Low Risk' },
-                                        MODERATE: { color: 'text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800', icon: <AlertCircle className="w-5 h-5" />, label: 'Moderate Risk' },
-                                        HIGH: { color: 'text-orange-600 bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-800', icon: <AlertTriangle className="w-5 h-5" />, label: 'High Risk' },
-                                        CRITICAL: { color: 'text-red-600 bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800', icon: <AlertTriangle className="w-5 h-5" />, label: 'Critical' },
-                                    };
-                                    const risk = riskConfig[riskLevel];
-
-                                    const hasData = totalBudget > 0;
-
-                                    return (
-                                        <>
-                                            {/* Loading Skeleton */}
-                                            <AnimatePresence>
-                                                {isAnalyzing && (
-                                                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4">
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                                            {[0, 1, 2, 3].map(i => (
-                                                                <div key={i} className="rounded-2xl border border-border bg-card p-5 space-y-3" style={{ animationDelay: `${i * 150}ms` }}>
-                                                                    <div className="flex items-center gap-2">
-                                                                        <div className="w-8 h-8 rounded-lg bg-muted animate-pulse" />
-                                                                        <div className="h-4 w-24 rounded bg-muted animate-pulse" />
-                                                                    </div>
-                                                                    <div className="h-7 w-32 rounded bg-muted animate-pulse" />
-                                                                    <div className="h-2 w-full rounded-full bg-muted animate-pulse" />
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                        <div className="rounded-2xl border border-border bg-card p-6 space-y-3">
-                                                            <div className="h-5 w-44 rounded bg-muted animate-pulse" />
-                                                            {[0, 1, 2, 3, 4, 5].map(i => (
-                                                                <div key={i} className="flex justify-between items-center py-2">
-                                                                    <div className="h-4 w-36 rounded bg-muted animate-pulse" />
-                                                                    <div className="h-4 w-24 rounded bg-muted animate-pulse" />
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                        <div className="rounded-2xl border border-border bg-card p-6 space-y-3">
-                                                            <div className="h-5 w-52 rounded bg-muted animate-pulse" />
-                                                            {[0, 1, 2].map(i => (
-                                                                <div key={i} className="space-y-1.5">
-                                                                    <div className="h-4 w-28 rounded bg-muted animate-pulse" />
-                                                                    <div className="h-4 w-full rounded-full bg-muted animate-pulse" />
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                        <p className="text-center text-sm text-muted-foreground animate-pulse">✨ AI is analyzing your financials for {trip.destination}...</p>
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
-
-                                            {/* ── SECTION 1: Top Summary Cards (from RPC) ── */}
-                                            {!isAnalyzing && hasData && (
-                                                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="space-y-5">
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                                        {/* Trip Budget */}
-                                                        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-2xl border border-border bg-card p-5">
-                                                            <div className="flex items-center gap-2 mb-2">
-                                                                <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30"><Wallet className="w-4 h-4 text-blue-600 dark:text-blue-400" /></div>
-                                                                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Trip Budget</span>
-                                                            </div>
-                                                            <div className="text-2xl font-bold text-foreground">{cur} {totalBudget.toLocaleString()}</div>
-                                                            <p className="text-xs text-muted-foreground mt-1">per person · {trip.days?.length || 0} days</p>
-                                                        </motion.div>
-
-                                                        {/* Actual Spent */}
-                                                        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="rounded-2xl border border-border bg-card p-5">
-                                                            <div className="flex items-center gap-2 mb-2">
-                                                                <div className="p-1.5 rounded-lg bg-violet-100 dark:bg-violet-900/30"><DollarSign className="w-4 h-4 text-violet-600 dark:text-violet-400" /></div>
-                                                                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Actual Spent</span>
-                                                            </div>
-                                                            <div className="text-2xl font-bold text-foreground">{cur} {actualSpent.toLocaleString()}</div>
-                                                            <p className="text-xs text-muted-foreground mt-1">Manual + Bookings</p>
-                                                        </motion.div>
-
-                                                        {/* Forecast */}
-                                                        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="rounded-2xl border border-border bg-card p-5">
-                                                            <div className="flex items-center gap-2 mb-2">
-                                                                <div className="p-1.5 rounded-lg bg-cyan-100 dark:bg-cyan-900/30"><TrendingUp className="w-4 h-4 text-cyan-600 dark:text-cyan-400" /></div>
-                                                                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Forecast</span>
-                                                            </div>
-                                                            <div className={`text-2xl font-bold ${forecastPercent >= 100 ? 'text-red-500' : 'text-foreground'}`}>{cur} {forecastTotal.toLocaleString()}</div>
-                                                            <div className="w-full bg-muted h-1.5 rounded-full mt-2 overflow-hidden">
-                                                                <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(forecastPercent, 100)}%` }} transition={{ duration: 1, ease: "easeOut" }}
-                                                                    className={`h-full rounded-full ${forecastPercent >= 100 ? 'bg-red-500' : forecastPercent >= 80 ? 'bg-orange-500' : forecastPercent >= 60 ? 'bg-amber-500' : 'bg-emerald-500'}`}
-                                                                />
-                                                            </div>
-                                                            <p className="text-xs text-muted-foreground mt-1">{forecastPercent}% of budget</p>
-                                                        </motion.div>
-
-                                                        {/* Risk Level */}
-                                                        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className={`rounded-2xl border p-5 ${risk.color}`}>
-                                                            <div className="flex items-center gap-2 mb-2">
-                                                                {risk.icon}
-                                                                <span className="text-xs font-medium uppercase tracking-wide">Risk Level</span>
-                                                            </div>
-                                                            <div className="text-2xl font-bold">{riskLevel}</div>
-                                                            <p className="text-xs mt-1 opacity-80">{risk.label}</p>
-                                                        </motion.div>
-                                                    </div>
-
-                                                    {/* ── SECTION 2: Financial Summary Panel ── */}
-                                                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="rounded-2xl border border-border bg-card p-6">
-                                                        <h3 className="text-base font-bold text-foreground mb-4 flex items-center gap-2">
-                                                            <BarChart3 className="w-5 h-5 text-primary" /> Financial Summary
-                                                        </h3>
-                                                        <div className="divide-y divide-border">
-                                                            {[
-                                                                { label: 'Total Budget', value: `${cur} ${totalBudget.toLocaleString()}`, accent: false },
-                                                                { label: 'Actual Spent (Manual + Bookings)', value: `${cur} ${actualSpent.toLocaleString()}`, accent: false },
-                                                                { label: 'AI Estimated Spend', value: `${cur} ${aiEstimated.toLocaleString()}`, accent: false },
-                                                                { label: 'Forecast Total', value: `${cur} ${forecastTotal.toLocaleString()}`, accent: forecastPercent >= 100 },
-                                                                { label: 'Remaining (Forecast)', value: `${cur} ${remainingForecast.toLocaleString()}`, accent: remainingForecast < 0 },
-                                                                { label: 'Forecast Utilization', value: `${forecastPercent}%`, accent: forecastPercent >= 80 },
-                                                            ].map((row, i) => (
-                                                                <div key={i} className="flex justify-between items-center py-3">
-                                                                    <span className="text-sm text-muted-foreground">{row.label}</span>
-                                                                    <span className={`text-sm font-semibold ${row.accent ? 'text-red-500' : 'text-foreground'}`}>{row.value}</span>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </motion.div>
-
-                                                    {/* ── SECTION 3: Projected Cost Allocation ── */}
-                                                    {categories.length > 0 && (
-                                                        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="rounded-2xl border border-border bg-card p-6">
-                                                            <h3 className="text-base font-bold text-foreground mb-4 flex items-center gap-2">
-                                                                <span className="text-lg">📊</span> Projected Cost Allocation
-                                                            </h3>
-                                                            {/* Legend */}
-                                                            <div className="flex gap-4 mb-4 text-xs text-muted-foreground">
-                                                                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-blue-500" /> Manual</span>
-                                                                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-violet-500" /> Booking</span>
-                                                                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-cyan-400" /> AI Estimate</span>
-                                                            </div>
-                                                            <div className="space-y-4">
-                                                                {categories.map((cat, i) => {
-                                                                    const catTotal = parseFloat(cat.total) || 0;
-                                                                    const manual = parseFloat(cat.by_source?.manual) || 0;
-                                                                    const booking = parseFloat(cat.by_source?.booking) || 0;
-                                                                    const aiEst = parseFloat(cat.by_source?.ai_estimate) || 0;
-                                                                    const catPercent = totalBudget > 0 ? Math.round((catTotal / totalBudget) * 100) : 0;
-                                                                    const manualPct = catTotal > 0 ? (manual / catTotal) * 100 : 0;
-                                                                    const bookingPct = catTotal > 0 ? (booking / catTotal) * 100 : 0;
-                                                                    const aiPct = catTotal > 0 ? (aiEst / catTotal) * 100 : 0;
-
-                                                                    return (
-                                                                        <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 + i * 0.08 }}>
-                                                                            <div className="flex justify-between items-center mb-1">
-                                                                                <span className="text-sm font-medium text-foreground capitalize">{cat.category}</span>
-                                                                                <span className="text-sm text-muted-foreground">{cur} {catTotal.toLocaleString()} <span className="text-xs">({catPercent}%)</span></span>
-                                                                            </div>
-                                                                            {/* Stacked bar */}
-                                                                            <div className="w-full bg-muted rounded-full h-3 overflow-hidden flex">
-                                                                                {manual > 0 && (
-                                                                                    <motion.div initial={{ width: 0 }} animate={{ width: `${manualPct}%` }} transition={{ duration: 0.8, delay: 0.6 + i * 0.08 }}
-                                                                                        className="h-full bg-blue-500" title={`Manual: ${cur} ${manual.toLocaleString()}`} />
-                                                                                )}
-                                                                                {booking > 0 && (
-                                                                                    <motion.div initial={{ width: 0 }} animate={{ width: `${bookingPct}%` }} transition={{ duration: 0.8, delay: 0.7 + i * 0.08 }}
-                                                                                        className="h-full bg-violet-500" title={`Booking: ${cur} ${booking.toLocaleString()}`} />
-                                                                                )}
-                                                                                {aiEst > 0 && (
-                                                                                    <motion.div initial={{ width: 0 }} animate={{ width: `${aiPct}%` }} transition={{ duration: 0.8, delay: 0.8 + i * 0.08 }}
-                                                                                        className="h-full bg-cyan-400" title={`AI Estimate: ${cur} ${aiEst.toLocaleString()}`} />
-                                                                                )}
-                                                                            </div>
-                                                                        </motion.div>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        </motion.div>
-                                                    )}
-
-                                                    {/* ── SECTION 4: Risk Assessment (Deterministic) ── */}
-                                                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-                                                        className={`rounded-2xl border p-5 ${risk.color}`}>
-                                                        <h3 className="text-base font-bold mb-2 flex items-center gap-2">
-                                                            {risk.icon} Risk Assessment
-                                                        </h3>
-                                                        <p className="text-sm leading-relaxed">
-                                                            {riskLevel === 'LOW' && `Forecast utilization is within safe range at ${forecastPercent}%. Your budget of ${cur} ${totalBudget.toLocaleString()} comfortably covers projected expenses.`}
-                                                            {riskLevel === 'MODERATE' && `Forecast utilization is at ${forecastPercent}%. Budget is being used efficiently but monitor spending closely. Remaining forecast: ${cur} ${remainingForecast.toLocaleString()}.`}
-                                                            {riskLevel === 'HIGH' && `Forecast utilization is elevated at ${forecastPercent}%. Projected expenses are approaching the budget limit. Only ${cur} ${Math.max(0, remainingForecast).toLocaleString()} remains.`}
-                                                            {riskLevel === 'CRITICAL' && `Projected expenses exceed budget by ${cur} ${Math.abs(remainingForecast).toLocaleString()} (${forecastPercent}% utilization). Immediate budget review recommended.`}
-                                                        </p>
-                                                    </motion.div>
-
-                                                    {/* ── SECTION 5: AI Financial Insights ── */}
-                                                    {aiInsights && (
-                                                        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="rounded-2xl border border-border bg-card p-6 space-y-5">
-                                                            <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                                                                <Sparkles className="w-5 h-5 text-primary" /> AI Financial Insights
-                                                            </h3>
-
-                                                            {/* Summary */}
-                                                            {aiInsights.summary && (
-                                                                <div className="p-4 rounded-xl bg-primary/5 border border-primary/10">
-                                                                    <p className="text-sm text-foreground leading-relaxed">{aiInsights.summary}</p>
-                                                                </div>
-                                                            )}
-
-                                                            {/* Risk Analysis */}
-                                                            {aiInsights.risk_analysis && (
-                                                                <div className="p-4 rounded-xl bg-muted/50">
-                                                                    <h4 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-1.5">
-                                                                        <ShieldCheck className="w-4 h-4 text-muted-foreground" /> Risk Analysis
-                                                                    </h4>
-                                                                    <p className="text-sm text-muted-foreground leading-relaxed">{aiInsights.risk_analysis}</p>
-                                                                </div>
-                                                            )}
-
-                                                            {/* Category Insights */}
-                                                            {aiInsights.category_insights && aiInsights.category_insights.length > 0 && (
-                                                                <div>
-                                                                    <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
-                                                                        <BarChart3 className="w-4 h-4 text-muted-foreground" /> Category Insights
-                                                                    </h4>
-                                                                    <div className="space-y-2">
-                                                                        {aiInsights.category_insights.map((insight, i) => (
-                                                                            <motion.div key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 + i * 0.06 }}
-                                                                                className="flex items-start gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
-                                                                                <div className="mt-0.5 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                                                                    <CheckCircle2 className="w-3 h-3 text-primary" />
-                                                                                </div>
-                                                                                <p className="text-sm text-muted-foreground leading-relaxed">{insight}</p>
-                                                                            </motion.div>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-                                                            )}
-
-                                                            {/* Recommendations */}
-                                                            {aiInsights.recommendations && aiInsights.recommendations.length > 0 && (
-                                                                <div>
-                                                                    <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
-                                                                        <Lightbulb className="w-4 h-4 text-amber-500" /> Recommendations
-                                                                    </h4>
-                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                        {aiInsights.recommendations.map((rec, i) => (
-                                                                            <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 + i * 0.06 }}
-                                                                                className="flex items-start gap-3 p-3 rounded-xl bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors">
-                                                                                <span className="text-amber-500 font-bold text-sm mt-px">{i + 1}.</span>
-                                                                                <p className="text-sm text-muted-foreground leading-relaxed">{rec}</p>
-                                                                            </motion.div>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </motion.div>
-                                                    )}
-                                                </motion.div>
-                                            )}
-
-                                            {/* Empty State */}
-                                            {!isAnalyzing && !hasData && !aiInsights && (
-                                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20">
-                                                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/5 flex items-center justify-center">
-                                                        <Sparkles className="w-7 h-7 text-primary/40" />
-                                                    </div>
-                                                    <h3 className="text-lg font-semibold text-foreground mb-2">Financial Intelligence Panel</h3>
-                                                    <p className="text-sm text-muted-foreground max-w-md mx-auto">Enter your budget above and click <strong>Save</strong> to see your financial summary. Then click <strong>Analyze</strong> to get AI-powered financial insights for {trip.destination}.</p>
-                                                </motion.div>
-                                            )}
-                                        </>
-                                    );
-                                })()}
-
-
-                            </div>
+                            <BudgetTab
+                                trip={trip}
+                                budgetInput={budgetInput}
+                                setBudgetInput={setBudgetInput}
+                                currencyInput={currencyInput}
+                                setCurrencyInput={setCurrencyInput}
+                                isAnalyzing={isAnalyzing}
+                                aiInsights={aiInsights}
+                                budgetSummary={budgetSummary}
+                                activeCurrencySymbol={activeCurrencySymbol}
+                                handleAnalyzeBudget={handleAnalyzeBudget}
+                                handleSaveBudget={handleSaveBudget}
+                            />
                         </div>
 
                     </div>
@@ -1346,6 +826,7 @@ const ItineraryBuilder = () => {
                 )}
             </AnimatePresence>
         </div>
+
     );
 };
 
