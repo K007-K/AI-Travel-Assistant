@@ -186,11 +186,12 @@ function decideTransportMode(trip, distanceTier) {
         return vehicle; // 'car' or 'bike'
     }
 
-    // If user explicitly chose a mode (but still enforce Rule 3)
+    // If user explicitly chose a mode (but still enforce Rule 3 for absurd cases)
     if (pref !== 'any') {
-        // ── Rule 3: Never allow flight when driving time < 5h ──
-        if (pref === 'flight' && drivingHours < 5) {
-            return 'train'; // Downgrade explicit flight preference
+        // ── Rule 3: Only block explicit flight for truly short distances (< 2h / ~120km) ──
+        // Previously blocked at < 5h, which was too aggressive and overrode user intent
+        if (pref === 'flight' && drivingHours < 2) {
+            return 'train'; // Downgrade only for absurdly short flight requests
         }
         return pref;
     }
