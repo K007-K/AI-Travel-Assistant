@@ -178,7 +178,10 @@ const useItineraryStore = create((set, get) => ({
         set({ isLoading: true, error: null });
         try {
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
+            if (!user) {
+                set({ isLoading: false, trips: [] });
+                return;
+            }
 
             const { data: trips, error } = await supabase
                 .from('trips')
