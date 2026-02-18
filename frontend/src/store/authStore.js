@@ -13,6 +13,15 @@ const useAuthStore = create((set, get) => ({
         set({ isLoading: true });
         if (import.meta.env.DEV) console.log('AuthStore: initializing...');
 
+        // Safety timeout — if auth init takes longer than 5s, unblock the UI
+        const timeout = setTimeout(() => {
+            const { isLoading } = get();
+            if (isLoading) {
+                console.warn('AuthStore: initialization timed out, unblocking UI');
+                set({ isLoading: false });
+            }
+        }, 5000);
+
         try {
             // Get initial session
             const { data: { session }, error } = await supabase.auth.getSession();
@@ -46,9 +55,11 @@ const useAuthStore = create((set, get) => ({
                     set({ user: null, profile: null, isAuthenticated: false, isLoading: false });
                 }
             });
+            clearTimeout(timeout);
             return () => subscription.unsubscribe();
         } catch (error) {
             console.error('AuthStore: Initialization error', error);
+            clearTimeout(timeout);
             set({ isLoading: false });
         }
     },
