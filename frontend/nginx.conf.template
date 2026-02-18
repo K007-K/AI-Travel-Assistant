@@ -1,0 +1,44 @@
+server {
+    listen ${PORT};
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # ── Gzip compression ─────────────────────────────────────
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_min_length 256;
+    gzip_comp_level 6;
+    gzip_types
+        text/plain
+        text/css
+        text/javascript
+        application/javascript
+        application/json
+        application/xml
+        image/svg+xml
+        font/woff2;
+
+    # ── Immutable cache for hashed assets (JS, CSS, images) ──
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+
+    # ── Short cache for root HTML (allows instant deploy updates) ─
+    location = /index.html {
+        expires -1;
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+    }
+
+    # ── SPA fallback — serve index.html for all routes ───────
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # ── Security headers ─────────────────────────────────────
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+}
