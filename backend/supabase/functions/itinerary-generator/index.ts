@@ -2,8 +2,10 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY')
 
+const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || '*'
+
 const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 

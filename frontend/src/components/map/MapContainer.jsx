@@ -89,7 +89,7 @@ export default function MapContainer({ trip, destination, onMapReady, highlighte
 
         import('./HighlightController.js').then(({ highlightSegment }) => {
             highlightSegment(map, highlightedSegmentId, markers);
-        });
+        }).catch(console.error);
     }, [highlightedSegmentId, mapLoaded, markers]);
 
     return (
