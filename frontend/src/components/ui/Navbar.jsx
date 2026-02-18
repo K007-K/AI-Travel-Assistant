@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useAuthStore from '../../store/authStore';
-import { Button } from '../ui/button';
+import { Button } from '../ui/Button';
 import useBackgroundBrightness from '../../hooks/useBackgroundBrightness';
 import { useTheme } from '../../providers/ThemeProvider';
 

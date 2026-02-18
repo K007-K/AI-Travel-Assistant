@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import useAuthStore from '../../store/authStore';
-import { Button } from '../ui/button';
+import { Button } from '../ui/Button';
 import Navbar from '../ui/Navbar';
 
 const UserDashboard = () => {
