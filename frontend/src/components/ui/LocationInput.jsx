@@ -7,7 +7,7 @@ const LocationInput = ({
     value,
     onChange,
     placeholder = "City or Airport",
-    icon: _Icon = MapPin,
+    icon: Icon = MapPin,
     className = ""
 }) => {
     const [suggestions, setSuggestions] = useState([]);
