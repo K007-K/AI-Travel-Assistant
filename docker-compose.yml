@@ -18,6 +18,15 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+        - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+        - VITE_GEMINI_API_KEY=${VITE_GEMINI_API_KEY}
+        - VITE_GROQ_API_KEY=${VITE_GROQ_API_KEY}
+        - VITE_TRANSLATION_API_URL=${VITE_TRANSLATION_API_URL}
+        - VITE_APP_NAME=${VITE_APP_NAME}
+        - VITE_APP_VERSION=${VITE_APP_VERSION}
+        - VITE_ORS_API_KEY=${VITE_ORS_API_KEY}
     ports:
       - "3000:3000"
     env_file:
