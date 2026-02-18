@@ -277,7 +277,7 @@ function handleGeneral(message, context) {
  * Build system prompt with full trip context for Groq fallback.
  */
 function buildSystemPrompt(context) {
-    const { allocation, reconciliation, destination, currency, travelStyle, dailySummary } = context;
+    const { allocation, reconciliation, destination, currency, travelStyle, dailySummary: _dailySummary } = context;
 
     const parts = [
         'You are a helpful travel assistant for an AI-powered travel planner.',

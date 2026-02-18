@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plane, Hotel, Train, Search, Calendar, MapPin, User, CheckCircle, ArrowRight, Star, Clock, Briefcase, Coffee, Wifi, Ban, Award } from 'lucide-react';
 import useBookingStore from '../store/bookingStore';
@@ -9,11 +9,11 @@ import { generateFlightResults, generateHotelResults, generateTrainResults, sort
 
 const Bookings = () => {
     const navigate = useNavigate();
-    const { addBooking } = useBookingStore();
+    const { addBooking: _addBooking } = useBookingStore();
     const [activeTab, setActiveTab] = useState('flights');
     const [searchState, setSearchState] = useState('idle'); // idle, searching, results
     const [results, setResults] = useState([]);
-    const [showConfetti, setShowConfetti] = useState(false);
+    const [showConfetti, _setShowConfetti] = useState(false);
 
     // Currency State — persisted in localStorage
     const [currency, setCurrencyState] = useState(() => {

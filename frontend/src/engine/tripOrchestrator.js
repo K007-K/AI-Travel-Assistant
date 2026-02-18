@@ -338,7 +338,7 @@ export async function orchestrateTrip(trip, callbacks = {}) {
     const currencyRate = CURRENCY_MULTIPLIERS[currency] || 1;
     const budgetTier = trip.accommodation_preference || 'mid-range';
     const travelStyle = trip.travel_style || '';
-    const isLuxury = budgetTier === 'luxury';
+    const _isLuxury = budgetTier === 'luxury';
 
     // Build day-to-location mapping
     const dayLocations = [];

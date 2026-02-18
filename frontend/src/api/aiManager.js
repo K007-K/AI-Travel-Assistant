@@ -23,7 +23,7 @@ export const aiManager = {
      * @param {object} context - Additional metadata (optional)
      * @returns {Promise<any>} - Parsed JSON response (or string if fallback)
      */
-    async runAgent(agentId, userInput, context = {}) {
+    async runAgent(agentId, userInput, _context = {}) {
         const systemPrompt = AGENT_PROMPTS[agentId];
         if (!systemPrompt) {
             throw new Error(`Agent ID '${agentId}' not found.`);

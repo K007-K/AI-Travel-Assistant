@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import RouteLayer from './RouteLayer';
@@ -10,7 +10,7 @@ import useMapSegments from '../../hooks/useMapSegments';
  * Uses OSM raster tiles (fully free, no API key).
  * Manages map lifecycle, auto-fit bounds, and child layers.
  */
-export default function MapContainer({ trip, destination, onMapReady, highlightedSegmentId, focusedActivityId, onPinClick }) {
+export default function MapContainer({ trip, destination, onMapReady, highlightedSegmentId, focusedActivityId: _focusedActivityId, onPinClick }) {
     const containerRef = useRef(null);
     const mapRef = useRef(null);
     const [mapLoaded, setMapLoaded] = useState(false);

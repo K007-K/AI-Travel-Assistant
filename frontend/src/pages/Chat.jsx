@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, memo } from 'react';
 import useChatStore from '../store/chatStore';
 import { Send, Sparkles, User, Trash2, MapPin, Compass, Lightbulb, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+// remarkGfm removed — not currently used
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Memoized Message Component to prevent unnecessary re-renders

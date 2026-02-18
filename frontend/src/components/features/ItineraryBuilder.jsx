@@ -44,16 +44,16 @@ const ItineraryBuilder = () => {
     const {
         trips,
         fetchTrips,
-        isLoading,
+        isLoading: _isLoading,
         updateTrip,
         addActivity,
-        batchAddActivities,
+        batchAddActivities: _batchAddActivities,
         generateFullItinerary,
         reorderActivities,
         persistReorder,
         deleteActivity,
         toggleActivityComplete,
-        updateActivityTime,
+        updateActivityTime: _updateActivityTime,
         ensureSegments,
         orchestrationPhase,
         allocation: storeAllocation,
@@ -293,7 +293,7 @@ const ItineraryBuilder = () => {
         showToast("Activity added!");
     };
 
-    const handleAddGem = async (gem) => {
+    const _handleAddGem = async (gem) => {
         if (!selectedDay) return;
         try {
             await addActivity(trip.id, selectedDay, {
@@ -401,7 +401,7 @@ const ItineraryBuilder = () => {
 
     // Memoize derived trip data
     const activeDay = useMemo(() => trip?.days?.find(d => d.id === selectedDay), [trip?.days, selectedDay]);
-    const allActivities = useMemo(() => trip?.days?.flatMap(d => d.activities) || [], [trip?.days]);
+    const _allActivities = useMemo(() => trip?.days?.flatMap(d => d.activities) || [], [trip?.days]);
 
     if (!trip) return null;
 

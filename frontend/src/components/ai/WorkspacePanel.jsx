@@ -10,7 +10,7 @@ import { aiManager } from '../../api/aiManager';
 // --- SUB-COMPONENTS FOR SPECIFIC TOOLS ---
 
 // 1. LIVE TRANSLATION (Text & Context)
-const TranslationTool = ({ isActive }) => {
+const TranslationTool = ({ isActive: _isActive }) => {
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
@@ -66,7 +66,7 @@ const TranslationTool = ({ isActive }) => {
 // 2. EMERGENCY ASSISTANT (Immediate Action Buttons)
 const EmergencyTool = () => {
     const [step, setStep] = useState('select');
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(false); // eslint-disable-line no-unused-vars
     const [advice, setAdvice] = useState(null);
 
     const handleEmergencyType = async (type) => {
@@ -357,8 +357,8 @@ const ChatTool = ({ feature, placeholder, accentColor = 'blue' }) => {
                 {messages.map((msg, i) => (
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[85%] p-3 rounded-2xl text-sm ${msg.role === 'user'
-                                ? 'bg-slate-900 text-white rounded-br-none'
-                                : 'bg-slate-100 text-slate-800 rounded-bl-none whitespace-pre-wrap'
+                            ? 'bg-slate-900 text-white rounded-br-none'
+                            : 'bg-slate-100 text-slate-800 rounded-bl-none whitespace-pre-wrap'
                             }`}>
                             {msg.content}
                         </div>

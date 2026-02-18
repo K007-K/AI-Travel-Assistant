@@ -12,7 +12,7 @@ const Discover = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [filter, setFilter] = useState('All');
     const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
-    const [selectedDestination, setSelectedDestination] = useState(null);
+    const [selectedDestination, _setSelectedDestination] = useState(null);
 
     useEffect(() => {
         // Load initial curated destinations

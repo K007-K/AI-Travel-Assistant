@@ -22,7 +22,7 @@ const BudgetTab = ({
     isAnalyzing,
     aiInsights,
     budgetSummary,
-    activeCurrencySymbol,
+    activeCurrencySymbol: _activeCurrencySymbol,
     handleAnalyzeBudget,
     handleSaveBudget,
 }) => {

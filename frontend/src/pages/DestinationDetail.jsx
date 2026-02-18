@@ -11,6 +11,7 @@ import { loadDestinationImage, getFallbackImage } from '../utils/destinationImag
 
 
 /* ─── Reusable section wrapper ──────────────────────────────────── */
+// eslint-disable-next-line no-unused-vars
 const Section = ({ icon: Icon, title, children, delay = 0 }) => (
     <motion.section
         initial={{ opacity: 0, y: 30 }}
@@ -30,11 +31,11 @@ const Section = ({ icon: Icon, title, children, delay = 0 }) => (
 );
 
 /* ─── Highlight Card with Wikipedia image ───────────────────────── */
-const HighlightCard = ({ highlight, index, destinationName }) => {
+const HighlightCard = ({ highlight, index, destinationName: _destinationName }) => {
     const [imgUrl, setImgUrl] = useState(null);
     useEffect(() => {
         loadDestinationImage(highlight.name, setImgUrl);
-    }, [highlight.name, destinationName]);
+    }, [highlight.name]);
 
     const fallback = getFallbackImage(highlight.name);
     return (
@@ -66,7 +67,7 @@ const HighlightCard = ({ highlight, index, destinationName }) => {
 };
 
 /* ─── Cuisine Card with photo ──────────────────────────────────────────── */
-const CuisineCard = ({ item, index, destinationName }) => {
+const CuisineCard = ({ item, index, destinationName: _destinationName }) => {
     const [imgUrl, setImgUrl] = useState(null);
     useEffect(() => {
         loadDestinationImage(item.name, setImgUrl);

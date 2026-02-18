@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { motion, useAnimation, useMotionValue } from "framer-motion";
+import { motion } from "framer-motion";
 
 export const LogoLoop = ({
     items = [],
@@ -12,12 +12,6 @@ export const LogoLoop = ({
     const containerRef = useRef(null);
     const scrollerRef = useRef(null);
     const [start, setStart] = useState(false);
-
-    useEffect(() => {
-        getDirection();
-        getSpeed();
-        setStart(true);
-    }, [items, direction, speed]);
 
     const getDirection = () => {
         if (containerRef.current) {
@@ -35,6 +29,12 @@ export const LogoLoop = ({
             containerRef.current.style.setProperty("--animation-duration", duration);
         }
     };
+
+    useEffect(() => {
+        getDirection();
+        getSpeed();
+        setStart(true);
+    }, [items, direction, speed]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
         <div
