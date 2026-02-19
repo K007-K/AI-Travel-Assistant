@@ -182,16 +182,17 @@ Provide your financial assessment as a JSON object.`;
         });
 
     } catch (error) {
+        console.error('budget-validator error:', error);
         return new Response(JSON.stringify({
-            error: error.message,
+            error: 'Budget analysis failed',
             insights: {
-                summary: `Analysis failed: ${error.message}`,
+                summary: 'Analysis failed due to a server error.',
                 risk_analysis: "Unable to assess risk due to an error.",
                 category_insights: [],
-                recommendations: ["Please verify your GROQ_API_KEY is set in Supabase Secrets."]
+                recommendations: ["Please try again later or contact support."]
             }
         }), {
-            status: 200,
+            status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
     }

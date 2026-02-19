@@ -7,6 +7,7 @@ const LocationInput = ({
     value,
     onChange,
     placeholder = "City or Airport",
+    // eslint-disable-next-line no-unused-vars
     icon: Icon = MapPin,
     className = ""
 }) => {

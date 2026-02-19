@@ -11,21 +11,16 @@ services:
     rootDir: frontend
     dockerfilePath: ./Dockerfile
     healthCheckPath: /
-    autoDeploy: true
+    autoDeploy: false
     envVars:
       - key: VITE_SUPABASE_URL
         sync: false
       - key: VITE_SUPABASE_ANON_KEY
         sync: false
-      - key: VITE_GEMINI_API_KEY
-        sync: false
-      - key: VITE_GROQ_API_KEY
-        sync: false
-      - key: VITE_ORS_API_KEY
-        sync: false
       - key: VITE_TRANSLATION_API_URL
         value: https://libretranslate.de
       - key: VITE_APP_NAME
-        value: AI Travel Assistant
+        value: Roameo
       - key: VITE_APP_VERSION
         value: 1.0.0
+

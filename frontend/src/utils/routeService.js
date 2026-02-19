@@ -1,13 +1,14 @@
 /**
- * routeService.js — OpenRouteService integration for route fetching + caching.
+ * routeService.js — Route fetching via Edge Function proxy + caching.
  *
  * Called ONCE per transport segment at itinerary generation time.
  * Stores GeoJSON geometry in trip_segments.route_geometry via Supabase.
  * Map only renders stored geometry — zero ORS calls on render.
+ *
+ * The ORS API key is kept server-side in the route-proxy edge function.
  */
 
-const ORS_BASE = 'https://api.openrouteservice.org/v2/directions';
-const ORS_KEY = import.meta.env.VITE_ORS_API_KEY;
+import { supabase } from '../lib/supabase';
 
 // ORS transport profiles
 const PROFILE_MAP = {
@@ -25,7 +26,7 @@ const PROFILE_MAP = {
 };
 
 /**
- * Fetch route geometry from ORS for a given origin/destination.
+ * Fetch route geometry via the route-proxy edge function.
  *
  * @param {{ lat: number, lng: number }} from - Start coordinates
  * @param {{ lat: number, lng: number }} to - End coordinates
@@ -44,37 +45,23 @@ export async function fetchRoute(from, to, mode = 'car') {
         };
     }
 
-    if (!ORS_KEY) {
-        console.warn('ORS API key missing — using straight-line fallback');
-        return {
-            geometry: {
-                type: 'LineString',
-                coordinates: [[from.lng, from.lat], [to.lng, to.lat]],
-            },
-            distance: haversineDistance(from, to),
-            duration: 0,
-        };
-    }
-
     try {
-        const res = await fetch(`${ORS_BASE}/${profile}`, {
-            method: 'POST',
-            headers: {
-                'Authorization': ORS_KEY,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                coordinates: [[from.lng, from.lat], [to.lng, to.lat]],
-                format: 'geojson',
-            }),
+        const { data, error } = await supabase.functions.invoke('route-proxy', {
+            body: { from, to, profile }
         });
 
-        if (!res.ok) {
-            console.error(`ORS error (${res.status}):`, await res.text());
-            return null;
+        if (error) {
+            console.warn('Route proxy error — using straight-line fallback:', error.message);
+            return {
+                geometry: {
+                    type: 'LineString',
+                    coordinates: [[from.lng, from.lat], [to.lng, to.lat]],
+                },
+                distance: haversineDistance(from, to),
+                duration: 0,
+            };
         }
 
-        const data = await res.json();
         const feature = data.features?.[0];
 
         if (!feature) return null;
@@ -85,7 +72,7 @@ export async function fetchRoute(from, to, mode = 'car') {
             duration: feature.properties?.summary?.duration || 0, // seconds
         };
     } catch (err) {
-        console.error('ORS fetch failed:', err);
+        console.error('Route fetch failed:', err);
         return null;
     }
 }

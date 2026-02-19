@@ -1,7 +1,5 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { supabase } from '../lib/supabase';
 import { logger } from '../utils/logger';
-
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 // System prompt to guide the AI's behavior
 const SYSTEM_PROMPT = `
@@ -28,56 +26,32 @@ Format:
 
 export const sendMessageToGemini = async (messages) => {
     try {
-        if (!API_KEY) {
-            throw new Error("Gemini API Key is missing");
-        }
+        // Build conversation history for the edge function
+        const apiMessages = [
+            { role: 'system', content: SYSTEM_PROMPT },
+            ...messages
+                .filter(msg => msg.id !== 'welcome')
+                .map(msg => ({
+                    role: msg.role === 'user' ? 'user' : 'assistant',
+                    content: msg.content
+                }))
+        ];
 
-        const genAI = new GoogleGenerativeAI(API_KEY);
-        // Using gemini-pro as it's the stable model for v1beta
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-
-        // Build the conversation history (excluding the last user message)
-        // IMPORTANT: Filter out the initial welcome message and ensure history starts with user
-        const history = messages
-            .slice(0, -1)  // Exclude the last message (current user input)
-            .filter(msg => msg.id !== 'welcome')  // Remove welcome message
-            .map(msg => ({
-                role: msg.role === 'user' ? 'user' : 'model',
-                parts: [{ text: msg.content }]
-            }));
-
-        const chat = model.startChat({
-            history: history,
-            generationConfig: {
-                maxOutputTokens: 2048,
-                temperature: 0.7,
-            },
+        const { data, error } = await supabase.functions.invoke('chat-completion', {
+            body: { messages: apiMessages }
         });
 
-        const lastMessage = messages[messages.length - 1].content;
+        if (error) {
+            throw new Error(error.message || 'Edge function error');
+        }
 
-        // Add system prompt to first user message only (when history is empty)
-        const messageToSend = history.length === 0
-            ? `${SYSTEM_PROMPT}\n\nUser: ${lastMessage}`
-            : lastMessage;
-
-        const result = await chat.sendMessage(messageToSend);
-        const response = await result.response;
-        return response.text();
+        return data.choices?.[0]?.message?.content || "I couldn't generate a response.";
 
     } catch (error) {
-        logger.error("Gemini API Error:", error);
+        logger.error("AI Chat Error:", error);
 
-        if (error.message.includes('429')) {
+        if (error.message?.includes('429')) {
             return "I'm receiving too many requests right now. Please give me a moment to catch my breath! 😅";
-        }
-
-        if (error.message.includes('API_KEY_INVALID') || error.message.includes('API key')) {
-            return "❌ Invalid API Key. Please check your .env file.";
-        }
-
-        if (error.message.includes('404') || error.message.includes('not found')) {
-            return "❌ Model configuration error. Please try again later.";
         }
 
         return "I'm having trouble connecting to my travel database right now. Please check your internet connection or try again in a moment.";

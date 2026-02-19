@@ -1,45 +1,24 @@
-/**
- * Companion Store — Chat state + context injection for AI Companion
- *
- * Reads trip context from itineraryStore and injects it into each handler call.
- * Manages chat message history and processing state.
- */
-
 import { create } from 'zustand';
 import { routeMessage } from '../engine/intentRouter';
 import useItineraryStore from './itineraryStore';
+import { supabase } from '../lib/supabase';
 
-// ── Groq API fallback ────────────────────────────────────────────────
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
-
+// ── AI fallback via Edge Function (no client-side API key) ───────────
 async function callGroq(message, systemPrompt) {
-    if (!GROQ_API_KEY) {
-        return "AI assistant unavailable — Groq API key not configured. I can still help with budget queries, emergency contacts, and activity planning using your trip data!";
-    }
-
     try {
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${GROQ_API_KEY}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                model: 'mixtral-8x7b-32768',
+        const { data, error } = await supabase.functions.invoke('chat-completion', {
+            body: {
                 messages: [
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: message },
-                ],
-                max_tokens: 500,
-                temperature: 0.7,
-            }),
+                ]
+            }
         });
 
-        if (!response.ok) throw new Error(`Groq API error: ${response.status}`);
-        const data = await response.json();
+        if (error) throw error;
         return data.choices?.[0]?.message?.content || "I couldn't generate a response. Try asking about your budget or activities!";
     } catch (error) {
-        console.error('[Companion] Groq API error:', error);
+        console.error('[Companion] Edge function error:', error);
         return "Sorry, I couldn't reach the AI service. I can still help with budget queries, emergency contacts, and activity planning!";
     }
 }
