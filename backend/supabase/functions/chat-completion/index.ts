@@ -1,32 +1,60 @@
+// deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-
-const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY')
 
 const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || '*'
 
-const corsHeaders = {
+const corsHeaders: Record<string, string> = {
     'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders })
     }
 
     try {
-        const { messages } = await req.json()
+        // ── Auth check ──────────────────────────────────────
+        const authHeader = req.headers.get('Authorization')
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
+                status: 401,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            })
+        }
 
-        // Retrieve API Key securely from Server Environment
-        if (!GROQ_API_KEY) {
+        // ── Validate API key ────────────────────────────────
+        const groqApiKey = Deno.env.get('GROQ_API_KEY')
+        if (!groqApiKey) {
             throw new Error('GROQ_API_KEY is not set in Edge Function secrets.')
         }
 
-        // Call Groq API from the server side
+        // ── Validate input ──────────────────────────────────
+        const body = await req.json()
+        const messages = body?.messages
+
+        if (!messages || !Array.isArray(messages) || messages.length === 0) {
+            return new Response(JSON.stringify({ error: 'messages must be a non-empty array' }), {
+                status: 400,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            })
+        }
+
+        // Validate each message has role and content
+        for (const msg of messages) {
+            if (!msg || typeof msg.role !== 'string' || typeof msg.content !== 'string') {
+                return new Response(JSON.stringify({ error: 'Each message must have a string "role" and "content"' }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                })
+            }
+        }
+
+        // ── Call Groq API ───────────────────────────────────
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${GROQ_API_KEY}`,
+                'Authorization': `Bearer ${groqApiKey}`,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -40,15 +68,24 @@ serve(async (req) => {
         const data = await response.json()
 
         if (!response.ok) {
-            throw new Error(data.error?.message || 'Failed to fetch from Groq')
+            console.error('Groq API error:', data?.error)
+            throw new Error(data?.error?.message || `Groq API returned status ${response.status}`)
+        }
+
+        // ── Validate response structure ─────────────────────
+        if (!data?.choices?.[0]?.message?.content) {
+            console.error('Groq returned empty response:', JSON.stringify(data).slice(0, 500))
+            throw new Error('Groq returned empty or malformed response')
         }
 
         return new Response(JSON.stringify(data), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
-    } catch (error) {
-        console.error('chat-completion error:', error);
-        return new Response(JSON.stringify({ error: 'Internal server error' }), {
+
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Unknown error'
+        console.error('chat-completion error:', message)
+        return new Response(JSON.stringify({ error: 'Chat completion failed', details: message }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 500,
         })
