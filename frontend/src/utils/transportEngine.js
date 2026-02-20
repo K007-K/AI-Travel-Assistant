@@ -31,17 +31,19 @@ const ACCOMMODATION_COSTS = {
 };
 
 // ── Local transport cost per km (for pairwise insertion) ─────────────
+// PPP-adjusted: these values produce realistic fares when multiplied
+// by currency rates (e.g., ₹25 auto min, ₹50 cab min in India)
 
 const LOCAL_FARE_PER_KM = {
-    budget: 0.10,      // USD/km — auto-rickshaw, public bus
-    'mid-range': 0.25, // USD/km — cab, metro
-    luxury: 0.60,      // USD/km — premium cab
+    budget: 0.12,      // USD/km — auto-rickshaw, public bus (~₹10/km)
+    'mid-range': 0.18, // USD/km — cab, metro (~₹15/km)
+    luxury: 0.30,      // USD/km — premium cab (~₹25/km)
 };
 
 const LOCAL_MIN_FARE = {
-    budget: 1,
-    'mid-range': 3,
-    luxury: 8,
+    budget: 0.30,      // USD — auto minimum (~₹25)
+    'mid-range': 0.60, // USD — cab/Ola minimum (~₹50)
+    luxury: 1.20,      // USD — premium cab minimum (~₹100)
 };
 
 // ── Currency conversion rates (approximate, relative to USD) ─────────
