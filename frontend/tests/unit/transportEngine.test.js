@@ -183,8 +183,8 @@ describe('calculateTransportCost', () => {
 
     it('should use per-km calculation for car/bike', () => {
         const carCost = calculateTransportCost('car', 'short', 1, 'USD');
-        // 300km * 0.08/km = 24
-        expect(carCost).toBe(24);
+        // 300km * 0.10/km = 30
+        expect(carCost).toBe(30);
     });
 
     it('should return a positive number for all valid inputs', () => {
