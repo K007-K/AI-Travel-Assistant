@@ -237,14 +237,19 @@ const DOWNGRADE_LADDER = ['flight', 'train', 'bus', 'car'];
  * If preferred mode exceeds remaining envelope, walk down the
  * downgrade ladder until cost fits or clamp to remaining.
  *
+ * IMPORTANT: When user explicitly chose a transport preference
+ * (e.g. 'flight'), we RESPECT it and don't silently downgrade.
+ * The downgrade ladder only applies when preference was 'any'.
+ *
  * @param {string} preferredMode — Mode from decideTransportMode()
  * @param {string} distanceTier
  * @param {number} travelers
  * @param {string} currency
  * @param {number} remaining — allocation.intercity_remaining
+ * @param {boolean} [userExplicitChoice=false] — True when user picked this mode
  * @returns {{ mode: string, cost: number, adjusted: boolean }}
  */
-function envelopeAwareTransportCost(preferredMode, distanceTier, travelers, currency, remaining) {
+function envelopeAwareTransportCost(preferredMode, distanceTier, travelers, currency, remaining, userExplicitChoice = false) {
     // If no budget left at all, return zero-cost
     if (remaining <= 0) {
         return { mode: preferredMode, cost: 0, adjusted: true };
@@ -254,6 +259,14 @@ function envelopeAwareTransportCost(preferredMode, distanceTier, travelers, curr
 
     // If within envelope, use as-is
     if (cost <= remaining) {
+        return { mode: preferredMode, cost, adjusted: false };
+    }
+
+    // ── FIX: When user EXPLICITLY chose a mode, respect it ──
+    // Don't silently downgrade from flight to bus/train.
+    // Let the cost stand (may overshoot envelope) and flag it.
+    if (userExplicitChoice) {
+        console.warn(`[TransportEngine] User chose ${preferredMode} (₹${cost}) but exceeds envelope (₹${remaining}). Respecting preference.`);
         return { mode: preferredMode, cost, adjusted: false };
     }
 
@@ -358,8 +371,9 @@ export function buildOutboundSegment(trip, allocation, _currencyRate) {
     const preferredMode = decideTransportMode(trip, distTier);
 
     // Fix Group 1: Envelope-aware cost with downgrade ladder
+    const userExplicit = (trip.travel_preference || 'any') !== 'any';
     const { mode, cost, adjusted } = envelopeAwareTransportCost(
-        preferredMode, distTier, travelers, currency, remaining
+        preferredMode, distTier, travelers, currency, remaining, userExplicit
     );
 
     // Deduct from intercity envelope
@@ -418,8 +432,9 @@ export function buildIntercitySegments(trip, allocation, _currencyRate) {
             const preferredMode = decideTransportMode(trip, distTier);
 
             // Fix Group 1: Envelope-aware cost with downgrade ladder
+            const userExplicit = (trip.travel_preference || 'any') !== 'any';
             const { mode, cost, adjusted } = envelopeAwareTransportCost(
-                preferredMode, distTier, travelers, currency, remaining
+                preferredMode, distTier, travelers, currency, remaining, userExplicit
             );
 
             if (allocation) {
@@ -482,8 +497,9 @@ export function buildReturnSegment(trip, allocation, currencyRate, totalDays) {
     const preferredMode = decideTransportMode(trip, distTier);
 
     // Fix Group 1: Envelope-aware cost with downgrade ladder
+    const userExplicit = (trip.travel_preference || 'any') !== 'any';
     const { mode, cost, adjusted } = envelopeAwareTransportCost(
-        preferredMode, distTier, travelers, currency, remaining
+        preferredMode, distTier, travelers, currency, remaining, userExplicit
     );
 
     if (allocation) {
@@ -659,7 +675,7 @@ export function insertPairwiseLocalTransport(activities, tripId, dayNumber, budg
             distKm = FALLBACK_DISTANCE_KM;
         }
 
-        if (distKm > 2) {
+        if (distKm > 0.5) {
             // Guard: skip if local transport envelope is exhausted
             const localRemaining = allocation?.local_transport_remaining ?? Infinity;
             if (localRemaining <= 0) continue;
