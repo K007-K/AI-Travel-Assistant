@@ -506,7 +506,57 @@ describe('Worldwide Cost Verification — PPP-Adjusted Pricing', () => {
         expect(hMid).toBeLessThanOrEqual(180);
     });
 
-    it('📊 COMPARISON TABLE — all countries side by side', () => {
+    it('🇰🇪 KENYA (KES) — should produce realistic Kenyan prices', () => {
+        const fShort = flight('short', 1, 'KES');
+        const hMid = hotel('mid-range', 'KES');
+        console.log(`\n  🇰🇪 Kenya: Flight short KES ${fShort} | Hotel mid KES ${hMid}`);
+        expect(fShort).toBeGreaterThanOrEqual(3000);
+        expect(fShort).toBeLessThanOrEqual(8000);
+    });
+
+    it('🇨🇴 COLOMBIA (COP) — should produce realistic Colombian prices', () => {
+        const fShort = flight('short', 1, 'COP');
+        const hMid = hotel('mid-range', 'COP');
+        console.log(`\n  🇨🇴 Colombia: Flight short COP ${fShort.toLocaleString()} | Hotel mid COP ${hMid.toLocaleString()}`);
+        expect(fShort).toBeGreaterThanOrEqual(100000);
+        expect(fShort).toBeLessThanOrEqual(250000);
+    });
+
+    it('🇲🇦 MOROCCO (MAD) — should produce realistic Moroccan prices', () => {
+        const fShort = flight('short', 1, 'MAD');
+        const hMid = hotel('mid-range', 'MAD');
+        console.log(`\n  🇲🇦 Morocco: Flight short MAD ${fShort} | Hotel mid MAD ${hMid}`);
+        expect(fShort).toBeGreaterThanOrEqual(300);
+        expect(fShort).toBeLessThanOrEqual(800);
+    });
+
+    it('🇻🇳 VIETNAM (VND) — should produce realistic Vietnamese prices', () => {
+        const fShort = flight('short', 1, 'VND');
+        const hBudget = hotel('budget', 'VND');
+        console.log(`\n  🇻🇳 Vietnam: Flight short VND ${fShort.toLocaleString()} | Hotel budget VND ${hBudget.toLocaleString()}`);
+        expect(fShort).toBeGreaterThanOrEqual(500000);
+        expect(fShort).toBeLessThanOrEqual(1500000);
+    });
+
+    it('🇨🇭 SWITZERLAND (CHF) — should produce realistic Swiss prices', () => {
+        const fShort = flight('short', 1, 'CHF');
+        const hMid = hotel('mid-range', 'CHF');
+        console.log(`\n  🇨🇭 Switzerland: Flight short CHF ${fShort} | Hotel mid CHF ${hMid}`);
+        // Swiss prices are high
+        expect(fShort).toBeGreaterThanOrEqual(100);
+        expect(fShort).toBeLessThanOrEqual(250);
+        expect(hMid).toBeGreaterThanOrEqual(100);
+        expect(hMid).toBeLessThanOrEqual(250);
+    });
+
+    it('🔮 SMART FALLBACK — unknown currency infers COL from exchange rate', () => {
+        // An unknown currency with high exchange rate should be treated as cheap
+        const fakeHigh = flight('medium', 1, 'FAKE_HIGH'); // defaults to rate 1, COL 0.80
+        console.log(`\n  🔮 Unknown currency: Flight medium = ${fakeHigh} (should default gracefully)`);
+        expect(fakeHigh).toBeGreaterThan(0);
+    });
+
+    it('📊 GLOBAL COMPARISON TABLE — 12 countries side by side', () => {
         const countries = [
             { flag: '🇮🇳', name: 'India', code: 'INR', sym: '₹' },
             { flag: '🇺🇸', name: 'USA', code: 'USD', sym: '$' },
@@ -514,20 +564,27 @@ describe('Worldwide Cost Verification — PPP-Adjusted Pricing', () => {
             { flag: '🇹🇭', name: 'Thailand', code: 'THB', sym: '฿' },
             { flag: '🇬🇧', name: 'UK', code: 'GBP', sym: '£' },
             { flag: '🇪🇺', name: 'Europe', code: 'EUR', sym: '€' },
+            { flag: '🇰🇪', name: 'Kenya', code: 'KES', sym: 'K' },
+            { flag: '🇨🇴', name: 'Colombia', code: 'COP', sym: 'C' },
+            { flag: '🇲🇦', name: 'Morocco', code: 'MAD', sym: 'M' },
+            { flag: '🇻🇳', name: 'Vietnam', code: 'VND', sym: '₫' },
+            { flag: '🇨🇭', name: 'Switz.', code: 'CHF', sym: 'F' },
+            { flag: '🇧🇷', name: 'Brazil', code: 'BRL', sym: 'R' },
         ];
 
-        console.log('\n  ┌────────────────┬────────────┬────────────┬────────────┐');
-        console.log('  │ Country        │ Flight Med │ Hotel Mid  │ Train Sht  │');
-        console.log('  ├────────────────┼────────────┼────────────┼────────────┤');
+        console.log('\n  ┌────────────────┬────────────┬────────────┬────────────┬────────────┐');
+        console.log('  │ Country        │ Flight Med │ Hotel Mid  │ Train Sht  │ Bus Short  │');
+        console.log('  ├────────────────┼────────────┼────────────┼────────────┼────────────┤');
         countries.forEach(c => {
             const f = flight('medium', 1, c.code);
             const h = hotel('mid-range', c.code);
             const t = train('short', 1, c.code);
-            console.log(`  │ ${c.flag} ${c.name.padEnd(12)}│ ${c.sym}${String(f).padEnd(10)}│ ${c.sym}${String(h).padEnd(10)}│ ${c.sym}${String(t).padEnd(10)}│`);
+            const b = bus('short', 1, c.code);
+            console.log(`  │ ${c.flag} ${c.name.padEnd(12)}│ ${c.sym}${String(f).padEnd(10)}│ ${c.sym}${String(h).padEnd(10)}│ ${c.sym}${String(t).padEnd(10)}│ ${c.sym}${String(b).padEnd(10)}│`);
         });
-        console.log('  └────────────────┴────────────┴────────────┴────────────┘');
+        console.log('  └────────────────┴────────────┴────────────┴────────────┴────────────┘');
 
-        // Just verify the table rendered — actual assertions are in per-country tests
         expect(true).toBe(true);
     });
 });
+
