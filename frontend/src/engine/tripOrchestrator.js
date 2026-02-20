@@ -48,7 +48,8 @@ import { getCityCoordsLong, CITY_COORDINATES } from '../data/cityCoordinates.js'
 const _geocodeMemCache = {};
 
 // localStorage cache helpers (30-day TTL)
-const GEO_CACHE_KEY = 'geocode_cache_v1';
+// v2: invalidates stale city-center coords from pre-Nominatim-first fix
+const GEO_CACHE_KEY = 'geocode_cache_v2';
 function _getGeoCache() {
     try {
         const raw = localStorage.getItem(GEO_CACHE_KEY);
@@ -108,9 +109,14 @@ async function _fetchFromNominatim(query) {
  * Geocode a location string. Strategy:
  *   1. In-memory cache (instant)
  *   2. localStorage cache (instant, persists across sessions)
- *   3. KNOWN_CITIES exact/partial match (instant, no network)
+ *   3. KNOWN_CITIES **exact** match only (instant, no network)
  *   4. Nominatim API (any place worldwide, cached after first call)
- *   5. cityContext fallback — retry with parent city name
+ *   5. Nominatim with cityContext appended (e.g., "Rishikonda Beach, Vizag")
+ *   6. City-level partial match fallback (last resort — city-center coords)
+ *
+ * IMPORTANT: Partial city matching is deliberately LAST because locations
+ * like "Borra Caves, Visakhapatnam" contain the city name but are 100km
+ * from city center. We must try Nominatim first for accurate coords.
  *
  * @param {string} location — Place name (e.g., "Rishikonda Beach")
  * @param {string} activityHint — Used for deterministic ±1km offset
@@ -136,24 +142,17 @@ async function geocodeLocation(location, activityHint = '', cityContext = '') {
         return _applyOffset(coords, activityHint || normalized);
     }
 
-    // 3. Shared city coordinates (instant, no network)
-    let baseCoords = getCityCoordsLong(normalized);
-    if (!baseCoords) {
-        for (const [city] of Object.entries(CITY_COORDINATES)) {
-            if (normalized.includes(city) || city.includes(normalized)) {
-                baseCoords = getCityCoordsLong(city);
-                break;
-            }
-        }
+    // 3. EXACT city match only — don't use partial matches here
+    //    (partial matching would give "Borra Caves, Visakhapatnam" the same
+    //    coords as "Visakhapatnam" city center, which is 100km wrong)
+    const exactMatch = getCityCoordsLong(normalized);
+    if (exactMatch) {
+        _geocodeMemCache[cacheKey] = exactMatch;
+        _setGeoCache(cacheKey, exactMatch);
+        return _applyOffset(exactMatch, activityHint || normalized);
     }
 
-    if (baseCoords) {
-        _geocodeMemCache[cacheKey] = baseCoords;
-        _setGeoCache(cacheKey, baseCoords);
-        return _applyOffset(baseCoords, activityHint || normalized);
-    }
-
-    // 4. Nominatim API — works for any place in the world
+    // 4. Nominatim API — works for any specific place in the world
     const nominatimResult = await _fetchFromNominatim(location);
     if (nominatimResult) {
         _geocodeMemCache[cacheKey] = nominatimResult;
@@ -169,8 +168,24 @@ async function geocodeLocation(location, activityHint = '', cityContext = '') {
             _setGeoCache(cacheKey, withCity);
             return _applyOffset(withCity, activityHint || normalized);
         }
+    }
 
-        // Last resort: use the city itself
+    // 6. LAST RESORT: partial city match from CITY_COORDINATES
+    //    Only reaches here if Nominatim failed entirely
+    for (const [city] of Object.entries(CITY_COORDINATES)) {
+        if (normalized.includes(city) || city.includes(normalized)) {
+            const partialCoords = getCityCoordsLong(city);
+            if (partialCoords) {
+                console.warn(`[Geocoder] Using city-level fallback for "${location}" → matched "${city}" (Nominatim failed)`);
+                _geocodeMemCache[cacheKey] = partialCoords;
+                _setGeoCache(cacheKey, partialCoords);
+                return _applyOffset(partialCoords, activityHint || normalized);
+            }
+        }
+    }
+
+    // 7. Final fallback: use cityContext city coords
+    if (cityContext) {
         const cityKey = cityContext.toLowerCase().trim();
         if (!_geocodeMemCache[cityKey]) {
             const cityCoords = getCityCoordsLong(cityKey)
@@ -181,6 +196,7 @@ async function geocodeLocation(location, activityHint = '', cityContext = '') {
             }
         }
         if (_geocodeMemCache[cityKey]) {
+            console.warn(`[Geocoder] Using parent city fallback for "${location}" → "${cityContext}"`);
             _geocodeMemCache[cacheKey] = _geocodeMemCache[cityKey];
             return _applyOffset(_geocodeMemCache[cityKey], activityHint || normalized);
         }
