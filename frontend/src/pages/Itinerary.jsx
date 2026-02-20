@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Calendar, MapPin, ArrowRight, Trash2, Clock, CheckCircle2, Pin, X } from 'lucide-react';
-import useItineraryStore from '../store/itineraryStore';
+import useTripStore from '../store/tripStore';
 import { Link, useSearchParams } from 'react-router-dom';
 import { getFallbackImage, loadDestinationImage } from '../utils/destinationImages';
 import { Button } from '../components/ui/Button';
@@ -27,7 +27,7 @@ const TripCardImage = ({ destination, className }) => {
 };
 
 const Itinerary = () => {
-    const { trips, createTrip, deleteTrip, togglePinTrip, setCurrentTrip, fetchTrips, isLoading } = useItineraryStore();
+    const { trips, createTrip, deleteTrip, togglePinTrip, setCurrentTrip, fetchTrips, isLoading } = useTripStore();
 
     useEffect(() => {
         fetchTrips();

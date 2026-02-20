@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, CreditCard, User, Shield, Coffee, ArrowLeft, Loader2, AlertTriangle } from 'lucide-react';
 import useBookingStore from '../store/bookingStore';
-import useItineraryStore from '../store/itineraryStore';
+import useTripStore from '../store/tripStore';
 import useBudgetStore from '../store/budgetStore';
 import DemoBanner from '../components/ui/DemoBanner';
 
@@ -11,7 +11,7 @@ const BookingReview = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { addBooking } = useBookingStore();
-    const { trips } = useItineraryStore();
+    const { trips } = useTripStore();
     const { fetchBudgetSummary, budgetSummary } = useBudgetStore();
     const bookingData = location.state?.bookingData;
     const currency = location.state?.currency || { code: 'USD', symbol: '$', rate: 1 };

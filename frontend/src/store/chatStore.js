@@ -2,17 +2,19 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { routeMessage } from '../engine/intentRouter';
 import { makeGroqRequest } from '../api/groq';
+import useTripStore from './tripStore';
 import useItineraryStore from './itineraryStore';
 
 // ── Build context from itineraryStore for intent routing ─────────────
 function _getContext() {
-    const itStore = useItineraryStore.getState();
-    const trip = itStore.trips.find(t => t.id === itStore.currentTrip) || itStore.trips[0];
+    const tripState = useTripStore.getState();
+    const itState = useItineraryStore.getState();
+    const trip = tripState.trips.find(t => t.id === tripState.currentTrip?.id) || tripState.trips[0];
 
     return {
-        allocation: itStore.allocation || null,
-        reconciliation: itStore.reconciliation || null,
-        dailySummary: itStore.dailySummary || [],
+        allocation: itState.allocation || null,
+        reconciliation: itState.reconciliation || null,
+        dailySummary: itState.dailySummary || [],
         destination: trip?.destination || '',
         currentLocation: trip?.destination || '',
         currency: trip?.currency || 'USD',

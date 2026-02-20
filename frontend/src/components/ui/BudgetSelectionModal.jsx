@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, DollarSign, Star, Coins, Calendar, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import useItineraryStore from '../../store/itineraryStore';
+import useTripStore from '../../store/tripStore';
 
 const BudgetSelectionModal = ({ isOpen, onClose, destination }) => {
     const navigate = useNavigate();
-    const createTrip = useItineraryStore((state) => state.createTrip);
+    const createTrip = useTripStore((state) => state.createTrip);
 
     // State for multi-step flow
     const [step, setStep] = useState('budget'); // 'budget' | 'date'

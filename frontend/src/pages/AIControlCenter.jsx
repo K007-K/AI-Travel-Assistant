@@ -7,7 +7,8 @@ import {
     CircleDollarSign, AlertTriangle, Gauge,
     Train, Sparkles, MessageCircle, Utensils,
 } from 'lucide-react';
-import useItineraryStore from '../store/itineraryStore';
+import useTripStore from '../store/tripStore';
+import { allocateBudget, reconcileBudget } from '../engine/budgetAllocator';
 
 import BudgetOverviewPanel from './ai-control/components/BudgetOverviewPanel';
 import DailyCostTable from './ai-control/components/DailyCostTable';
@@ -64,7 +65,7 @@ function computeRisks(allocation, reconciliation) {
 
 // ── Main Component ───────────────────────────────────────────────────
 const AIControlCenter = () => {
-    const { trips, currentTrip, fetchTrips } = useItineraryStore();
+    const { trips, currentTrip, fetchTrips } = useTripStore();
     const [selectedTripId, setSelectedTripId] = useState(currentTrip || null);
     const [allocation, setAllocation] = useState(null);
     const [reconciliation, setReconciliation] = useState(null);
@@ -103,7 +104,14 @@ const AIControlCenter = () => {
 
         try {
             // 1. Re-derive allocation from trip params (deterministic)
-            const derivedAllocation = useItineraryStore.getState().deriveAllocation(trip);
+            const derivedAllocation = allocateBudget(trip.budget || 0, {
+                travelStyle: trip.travel_style || '',
+                budgetTier: trip.accommodation_preference || 'mid-range',
+                totalDays: trip.days?.length || 1,
+                totalNights: Math.max(0, (trip.days?.length || 1) - 1),
+                travelers: trip.travelers || 1,
+                hasOwnVehicle: trip.own_vehicle_type && trip.own_vehicle_type !== 'none',
+            });
 
             // 2. Flatten segments from trip.days to compute reconciliation
             const allActivities = trip.days?.flatMap(d => d.activities || []) || [];
@@ -135,7 +143,7 @@ const AIControlCenter = () => {
             }
 
             // 3. Reconcile
-            const derivedReconciliation = useItineraryStore.getState().deriveReconciliation(derivedAllocation, flatSegments);
+            const derivedReconciliation = reconcileBudget(derivedAllocation, flatSegments);
 
             // 4. Build daily summary from days
             const summary = (trip.days || []).map(day => {

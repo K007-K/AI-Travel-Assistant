@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Wallet, Plus, Trash2, DollarSign, TrendingUp, AlertCircle, ShoppingBag, Coffee, Car, Plane, Home, Sparkles, Receipt, BarChart3 } from 'lucide-react';
 import useBudgetStore from '../store/budgetStore';
-import useItineraryStore from '../store/itineraryStore';
+import useTripStore from '../store/tripStore';
 import BudgetHealthBadge from '../components/ui/BudgetHealthBadge';
 import { useTheme } from '../providers/ThemeProvider';
 
@@ -29,7 +29,7 @@ const Budget = () => {
         costEvents, budgetSummary, addExpense, deleteExpense,
         fetchCostEvents, fetchBudgetSummary, currency: globalCurrency
     } = useBudgetStore();
-    const { trips, fetchTrips, isLoading: tripsLoading } = useItineraryStore();
+    const { trips, fetchTrips, isLoading: tripsLoading } = useTripStore();
 
     const [selectedTripId, setSelectedTripId] = useState('');
     const [isAdding, setIsAdding] = useState(false);

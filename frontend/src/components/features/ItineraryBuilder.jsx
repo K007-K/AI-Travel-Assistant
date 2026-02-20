@@ -9,6 +9,7 @@ import {
     CheckCircle2, Circle, AlertCircle, AlertTriangle,
     Plane, Train, Bus, Car, Bike, Hotel, Sun,
 } from 'lucide-react';
+import useTripStore from '../../store/tripStore';
 import useItineraryStore from '../../store/itineraryStore';
 import useBudgetStore from '../../store/budgetStore';
 import BudgetHealthBadge from '../ui/BudgetHealthBadge';
@@ -48,13 +49,15 @@ const ItineraryBuilder = () => {
         updateTrip,
         addActivity,
         batchAddActivities: _batchAddActivities,
-        generateFullItinerary,
         reorderActivities,
         persistReorder,
         deleteActivity,
         toggleActivityComplete,
         updateActivityTime: _updateActivityTime,
         ensureSegments,
+    } = useTripStore();
+    const {
+        generateFullItinerary,
         orchestrationPhase,
         allocation: storeAllocation,
         dailySummary: storeDailySummary,
@@ -214,7 +217,7 @@ const ItineraryBuilder = () => {
 
                 // Sync AI estimated costs to cost_events table
                 setTimeout(async () => {
-                    const updatedTrips = useItineraryStore.getState().trips;
+                    const updatedTrips = useTripStore.getState().trips;
                     const updatedTrip = updatedTrips.find(t => t.id === trip.id);
                     if (updatedTrip?.days) {
                         await syncAiEstimates(trip.id, updatedTrip.days, trip.currency || activeCurrency);
@@ -344,7 +347,7 @@ const ItineraryBuilder = () => {
             // Re-fetch to pick up itinerary_stale flag
             await fetchTrips();
             // Sync local trip state from store (important for itinerary_stale)
-            const refreshed = useItineraryStore.getState().trips.find(t => t.id === trip.id);
+            const refreshed = useTripStore.getState().trips.find(t => t.id === trip.id);
             if (refreshed) setTrip(refreshed);
             showToast("✅ Budget saved!");
         } catch (err) {

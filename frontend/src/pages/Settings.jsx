@@ -7,13 +7,13 @@ import {
     DollarSign, Palette
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
-import useItineraryStore from '../store/itineraryStore';
+import useTripStore from '../store/tripStore';
 import useBookingStore from '../store/bookingStore';
 import { useTheme } from '../providers/ThemeProvider';
 
 const Settings = () => {
     const { user, profile: authProfile, updateProfile, updatePassword, deleteAccount, isLoading } = useAuthStore();
-    const { trips } = useItineraryStore();
+    const { trips } = useTripStore();
     const { bookings } = useBookingStore();
     const { theme, setTheme } = useTheme();
 
