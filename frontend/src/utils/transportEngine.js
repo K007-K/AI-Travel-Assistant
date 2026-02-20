@@ -48,165 +48,17 @@ const LOCAL_MIN_FARE = {
     luxury: 1.20,      // USD — premium cab minimum (~₹100)
 };
 
-// ── Currency conversion rates (approximate, relative to USD) ─────────
+// ── Currency conversion rates and cost-of-living index ───────────────
+// Data extracted to JSON files for maintainability.
+// CURRENCY_MULTIPLIERS: approximate exchange rates relative to USD.
+// COST_OF_LIVING: PPP-based purchasing power adjustment (1.0 = US baseline).
+// REGION_DEFAULTS: fallback COL values by region (documentation reference).
 
-const CURRENCY_MULTIPLIERS = {
-    // ── Major currencies ──
-    USD: 1, EUR: 0.92, GBP: 0.79, CHF: 0.88, JPY: 149,
-    CAD: 1.37, AUD: 1.55, NZD: 1.67, SGD: 1.35, HKD: 7.8,
+import CURRENCY_MULTIPLIERS from '../data/currencyRates.json';
+import costOfLivingData from '../data/costOfLiving.json';
 
-    // ── Asia ──
-    INR: 83, PKR: 280, LKR: 320, BDT: 110, NPR: 133,
-    MVR: 15.4, BTN: 83, AFN: 87,
-    THB: 35, MYR: 4.7, VND: 24500, IDR: 15600, PHP: 56,
-    MMK: 2100, KHR: 4100, LAK: 20500, BND: 1.35,
-    CNY: 7.2, KRW: 1330, TWD: 31.5, MOP: 8.1, MNT: 3400,
-
-    // ── Middle East ──
-    AED: 3.67, SAR: 3.75, QAR: 3.64, OMR: 0.385, BHD: 0.376,
-    KWD: 0.31, ILS: 3.7, JOD: 0.71, LBP: 89500, IQD: 1310,
-    YER: 250, SYP: 13000, IRR: 42000,
-
-    // ── Europe ──
-    SEK: 10.5, NOK: 10.8, DKK: 6.9, ISK: 138,
-    PLN: 4, CZK: 23, HUF: 360, RON: 4.6, BGN: 1.8,
-    HRK: 7, RSD: 108, BAM: 1.8, MKD: 57, ALL: 100,
-    MDL: 17.8, UAH: 41, BYN: 3.3, GEL: 2.7, AMD: 390,
-    AZN: 1.7, TRY: 30, RUB: 92,
-
-    // ── CIS / Central Asia ──
-    KZT: 450, UZS: 12500, KGS: 89, TJS: 10.9, TMT: 3.5,
-
-    // ── Americas ──
-    MXN: 17, BRL: 5, ARS: 870, CLP: 950, COP: 3950,
-    PEN: 3.7, UYU: 39, BOB: 6.9, PYG: 7300, VES: 36,
-    GYD: 209, SRD: 36,
-    GTQ: 7.8, HNL: 24.7, NIO: 36.6, CRC: 520, PAB: 1,
-    BZD: 2, DOP: 58, JMD: 156, TTD: 6.8, HTG: 132,
-    CUP: 120, BSD: 1, BBD: 2, XCD: 2.7, AWG: 1.8, FKP: 0.79,
-
-    // ── Africa ──
-    EGP: 31, MAD: 10, TND: 3.1, DZD: 135, LYD: 4.85,
-    NGN: 1550, GHS: 15, XOF: 605, GMD: 68, SLL: 22500,
-    LRD: 192, GNF: 8600, CVE: 102, MRU: 39.5,
-    KES: 153, TZS: 2540, UGX: 3750, ETB: 57, RWF: 1280,
-    BIF: 2880, DJF: 178, SOS: 571, ERN: 15, SSP: 130,
-    ZAR: 18, BWP: 13.6, NAD: 18, MZN: 64, ZMW: 26,
-    MWK: 1730, LSL: 18, SZL: 18, ZWL: 5600,
-    XAF: 605, CDF: 2750, AOA: 830,
-    MUR: 45, SCR: 14.3, MGA: 4550, KMF: 455,
-
-    // ── Oceania ──
-    FJD: 2.25, PGK: 3.8, WST: 2.75, TOP: 2.37,
-    VUV: 120, SBD: 8.4, XPF: 110,
-};
-
-// ── Cost-of-Living Index (PPP-based) ─────────────────────────────────
-// Multiplied AFTER currency conversion to adjust for purchasing power.
-// 1.0 = US baseline. < 1.0 = cheaper country. > 1.0 = more expensive.
-//
-// Formula: effectiveCost = baseCostUSD × exchangeRate × costOfLiving
-// Example: India flight = $250 × 83 × 0.25 = ₹5,187  (real: ₹4,000-8,000 ✓)
-//          Japan flight = $250 × 149 × 0.70 = ¥26,075 (real: ¥20,000-35,000 ✓)
-
-const COST_OF_LIVING = {
-    // ── North America ──
-    USD: 1.0, CAD: 0.85, MXN: 0.35,
-
-    // ── Central America & Caribbean ──
-    GTQ: 0.30, HNL: 0.28, NIO: 0.25, CRC: 0.40, PAB: 0.55,
-    BZD: 0.45, DOP: 0.30, JMD: 0.35, TTD: 0.50, HTG: 0.20,
-    CUP: 0.20, BSD: 0.75, BBD: 0.65, XCD: 0.50, AWG: 0.60,
-
-    // ── South America ──
-    BRL: 0.40, ARS: 0.25, CLP: 0.45, COP: 0.30, PEN: 0.35,
-    UYU: 0.50, BOB: 0.25, PYG: 0.25, VES: 0.20, GYD: 0.30,
-    SRD: 0.30, FKP: 0.80,
-
-    // ── Western Europe ──
-    EUR: 1.0, GBP: 1.10, CHF: 1.40,
-    SEK: 1.05, NOK: 1.25, DKK: 1.05, ISK: 1.15,
-
-    // ── Eastern Europe ──
-    PLN: 0.45, CZK: 0.50, HUF: 0.40, RON: 0.40, BGN: 0.38,
-    HRK: 0.45, RSD: 0.35, BAM: 0.38, MKD: 0.35, ALL: 0.30,
-    MDL: 0.25, UAH: 0.25, BYN: 0.30, GEL: 0.35, AMD: 0.30,
-    AZN: 0.40,
-
-    // ── Russia & CIS ──
-    RUB: 0.35, KZT: 0.30, UZS: 0.20, KGS: 0.22, TJS: 0.20,
-    TMT: 0.25, MNT: 0.25,
-
-    // ── Turkey ──
-    TRY: 0.30,
-
-    // ── South Asia ──
-    INR: 0.25, PKR: 0.20, LKR: 0.22, BDT: 0.20, NPR: 0.22,
-    MVR: 0.55, BTN: 0.25, AFN: 0.18,
-
-    // ── Southeast Asia ──
-    THB: 0.30, MYR: 0.35, VND: 0.25, IDR: 0.25, PHP: 0.28,
-    MMK: 0.20, KHR: 0.22, LAK: 0.20, SGD: 0.80, BND: 0.75,
-    TLD: 0.20,
-
-    // ── East Asia ──
-    JPY: 0.70, KRW: 0.65, TWD: 0.55, HKD: 0.80, CNY: 0.40,
-    MOP: 0.75,
-
-    // ── Middle East ──
-    AED: 0.85, SAR: 0.70, QAR: 0.80, OMR: 0.80, BHD: 0.80,
-    KWD: 0.85, ILS: 0.90, JOD: 0.55, LBP: 0.25, IQD: 0.25,
-    YER: 0.20, SYP: 0.18, IRR: 0.25,
-
-    // ── North Africa ──
-    EGP: 0.22, MAD: 0.35, TND: 0.30, DZD: 0.28, LYD: 0.35,
-
-    // ── West Africa ──
-    NGN: 0.22, GHS: 0.25, XOF: 0.28, GMD: 0.20, SLL: 0.18,
-    LRD: 0.18, GNF: 0.18, CVE: 0.35, MRU: 0.22,
-
-    // ── East Africa ──
-    KES: 0.25, TZS: 0.20, UGX: 0.20, ETB: 0.18, RWF: 0.22,
-    BIF: 0.18, DJF: 0.35, SOS: 0.18, ERN: 0.20, SSP: 0.15,
-
-    // ── Southern Africa ──
-    ZAR: 0.35, BWP: 0.40, NAD: 0.35, MZN: 0.20, ZMW: 0.22,
-    MWK: 0.15, LSL: 0.30, SZL: 0.30, ZWL: 0.15,
-
-    // ── Central Africa ──
-    XAF: 0.28, CDF: 0.15, AOA: 0.25,
-
-    // ── Indian Ocean Islands ──
-    MUR: 0.40, SCR: 0.55, MGA: 0.18, KMF: 0.25,
-
-    // ── Oceania ──
-    AUD: 0.85, NZD: 0.80, FJD: 0.45, PGK: 0.30, WST: 0.40,
-    TOP: 0.40, VUV: 0.40, SBD: 0.35, XPF: 0.80,
-};
-
-// ── Region-based fallback tiers ──────────────────────────────────────
-// Maps each currency to a region for smart fallback when COST_OF_LIVING
-// doesn't have the currency. Regions have default COL values.
-
-const REGION_DEFAULTS = {
-    'north_america': 0.90,
-    'central_america': 0.35,
-    'caribbean': 0.45,
-    'south_america': 0.35,
-    'western_europe': 1.05,
-    'eastern_europe': 0.40,
-    'scandinavia': 1.15,
-    'russia_cis': 0.30,
-    'south_asia': 0.22,
-    'southeast_asia': 0.28,
-    'east_asia': 0.65,
-    'middle_east_rich': 0.82,
-    'middle_east_other': 0.30,
-    'north_africa': 0.30,
-    'sub_saharan_africa': 0.22,
-    'oceania_developed': 0.82,
-    'oceania_islands': 0.38,
-};
+const COST_OF_LIVING = costOfLivingData.COST_OF_LIVING;
+const REGION_DEFAULTS = costOfLivingData.REGION_DEFAULTS;
 
 /**
  * Get the effective cost multiplier for a currency.

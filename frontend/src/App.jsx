@@ -78,17 +78,17 @@ function App() {
                   <Route path="/chat/session" element={<Chat />} />
 
                   {/* AI CONTROL CENTER ROUTES */}
-                  <Route path="/ai" element={<AIControlCenter />} />
-                  <Route path="/ai/chat" element={<Chat />} />
-                  <Route path="/ai/translate" element={<TranslationPage />} />
-                  <Route path="/ai/emergency" element={<EmergencyPage />} />
-                  <Route path="/ai/voice" element={<VoicePage />} />
-                  <Route path="/ai/itinerary" element={<ItineraryPage />} />
-                  <Route path="/ai/budget" element={<BudgetPage />} />
-                  <Route path="/ai/food" element={<FoodPage />} />
-                  <Route path="/ai/what-if" element={<WhatIfPage />} />
-                  <Route path="/ai/explainability" element={<ExplainabilityPage />} />
-                  <Route path="/ai/memory" element={<MemoryPage />} />
+                  <Route path="/ai" element={<ProtectedRoute><AIControlCenter /></ProtectedRoute>} />
+                  <Route path="/ai/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+                  <Route path="/ai/translate" element={<ProtectedRoute><TranslationPage /></ProtectedRoute>} />
+                  <Route path="/ai/emergency" element={<ProtectedRoute><EmergencyPage /></ProtectedRoute>} />
+                  <Route path="/ai/voice" element={<ProtectedRoute><VoicePage /></ProtectedRoute>} />
+                  <Route path="/ai/itinerary" element={<ProtectedRoute><ItineraryPage /></ProtectedRoute>} />
+                  <Route path="/ai/budget" element={<ProtectedRoute><BudgetPage /></ProtectedRoute>} />
+                  <Route path="/ai/food" element={<ProtectedRoute><FoodPage /></ProtectedRoute>} />
+                  <Route path="/ai/what-if" element={<ProtectedRoute><WhatIfPage /></ProtectedRoute>} />
+                  <Route path="/ai/explainability" element={<ProtectedRoute><ExplainabilityPage /></ProtectedRoute>} />
+                  <Route path="/ai/memory" element={<ProtectedRoute><MemoryPage /></ProtectedRoute>} />
 
                   <Route path="/discover" element={<Discover />} />
                   <Route path="/destination/:id" element={<DestinationDetail />} />

@@ -5,7 +5,7 @@ import {
     Wallet, MapPin, ShieldAlert, Utensils, ArrowUp, Zap,
     AlertTriangle, ChevronDown
 } from 'lucide-react';
-import useCompanionStore from '../../store/companionStore';
+import useChatStore from '../../store/chatStore';
 import useAuthStore from '../../store/authStore';
 
 // ── Intent badge colors ──────────────────────────────────────────────
@@ -77,7 +77,7 @@ const MessageBubble = ({ message }) => {
                         ? 'bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-900 dark:text-red-200 rounded-bl-md'
                         : 'bg-white dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-slate-200 rounded-bl-md'
                     }`}>
-                    <div dangerouslySetInnerHTML={{ __html: formatText(message.text) }} />
+                    <div dangerouslySetInnerHTML={{ __html: formatText(message.content) }} />
                 </div>
 
                 {/* Timestamp */}
@@ -116,7 +116,7 @@ const TypingIndicator = () => (
 
 // ── Main Companion Component ─────────────────────────────────────────
 const AICompanion = () => {
-    const { messages, isProcessing, isOpen, toggleOpen, sendMessage, clearMessages } = useCompanionStore();
+    const { messages, isLoading, isOpen, toggleOpen, sendMessage, clearMessages } = useChatStore();
     const isAuthenticated = useAuthStore(s => s.isAuthenticated);
     const [input, setInput] = useState('');
     const messagesEndRef = useRef(null);
@@ -125,7 +125,7 @@ const AICompanion = () => {
     // Auto-scroll to bottom
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages, isProcessing]);
+    }, [messages, isLoading]);
 
     // Focus input when opening
     useEffect(() => {
@@ -135,7 +135,7 @@ const AICompanion = () => {
     }, [isOpen]);
 
     const handleSend = () => {
-        if (!input.trim() || isProcessing) return;
+        if (!input.trim() || isLoading) return;
         sendMessage(input);
         setInput('');
     };
@@ -243,7 +243,7 @@ const AICompanion = () => {
                                 <MessageBubble key={msg.id} message={msg} />
                             ))}
 
-                            {isProcessing && <TypingIndicator />}
+                            {isLoading && <TypingIndicator />}
                             <div ref={messagesEndRef} />
                         </div>
 
@@ -274,13 +274,13 @@ const AICompanion = () => {
                                     onKeyDown={handleKeyDown}
                                     placeholder="Ask about budget, activities, food..."
                                     className="flex-1 bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-slate-800 dark:text-white placeholder-slate-400 outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all"
-                                    disabled={isProcessing}
+                                    disabled={isLoading}
                                 />
                                 <motion.button
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={handleSend}
-                                    disabled={!input.trim() || isProcessing}
+                                    disabled={!input.trim() || isLoading}
                                     className="w-10 h-10 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 text-white flex items-center justify-center transition-colors shrink-0"
                                 >
                                     <Send className="w-4 h-4" />

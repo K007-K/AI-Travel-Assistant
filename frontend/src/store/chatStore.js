@@ -1,71 +1,130 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { sendMessageToGroq } from '../api/groq';
+import { routeMessage } from '../engine/intentRouter';
+import { makeGroqRequest } from '../api/groq';
+import useItineraryStore from './itineraryStore';
+
+// ── Build context from itineraryStore for intent routing ─────────────
+function _getContext() {
+    const itStore = useItineraryStore.getState();
+    const trip = itStore.trips.find(t => t.id === itStore.currentTrip) || itStore.trips[0];
+
+    return {
+        allocation: itStore.allocation || null,
+        reconciliation: itStore.reconciliation || null,
+        dailySummary: itStore.dailySummary || [],
+        destination: trip?.destination || '',
+        currentLocation: trip?.destination || '',
+        currency: trip?.currency || 'USD',
+        travelStyle: trip?.travel_style || '',
+        budgetTier: trip?.accommodation_preference || 'mid-range',
+        tripName: trip?.name || '',
+        travelers: trip?.travelers || 1,
+    };
+}
+
+// ── Unified Chat Store ───────────────────────────────────────────────
+// Serves both the Chat page and the AI Companion panel.
+// Uses intent routing for deterministic queries, falls back to AI.
+
+const WELCOME_MESSAGE = {
+    id: 'welcome',
+    role: 'assistant',
+    content: 'Hello! I\'m your TravelAI assistant. 👋\n\nI can help you plan trips, find hidden gems, or give you cultural tips for any destination.\n\nWhere are you thinking of going?',
+    timestamp: Date.now(),
+};
 
 const useChatStore = create(
     persist(
-        (set, get) => ({
-            messages: [
-                {
-                    id: 'welcome',
-                    role: 'assistant',
-                    content: 'Hello! I\'m your TravelAI assistant. 👋\n\nI can help you plan trips, find hidden gems, or give you cultural tips for any destination.\n\nWhere are you thinking of going?',
-                    timestamp: Date.now(),
-                },
-            ],
+        (set, _get) => ({
+            messages: [WELCOME_MESSAGE],
             isLoading: false,
             error: null,
 
-            addMessage: (message) => set((state) => ({
-                messages: [...state.messages, { ...message, id: Date.now().toString(), timestamp: Date.now() }]
-            })),
+            // Companion panel UI state
+            isOpen: false,
+            toggleOpen: () => set(state => ({ isOpen: !state.isOpen })),
+            setOpen: (open) => set({ isOpen: open }),
 
-            sendMessage: async (content) => {
-                const { addMessage } = get();
+            // Unified send — intent routing first, AI fallback second
+            sendMessage: async (text) => {
+                if (!text?.trim()) return;
 
-                // Add user message
-                addMessage({ role: 'user', content });
+                const userMessage = {
+                    id: Date.now().toString(),
+                    role: 'user',
+                    content: text.trim(),
+                    timestamp: Date.now(),
+                };
 
-                set({ isLoading: true, error: null });
+                set(state => ({
+                    messages: [...state.messages, userMessage],
+                    isLoading: true,
+                    error: null,
+                }));
 
                 try {
-                    // Get AI response
-                    const updatedMessages = [...get().messages];
-                    // Filter out the welcome message for the API call to keep context clean if needed
-                    // But Groq/Llama handles context well, let's just pass the user/assistant history
-                    // We exclude the first 'welcome' message if it has a special ID to avoid "System" confusion if mapped incorrectly
-                    // But our map in groq.js handles roles correctly.
+                    const context = _getContext();
+                    const { intent, confidence, response } = routeMessage(text, context);
 
-                    const responseText = await sendMessageToGroq(updatedMessages);
+                    let responseContent = response.text;
 
-                    addMessage({ role: 'assistant', content: responseText });
+                    // If handler signals AI fallback needed, call Groq
+                    if (response.needsAI) {
+                        const systemPrompt = response.systemPrompt ||
+                            'You are a helpful AI travel assistant. Keep responses concise and travel-focused.';
+                        responseContent = await makeGroqRequest([
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: text },
+                        ]);
+                    }
+
+                    const assistantMessage = {
+                        id: (Date.now() + 1).toString(),
+                        role: 'assistant',
+                        content: responseContent,
+                        intent,
+                        confidence,
+                        type: response.type,
+                        data: response.data,
+                        timestamp: Date.now(),
+                    };
+
+                    set(state => ({
+                        messages: [...state.messages, assistantMessage],
+                        isLoading: false,
+                    }));
                 } catch (error) {
-                    console.error("Chat Store Error:", error);
-                    const errorMessage = error.message || 'Something went wrong. Please try again.';
-                    set({ error: errorMessage });
-                    addMessage({ role: 'assistant', content: `❌ ${errorMessage}` });
-                } finally {
-                    set({ isLoading: false });
+                    console.error('[Chat] Error processing message:', error);
+                    const errorText = error.message || 'Something went wrong. Please try again.';
+                    set(state => ({
+                        messages: [...state.messages, {
+                            id: (Date.now() + 1).toString(),
+                            role: 'assistant',
+                            content: `❌ ${errorText}`,
+                            intent: 'error',
+                            type: 'error',
+                            timestamp: Date.now(),
+                        }],
+                        isLoading: false,
+                        error: errorText,
+                    }));
                 }
             },
 
-            clearChat: () => set({
-                messages: [{
-                    id: 'welcome',
-                    role: 'assistant',
-                    content: 'Hello! I\'m your TravelAI assistant. 👋\n\nI can help you plan trips, find hidden gems, or give you cultural tips for any destination.\n\nWhere are you thinking of going?',
-                    timestamp: Date.now(),
-                }]
-            }),
+            clearChat: () => set({ messages: [WELCOME_MESSAGE] }),
+
+            // Alias for companion backward compat
+            clearMessages: () => set({ messages: [WELCOME_MESSAGE] }),
         }),
         {
             name: 'travel-chat-storage',
-            partialize: (state) => ({ messages: state.messages }), // Only persist messages
+            partialize: (state) => ({ messages: state.messages }),
             merge: (persistedState, currentState) => ({
                 ...currentState,
                 ...persistedState,
-                isLoading: false, // FORCE reset loading state on reload
-                error: null,      // FORCE reset error state on reload
+                isLoading: false,
+                error: null,
             }),
         }
     )
