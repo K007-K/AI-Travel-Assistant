@@ -675,7 +675,7 @@ export function insertPairwiseLocalTransport(activities, tripId, dayNumber, budg
             distKm = FALLBACK_DISTANCE_KM;
         }
 
-        if (distKm > 0.5) {
+        if (distKm > 0.2) {
             // Guard: skip if local transport envelope is exhausted
             const localRemaining = allocation?.local_transport_remaining ?? Infinity;
             if (localRemaining <= 0) continue;
