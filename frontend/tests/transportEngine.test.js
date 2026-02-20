@@ -12,6 +12,8 @@ import {
     buildReturnSegment,
     buildIntercitySegments,
     haversineDistance,
+    _calculateTransportCost as calculateTransportCost,
+    _calculateAccommodationCost as calculateAccommodationCost,
 } from '../src/utils/transportEngine.js';
 
 // ─────────────────────────────────────────────────────────────────────
@@ -338,5 +340,194 @@ describe('Full Trip Simulation — Vizag → Goa → Puducherry', () => {
         expect(outbound?.metadata?.transport_mode).toBe('flight');
         intercity.forEach(s => expect(s.metadata.transport_mode).toBe('flight'));
         expect(ret?.metadata?.transport_mode).toBe('flight');
+    });
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// TEST 4: Worldwide Cost-of-Living Verification (PPP)
+// ─────────────────────────────────────────────────────────────────────
+
+describe('Worldwide Cost Verification — PPP-Adjusted Pricing', () => {
+    // Helper: calculate cost for display
+    const flight = (tier, travelers, currency) => calculateTransportCost('flight', tier, travelers, currency);
+    const train = (tier, travelers, currency) => calculateTransportCost('train', tier, travelers, currency);
+    const bus = (tier, travelers, currency) => calculateTransportCost('bus', tier, travelers, currency);
+    const hotel = (pref, currency) => calculateAccommodationCost(pref, currency);
+
+    it('🇮🇳 INDIA (INR) — should produce realistic Indian prices', () => {
+        console.log('\n  🇮🇳 INDIA (INR):');
+        const fShort = flight('short', 1, 'INR');
+        const fMed = flight('medium', 1, 'INR');
+        const fLong = flight('long', 1, 'INR');
+        const tShort = train('short', 1, 'INR');
+        const tMed = train('medium', 1, 'INR');
+        const bShort = bus('short', 1, 'INR');
+        const hBudget = hotel('budget', 'INR');
+        const hMid = hotel('mid-range', 'INR');
+        const hLux = hotel('luxury', 'INR');
+
+        console.log(`  ✈️  Flight short: ₹${fShort} (real: ₹2,500-6,000)`);
+        console.log(`  ✈️  Flight medium: ₹${fMed} (real: ₹4,000-10,000)`);
+        console.log(`  ✈️  Flight long: ₹${fLong} (real: ₹6,000-18,000)`);
+        console.log(`  🚄 Train short: ₹${tShort} (real: ₹400-1,500)`);
+        console.log(`  🚄 Train medium: ₹${tMed} (real: ₹800-2,500)`);
+        console.log(`  🚌 Bus short: ₹${bShort} (real: ₹300-800)`);
+        console.log(`  🏨 Hotel budget: ₹${hBudget}/night (real: ₹500-1,500)`);
+        console.log(`  🏨 Hotel mid-range: ₹${hMid}/night (real: ₹2,000-5,000)`);
+        console.log(`  🏨 Hotel luxury: ₹${hLux}/night (real: ₹8,000-25,000)`);
+
+        expect(fShort).toBeGreaterThanOrEqual(2000);
+        expect(fShort).toBeLessThanOrEqual(6000);
+        expect(fMed).toBeGreaterThanOrEqual(3000);
+        expect(fMed).toBeLessThanOrEqual(12000);
+        expect(tShort).toBeGreaterThanOrEqual(300);
+        expect(tShort).toBeLessThanOrEqual(2000);
+        expect(bShort).toBeGreaterThanOrEqual(200);
+        expect(bShort).toBeLessThanOrEqual(1000);
+        expect(hBudget).toBeGreaterThanOrEqual(500);
+        expect(hBudget).toBeLessThanOrEqual(2000);
+        expect(hMid).toBeGreaterThanOrEqual(1500);
+        expect(hMid).toBeLessThanOrEqual(5000);
+        expect(hLux).toBeGreaterThanOrEqual(5000);
+        expect(hLux).toBeLessThanOrEqual(30000);
+    });
+
+    it('🇺🇸 USA (USD) — should produce realistic American prices', () => {
+        console.log('\n  🇺🇸 USA (USD):');
+        const fShort = flight('short', 1, 'USD');
+        const fMed = flight('medium', 1, 'USD');
+        const tShort = train('short', 1, 'USD');
+        const bShort = bus('short', 1, 'USD');
+        const hBudget = hotel('budget', 'USD');
+        const hMid = hotel('mid-range', 'USD');
+        const hLux = hotel('luxury', 'USD');
+
+        console.log(`  ✈️  Flight short: $${fShort} (real: $80-250)`);
+        console.log(`  ✈️  Flight medium: $${fMed} (real: $150-400)`);
+        console.log(`  🚄 Train short: $${tShort} (real: $25-80)`);
+        console.log(`  🚌 Bus short: $${bShort} (real: $15-50)`);
+        console.log(`  🏨 Hotel budget: $${hBudget}/night (real: $30-70)`);
+        console.log(`  🏨 Hotel mid-range: $${hMid}/night (real: $80-200)`);
+        console.log(`  🏨 Hotel luxury: $${hLux}/night (real: $250-600)`);
+
+        expect(fShort).toBeGreaterThanOrEqual(80);
+        expect(fShort).toBeLessThanOrEqual(250);
+        expect(fMed).toBeGreaterThanOrEqual(150);
+        expect(fMed).toBeLessThanOrEqual(400);
+        expect(hBudget).toBeGreaterThanOrEqual(25);
+        expect(hBudget).toBeLessThanOrEqual(70);
+        expect(hMid).toBeGreaterThanOrEqual(80);
+        expect(hMid).toBeLessThanOrEqual(200);
+    });
+
+    it('🇯🇵 JAPAN (JPY) — should produce realistic Japanese prices', () => {
+        console.log('\n  🇯🇵 JAPAN (JPY):');
+        const fShort = flight('short', 1, 'JPY');
+        const tShort = train('short', 1, 'JPY');
+        const tMed = train('medium', 1, 'JPY');
+        const hBudget = hotel('budget', 'JPY');
+        const hMid = hotel('mid-range', 'JPY');
+
+        console.log(`  ✈️  Flight short: ¥${fShort.toLocaleString()} (real: ¥8,000-20,000)`);
+        console.log(`  🚄 Train short (Shinkansen): ¥${tShort.toLocaleString()} (real: ¥5,000-14,000)`);
+        console.log(`  🚄 Train medium: ¥${tMed.toLocaleString()} (real: ¥10,000-20,000)`);
+        console.log(`  🏨 Hotel budget: ¥${hBudget.toLocaleString()}/night (real: ¥3,000-6,000)`);
+        console.log(`  🏨 Hotel mid-range: ¥${hMid.toLocaleString()}/night (real: ¥8,000-20,000)`);
+
+        expect(fShort).toBeGreaterThanOrEqual(8000);
+        expect(fShort).toBeLessThanOrEqual(25000);
+        expect(tShort).toBeGreaterThanOrEqual(3000);
+        expect(tShort).toBeLessThanOrEqual(14000);
+        expect(hMid).toBeGreaterThanOrEqual(5000);
+        expect(hMid).toBeLessThanOrEqual(20000);
+    });
+
+    it('🇹🇭 THAILAND (THB) — should produce realistic Thai prices', () => {
+        console.log('\n  🇹🇭 THAILAND (THB):');
+        const fShort = flight('short', 1, 'THB');
+        const tShort = train('short', 1, 'THB');
+        const bShort = bus('short', 1, 'THB');
+        const hBudget = hotel('budget', 'THB');
+        const hMid = hotel('mid-range', 'THB');
+
+        console.log(`  ✈️  Flight short: ฿${fShort.toLocaleString()} (real: ฿1,200-4,000)`);
+        console.log(`  🚄 Train short: ฿${tShort.toLocaleString()} (real: ฿200-800)`);
+        console.log(`  🚌 Bus short: ฿${bShort.toLocaleString()} (real: ฿100-400)`);
+        console.log(`  🏨 Hotel budget: ฿${hBudget.toLocaleString()}/night (real: ฿400-1,500)`);
+        console.log(`  🏨 Hotel mid-range: ฿${hMid.toLocaleString()}/night (real: ฿1,500-4,000)`);
+
+        expect(fShort).toBeGreaterThanOrEqual(1000);
+        expect(fShort).toBeLessThanOrEqual(5000);
+        expect(hBudget).toBeGreaterThanOrEqual(300);
+        expect(hBudget).toBeLessThanOrEqual(2000);
+        expect(hMid).toBeGreaterThanOrEqual(1000);
+        expect(hMid).toBeLessThanOrEqual(5000);
+    });
+
+    it('🇬🇧 UK (GBP) — should produce realistic British prices', () => {
+        console.log('\n  🇬🇧 UK (GBP):');
+        const fShort = flight('short', 1, 'GBP');
+        const tShort = train('short', 1, 'GBP');
+        const hBudget = hotel('budget', 'GBP');
+        const hMid = hotel('mid-range', 'GBP');
+        const hLux = hotel('luxury', 'GBP');
+
+        console.log(`  ✈️  Flight short: £${fShort} (real: £40-150)`);
+        console.log(`  🚄 Train short: £${tShort} (real: £20-60)`);
+        console.log(`  🏨 Hotel budget: £${hBudget}/night (real: £30-60)`);
+        console.log(`  🏨 Hotel mid-range: £${hMid}/night (real: £80-180)`);
+        console.log(`  🏨 Hotel luxury: £${hLux}/night (real: £200-500)`);
+
+        expect(fShort).toBeGreaterThanOrEqual(40);
+        expect(fShort).toBeLessThanOrEqual(180);
+        expect(hMid).toBeGreaterThanOrEqual(60);
+        expect(hMid).toBeLessThanOrEqual(200);
+    });
+
+    it('🇪🇺 EUROPE (EUR) — should produce realistic European prices', () => {
+        console.log('\n  🇪🇺 EUROPE (EUR):');
+        const fShort = flight('short', 1, 'EUR');
+        const fMed = flight('medium', 1, 'EUR');
+        const tShort = train('short', 1, 'EUR');
+        const hBudget = hotel('budget', 'EUR');
+        const hMid = hotel('mid-range', 'EUR');
+
+        console.log(`  ✈️  Flight short: €${fShort} (real: €30-150)`);
+        console.log(`  ✈️  Flight medium: €${fMed} (real: €80-300)`);
+        console.log(`  🚄 Train short: €${tShort} (real: €15-50)`);
+        console.log(`  🏨 Hotel budget: €${hBudget}/night (real: €25-60)`);
+        console.log(`  🏨 Hotel mid-range: €${hMid}/night (real: €70-160)`);
+
+        expect(fShort).toBeGreaterThanOrEqual(30);
+        expect(fShort).toBeLessThanOrEqual(180);
+        expect(hBudget).toBeGreaterThanOrEqual(20);
+        expect(hBudget).toBeLessThanOrEqual(70);
+        expect(hMid).toBeGreaterThanOrEqual(60);
+        expect(hMid).toBeLessThanOrEqual(180);
+    });
+
+    it('📊 COMPARISON TABLE — all countries side by side', () => {
+        const countries = [
+            { flag: '🇮🇳', name: 'India', code: 'INR', sym: '₹' },
+            { flag: '🇺🇸', name: 'USA', code: 'USD', sym: '$' },
+            { flag: '🇯🇵', name: 'Japan', code: 'JPY', sym: '¥' },
+            { flag: '🇹🇭', name: 'Thailand', code: 'THB', sym: '฿' },
+            { flag: '🇬🇧', name: 'UK', code: 'GBP', sym: '£' },
+            { flag: '🇪🇺', name: 'Europe', code: 'EUR', sym: '€' },
+        ];
+
+        console.log('\n  ┌────────────────┬────────────┬────────────┬────────────┐');
+        console.log('  │ Country        │ Flight Med │ Hotel Mid  │ Train Sht  │');
+        console.log('  ├────────────────┼────────────┼────────────┼────────────┤');
+        countries.forEach(c => {
+            const f = flight('medium', 1, c.code);
+            const h = hotel('mid-range', c.code);
+            const t = train('short', 1, c.code);
+            console.log(`  │ ${c.flag} ${c.name.padEnd(12)}│ ${c.sym}${String(f).padEnd(10)}│ ${c.sym}${String(h).padEnd(10)}│ ${c.sym}${String(t).padEnd(10)}│`);
+        });
+        console.log('  └────────────────┴────────────┴────────────┴────────────┘');
+
+        // Just verify the table rendered — actual assertions are in per-country tests
+        expect(true).toBe(true);
     });
 });

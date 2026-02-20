@@ -14,20 +14,22 @@
  */
 import { getCityCoords } from '../data/cityCoordinates.js';
 
-// ── Cost Lookup Tables (base costs in USD, converted later) ──────────
+// ── Cost Lookup Tables (base costs in USD at US prices) ──────────────
+// These reflect realistic US pricing. Other countries are adjusted
+// via COST_OF_LIVING index (PPP-based purchasing power parity).
 
 const TRANSPORT_COSTS = {
-    flight: { short: 80, medium: 150, long: 300 },   // < 500km, 500-2000km, > 2000km
-    train: { short: 15, medium: 40, long: 80 },
-    bus: { short: 8, medium: 20, long: 45 },
-    car: { perKm: 0.08 },   // fuel cost per km
-    bike: { perKm: 0.03 },
+    flight: { short: 120, medium: 250, long: 450 },   // US domestic flights
+    train: { short: 35, medium: 90, long: 180 },      // Amtrak-level pricing
+    bus: { short: 18, medium: 45, long: 90 },          // Greyhound-level
+    car: { perKm: 0.10 },   // fuel + wear per km (US gas prices)
+    bike: { perKm: 0.04 },
 };
 
 const ACCOMMODATION_COSTS = {
-    budget: { perNight: 15 },
-    'mid-range': { perNight: 60 },
-    luxury: { perNight: 200 },
+    budget: { perNight: 40 },       // US hostel / motel
+    'mid-range': { perNight: 120 }, // US 3-star hotel
+    luxury: { perNight: 350 },      // US 5-star hotel
 };
 
 // ── Local transport cost per km (for pairwise insertion) ─────────────
@@ -58,6 +60,56 @@ const CURRENCY_MULTIPLIERS = {
     HUF: 360, ILS: 3.7, EGP: 31, PKR: 280, LKR: 320,
     BDT: 110, NPR: 133, MMK: 2100, KHR: 4100, LAK: 20500,
 };
+
+// ── Cost-of-Living Index (PPP-based) ─────────────────────────────────
+// Multiplied AFTER currency conversion to adjust for purchasing power.
+// 1.0 = US baseline. < 1.0 = cheaper country. > 1.0 = more expensive.
+//
+// Example: India flight medium = $250 × 83 × 0.25 = ₹5,187 (real: ₹4,000-8,000 ✓)
+//          Japan flight medium = $250 × 149 × 0.70 = ¥26,075 (real: ¥20,000-35,000 ✓)
+//          USA flight medium   = $250 × 1 × 1.0    = $250 (real: $150-400 ✓)
+
+const COST_OF_LIVING = {
+    // ── Americas & Oceania ──
+    USD: 1.0, CAD: 0.85, AUD: 0.85, NZD: 0.80,
+    BRL: 0.40, MXN: 0.35,
+
+    // ── Western Europe ──
+    EUR: 1.0, GBP: 1.10, CHF: 1.40,
+    SEK: 1.05, NOK: 1.25, DKK: 1.05,
+
+    // ── Eastern Europe ──
+    PLN: 0.45, CZK: 0.50, HUF: 0.40, TRY: 0.30, RUB: 0.35,
+
+    // ── South Asia (very affordable) ──
+    INR: 0.25, PKR: 0.20, LKR: 0.22, BDT: 0.20, NPR: 0.22,
+
+    // ── Southeast Asia ──
+    THB: 0.30, MYR: 0.35, VND: 0.25, IDR: 0.25, PHP: 0.28,
+    MMK: 0.20, KHR: 0.22, LAK: 0.20, SGD: 0.80,
+
+    // ── East Asia ──
+    JPY: 0.70, KRW: 0.65, TWD: 0.55, HKD: 0.80, CNY: 0.40,
+
+    // ── Middle East ──
+    AED: 0.85, SAR: 0.70, ILS: 0.90,
+
+    // ── Africa ──
+    ZAR: 0.35, EGP: 0.22,
+};
+
+/**
+ * Get the effective cost multiplier for a currency.
+ * = exchangeRate × costOfLiving (PPP adjustment).
+ *
+ * Used for intercity travel and accommodation.
+ * Local transport uses its own PPP-adjusted base rates.
+ */
+function getEffectiveMultiplier(currency) {
+    const exchangeRate = CURRENCY_MULTIPLIERS[currency] || 1;
+    const col = COST_OF_LIVING[currency] || 1;
+    return exchangeRate * col;
+}
 
 // ── Distance & Time Estimation ───────────────────────────────────────
 
@@ -216,7 +268,7 @@ function decideTransportMode(trip, distanceTier) {
 // ── Cost Calculation ─────────────────────────────────────────────────
 
 function calculateTransportCost(mode, distanceTier, travelers, currency) {
-    const multiplier = CURRENCY_MULTIPLIERS[currency] || 1;
+    const multiplier = getEffectiveMultiplier(currency);
     let baseCost = 0;
 
     if (mode === 'car' || mode === 'bike') {
@@ -295,7 +347,7 @@ function envelopeAwareTransportCost(preferredMode, distanceTier, travelers, curr
 }
 
 function calculateAccommodationCost(preference, currency) {
-    const multiplier = CURRENCY_MULTIPLIERS[currency] || 1;
+    const multiplier = getEffectiveMultiplier(currency);
     const tier = ACCOMMODATION_COSTS[preference] || ACCOMMODATION_COSTS['mid-range'];
     return Math.round(tier.perNight * multiplier);
 }
