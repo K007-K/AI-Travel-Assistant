@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft, MapPin, Star, Globe, DollarSign, Clock, Calendar,
     Utensils, Landmark, Lightbulb, Sun, Heart, ChevronRight, Compass, Users,
-    Camera, Mountain, Shield, Plane
+    Camera, Mountain, Shield, Plane, X, ExternalLink, Loader2
 } from 'lucide-react';
 import { getDestinationById } from '../api/places';
 import { fetchWikiSummary } from '../api/wikipediaService';
@@ -33,20 +33,17 @@ const Section = ({ icon: Icon, title, children, delay = 0 }) => (
 );
 
 /* ─── Highlight Card with Wikipedia image ───────────────────────── */
-const HighlightCard = ({ highlight, index, destinationName: _destinationName }) => {
+const HighlightCard = ({ highlight, index, onSelect }) => {
     const [imgUrl, setImgUrl] = useState(null);
     useEffect(() => {
         loadDestinationImage(highlight.name, setImgUrl);
     }, [highlight.name]);
 
     const fallback = getFallbackImage(highlight.name);
-    const wikiUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent(highlight.name.replace(/ /g, '_'))}`;
 
     return (
-        <motion.a
-            href={wikiUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+        <motion.div
+            onClick={() => onSelect(highlight)}
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -69,7 +66,118 @@ const HighlightCard = ({ highlight, index, destinationName: _destinationName }) 
                 <h3 className="font-bold text-base text-slate-800 dark:text-white mb-1.5 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">{highlight.name}</h3>
                 <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{highlight.desc}</p>
             </div>
-        </motion.a>
+        </motion.div>
+    );
+};
+
+/* ─── Highlight Detail Drawer (inline Wikipedia modal) ───────────── */
+const HighlightDrawer = ({ highlight, onClose }) => {
+    const [wikiData, setWikiData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [imgUrl, setImgUrl] = useState(null);
+
+    const wikiUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent(highlight.name.replace(/ /g, '_'))}`;
+
+    useEffect(() => {
+        setLoading(true);
+        loadDestinationImage(highlight.name, setImgUrl);
+        fetchWikiSummary(highlight.name).then(data => {
+            setWikiData(data);
+            if (data?.originalImage || data?.thumbnail) {
+                setImgUrl(data.originalImage || data.thumbnail);
+            }
+            setLoading(false);
+        });
+    }, [highlight.name]);
+
+    // Close on Escape
+    useEffect(() => {
+        const handler = (e) => e.key === 'Escape' && onClose();
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+    }, [onClose]);
+
+    return (
+        <>
+            {/* Backdrop */}
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={onClose}
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            />
+            {/* Drawer */}
+            <motion.div
+                initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 40, scale: 0.95 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="fixed inset-x-4 top-[10%] bottom-[10%] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-[560px] md:max-h-[80vh] z-50 rounded-2xl overflow-hidden bg-white dark:bg-[#141414] shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col"
+            >
+                {/* Header image */}
+                <div className="relative h-56 flex-shrink-0 overflow-hidden">
+                    <img
+                        src={imgUrl || getFallbackImage(highlight.name)}
+                        alt={highlight.name}
+                        className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                    <button
+                        onClick={onClose}
+                        className="absolute top-4 right-4 p-2 rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-black/60 transition-colors"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                    <div className="absolute bottom-4 left-5 right-5">
+                        <h2 className="text-2xl font-display font-bold text-white drop-shadow-lg">{highlight.name}</h2>
+                        <p className="text-white/80 text-sm mt-1">{highlight.desc}</p>
+                    </div>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto p-6">
+                    {loading ? (
+                        <div className="flex items-center justify-center py-12">
+                            <Loader2 className="w-6 h-6 animate-spin text-primary-500" />
+                            <span className="ml-3 text-slate-500">Loading details from Wikipedia...</span>
+                        </div>
+                    ) : wikiData?.extract ? (
+                        <div className="space-y-4">
+                            <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-[15px]">
+                                {wikiData.extract}
+                            </p>
+                            {wikiData.coordinates && (
+                                <div className="flex items-center gap-2 text-sm text-slate-500">
+                                    <MapPin className="w-4 h-4" />
+                                    <span>{wikiData.coordinates.lat.toFixed(4)}°N, {wikiData.coordinates.lon.toFixed(4)}°E</span>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <p className="text-slate-500 text-center py-8">No additional details available for this landmark.</p>
+                    )}
+                </div>
+
+                {/* Footer */}
+                <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-700 p-4 flex items-center justify-between">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+                    >
+                        Close
+                    </button>
+                    <a
+                        href={wikiUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
+                    >
+                        Read more on Wikipedia <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                </div>
+            </motion.div>
+        </>
     );
 };
 
@@ -149,6 +257,7 @@ export default function DestinationDetail() {
         } catch { return null; /* sessionStorage unavailable */ }
     });
     const [isEnriching, setIsEnriching] = useState(false);
+    const [selectedHighlight, setSelectedHighlight] = useState(null);
 
     const [heroImg, setHeroImg] = useState(null);
     const [liked, setLiked] = useState(false);
@@ -315,7 +424,7 @@ export default function DestinationDetail() {
                 <Section icon={Landmark} title="Top Highlights" delay={0.1}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                         {dest.highlights.map((h, i) => (
-                            <HighlightCard key={h.name} highlight={h} index={i} destinationName={dest.name} />
+                            <HighlightCard key={h.name} highlight={h} index={i} onSelect={setSelectedHighlight} />
                         ))}
                     </div>
                 </Section>
@@ -401,6 +510,15 @@ export default function DestinationDetail() {
                 </motion.div>
             </div>
 
+            {/* Highlight Detail Drawer */}
+            <AnimatePresence>
+                {selectedHighlight && (
+                    <HighlightDrawer
+                        highlight={selectedHighlight}
+                        onClose={() => setSelectedHighlight(null)}
+                    />
+                )}
+            </AnimatePresence>
 
         </div>
     );
