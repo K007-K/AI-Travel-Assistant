@@ -96,6 +96,16 @@ const useTripStore = create((set, get) => ({
 
             const _totalDays = segments.reduce((sum, s) => sum + (s.days || 0), 0);
 
+            // Map new user-facing styles → old DB-compatible values
+            // DB CHECK constraint (trips_travel_style_check) only allows original names
+            const STYLE_TO_DB = {
+                relax: 'luxury_escape',
+                explore: 'city_exploration',
+                adventure: 'road_trip',
+                business: 'business_travel',
+            };
+            const dbStyle = STYLE_TO_DB[tripData.travel_style] || tripData.travel_style || null;
+
             const newTrip = {
                 user_id: user.id,
                 title: tripData.title,
@@ -108,7 +118,7 @@ const useTripStore = create((set, get) => ({
                 pinned: false,
                 start_location: tripData.start_location || null,
                 return_location: tripData.return_location || null,
-                travel_style: tripData.travel_style || null,
+                travel_style: dbStyle,
                 // DB CHECK constraints only allow specific values — send safe defaults
                 own_vehicle_type: (tripData.own_vehicle_type && tripData.own_vehicle_type !== 'auto')
                     ? tripData.own_vehicle_type : 'none',
@@ -127,6 +137,7 @@ const useTripStore = create((set, get) => ({
 
             // Attach engine-only values client-side (not persisted to DB)
             data.budget_tier = tripData.budget_tier || null;
+            data.travel_style = tripData.travel_style || data.travel_style;
             data.own_vehicle_type = tripData.own_vehicle_type || 'auto';
             data.travel_preference = tripData.travel_preference || 'auto';
 
