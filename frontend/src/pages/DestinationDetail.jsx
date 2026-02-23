@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { getDestinationById } from '../api/places';
 import { fetchWikiSummary } from '../api/wikipediaService';
+import { enrichDestinationWithAI } from '../api/destinationEnrichment';
 import { loadDestinationImage, getFallbackImage } from '../utils/destinationImages';
 
 
@@ -152,22 +153,36 @@ export default function DestinationDetail() {
     const heroY = useTransform(scrollYProgress, [0, 1], ['0%', '30%']);
     const heroOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0.3]);
 
-    // Enrich dynamic destinations with Wikipedia data
+    // Enrich dynamic destinations with AI-generated details + Wikipedia image
     useEffect(() => {
-        if (dest && dest._source === 'search' && !dest._enriched) {
-            setIsEnriching(true);
-            fetchWikiSummary(dest.name).then(wiki => {
-                if (wiki) {
-                    setDest(prev => ({
-                        ...prev,
-                        description: wiki.extract || prev.description,
-                        image: wiki.originalImage || wiki.thumbnail || prev.image,
-                        _enriched: true,
-                    }));
-                }
-                setIsEnriching(false);
-            });
-        }
+        if (!dest || !dest._source || dest._enriched) return;
+
+        let cancelled = false;
+        setIsEnriching(true);
+
+        (async () => {
+            // 1. Wikipedia — for hero image
+            const wiki = await fetchWikiSummary(dest.name);
+
+            // 2. Groq AI — for highlights, cuisine, culture, tips (same shape as curated)
+            const aiData = await enrichDestinationWithAI(dest.name, dest.country);
+
+            if (cancelled) return;
+
+            setDest(prev => ({
+                ...prev,
+                // Wikipedia image
+                image: wiki?.originalImage || wiki?.thumbnail || prev.image,
+                // AI-generated rich content
+                ...(aiData || {}),
+                // Keep original description if AI provided a better one; prefer AI
+                description: aiData?.description || wiki?.extract || prev.description,
+                _enriched: true,
+            }));
+            setIsEnriching(false);
+        })();
+
+        return () => { cancelled = true; };
     }, [dest]);
 
     // Use high-quality image
@@ -183,8 +198,6 @@ export default function DestinationDetail() {
             </div>
         );
     }
-
-    const isCurated = !dest._source;
 
     const statItems = [
         dest.language && { icon: Globe, label: 'Language', value: dest.language },
@@ -235,10 +248,11 @@ export default function DestinationDetail() {
             </div>
 
             {/* ── QUICK STATS BAR ─────────────────────────────────── */}
+            {statItems.length > 0 && (
             <div className="relative -mt-8 z-20 max-w-5xl mx-auto px-6">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-                    className="bg-white dark:bg-white/[0.03] rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 px-8 py-5 grid grid-cols-2 md:grid-cols-4 gap-6"
+                    className={`bg-white dark:bg-white/[0.03] rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 px-8 py-5 grid grid-cols-2 md:grid-cols-${Math.min(statItems.length, 4)} gap-6`}
                 >
                     {statItems.map((s, i) => (
                         <div key={i} className="flex items-center gap-3">
@@ -253,6 +267,7 @@ export default function DestinationDetail() {
                     ))}
                 </motion.div>
             </div>
+            )}
 
             {/* ── MAIN CONTENT ────────────────────────────────────── */}
             <div className="max-w-5xl mx-auto px-6 py-12">
@@ -266,8 +281,8 @@ export default function DestinationDetail() {
                     ))}
                 </motion.div>
 
-                {/* ESTIMATED BUDGET — curated only */}
-                {isCurated && dest.minBudgetPerDay && (
+                {/* ESTIMATED BUDGET */}
+                {dest.minBudgetPerDay && (
                 <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}
                     className="mb-10 p-5 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40 border border-emerald-300 dark:border-emerald-800/50 flex items-center gap-4 shadow-sm">
                     <div className="w-11 h-11 rounded-xl bg-emerald-500 shadow-md flex items-center justify-center flex-shrink-0">
@@ -282,7 +297,12 @@ export default function DestinationDetail() {
 
                 {/* Enriching indicator */}
                 {isEnriching && (
-                    <div className="mb-6 text-center text-sm text-slate-400 animate-pulse">Fetching destination details from Wikipedia...</div>
+                    <div className="mb-6 p-5 rounded-2xl bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800/50 text-center">
+                        <div className="animate-pulse text-primary-600 dark:text-primary-400 font-medium">
+                            ✨ Generating destination details with AI...
+                        </div>
+                        <p className="text-xs text-slate-500 mt-1">Highlights, cuisine, tips, and more</p>
+                    </div>
                 )}
 
                 {/* TOP HIGHLIGHTS — curated only */}
