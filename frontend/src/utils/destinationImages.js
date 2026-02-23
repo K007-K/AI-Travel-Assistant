@@ -11,8 +11,10 @@
  *   7. Gradient fallback SVG (always works)
  */
 
-const CACHE_KEY = 'destination_image_cache_v5';
+const CACHE_KEY = 'destination_image_cache_v6';
 const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+const UNSPLASH_KEY = typeof import.meta !== 'undefined' && import.meta.env?.VITE_UNSPLASH_ACCESS_KEY;
 
 // Words in Wikipedia descriptions that indicate a wrong article (film, TV, etc.)
 const BAD_DESCRIPTION_WORDS = ['film', 'movie', 'television', 'tv series', 'album', 'song', 'novel', 'video game', 'actress', 'actor', 'singer', 'band'];
@@ -385,6 +387,25 @@ export function getFallbackImage(destination) {
     return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
 
+// ─── Unsplash (high-quality travel photos) ─────────────────────────
+async function fetchFromUnsplash(query, destinationContext = '') {
+    if (!UNSPLASH_KEY) return null;
+    try {
+        const searchTerm = destinationContext ? `${query} ${destinationContext}` : query;
+        const res = await fetch(
+            `https://api.unsplash.com/search/photos?query=${encodeURIComponent(searchTerm)}&per_page=1&orientation=landscape&content_filter=high&client_id=${UNSPLASH_KEY}`
+        );
+        if (!res.ok) return null;
+        const data = await res.json();
+        const photo = data.results?.[0];
+        if (!photo) return null;
+        // Use regular size (1080px wide) for a good quality/speed balance
+        return photo.urls?.regular || photo.urls?.small || null;
+    } catch {
+        return null;
+    }
+}
+
 
 // ─── MAIN: load image with aggressive multi-strategy approach ──────
 /**
@@ -436,7 +457,15 @@ export async function loadDestinationImage(query, setUrl, destinationContext = '
         }
     }
 
-    // 4. Try the query directly on Wikipedia
+    // 4. Try Unsplash (high-quality, wide coverage)
+    let unsplashUrl = await fetchFromUnsplash(query, destinationContext);
+    if (unsplashUrl) {
+        setCache(key, unsplashUrl);
+        setUrl(unsplashUrl);
+        return;
+    }
+
+    // 5. Try the query directly on Wikipedia
     let directUrl = await fetchFromWikipedia(query);
     if (directUrl) {
         setCache(key, directUrl);
@@ -444,7 +473,7 @@ export async function loadDestinationImage(query, setUrl, destinationContext = '
         return;
     }
 
-    // 5. Try with destination context for disambiguation (e.g. "Ramana Ashram Tiruvannamalai")
+    // 6. Try with destination context for disambiguation (e.g. "Ramana Ashram Tiruvannamalai")
     if (destinationContext) {
         directUrl = await fetchFromWikipedia(`${query} ${destinationContext}`);
         if (!directUrl) directUrl = await fetchPageImage(`${query} ${destinationContext}`);
@@ -455,7 +484,7 @@ export async function loadDestinationImage(query, setUrl, destinationContext = '
         }
     }
 
-    // 6. Try MediaWiki pageimages API directly
+    // 7. Try MediaWiki pageimages API directly
     directUrl = await fetchPageImage(query);
     if (directUrl) {
         setCache(key, directUrl);
@@ -463,7 +492,7 @@ export async function loadDestinationImage(query, setUrl, destinationContext = '
         return;
     }
 
-    // 7. Use Wikipedia opensearch to find the closest article title
+    // 8. Use Wikipedia opensearch to find the closest article title
     const searchQuery = destinationContext ? `${query} ${destinationContext}` : query;
     const titles = await findWikipediaTitle(searchQuery);
     for (const title of titles) {
@@ -476,7 +505,7 @@ export async function loadDestinationImage(query, setUrl, destinationContext = '
         }
     }
 
-    // 8. Search Wikimedia Commons
+    // 9. Search Wikimedia Commons
     const commonsUrl = await fetchFromWikimediaCommons(searchQuery);
     if (commonsUrl) {
         setCache(key, commonsUrl);
@@ -484,5 +513,5 @@ export async function loadDestinationImage(query, setUrl, destinationContext = '
         return;
     }
 
-    // 9. Fallback: gradient remains (no broken external URL)
+    // 10. Fallback: gradient remains (no broken external URL)
 }
