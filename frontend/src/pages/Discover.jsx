@@ -6,9 +6,10 @@ import { Link } from 'react-router-dom';
 import BudgetSelectionModal from '../components/ui/BudgetSelectionModal';
 import LocationInput from '../components/ui/LocationInput';
 import { loadDestinationImage, getFallbackImage } from '../utils/destinationImages';
+import useFavourites from '../hooks/useFavourites';
 
 /* ─── Destination Card with lazy image loading ───────────────── */
-const DestinationCard = ({ dest, index }) => {
+const DestinationCard = ({ dest, index, isFav, onToggleFav }) => {
     const [imgUrl, setImgUrl] = useState(dest.image || null);
 
     useEffect(() => {
@@ -33,8 +34,13 @@ const DestinationCard = ({ dest, index }) => {
                     alt={dest.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
-                <button className="absolute top-2.5 right-2.5 p-1.5 rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white hover:text-red-500 transition-colors">
-                    <Heart className="w-4 h-4" />
+                <button
+                    onClick={(e) => { e.preventDefault(); onToggleFav(dest); }}
+                    className={`absolute top-2.5 right-2.5 p-1.5 rounded-full backdrop-blur-md transition-colors ${
+                        isFav ? 'bg-red-500 text-white' : 'bg-white/20 text-white hover:bg-white hover:text-red-500'
+                    }`}
+                >
+                    <Heart className={`w-4 h-4 ${isFav ? 'fill-current' : ''}`} />
                 </button>
                 <div className="absolute bottom-2.5 left-2.5">
                     <span className="px-1.5 py-0.5 rounded-md bg-black/50 backdrop-blur-sm text-white text-[11px] font-semibold flex items-center gap-1">
@@ -83,6 +89,7 @@ const Discover = () => {
     const [filter, setFilter] = useState('All');
     const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
     const [selectedDestination, _setSelectedDestination] = useState(null);
+    const { isFavourite, toggleFavourite } = useFavourites();
 
     useEffect(() => {
         // Load initial curated destinations
@@ -170,7 +177,7 @@ const Discover = () => {
                             ))
                         ) : filteredDestinations.length > 0 ? (
                             filteredDestinations.map((dest, index) => (
-                                <DestinationCard key={dest.id || index} dest={dest} index={index} />
+                                <DestinationCard key={dest.id || index} dest={dest} index={index} isFav={isFavourite(dest.id)} onToggleFav={toggleFavourite} />
                             ))
                         ) : (
                             <div className="col-span-full text-center py-20">

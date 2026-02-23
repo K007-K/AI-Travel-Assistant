@@ -26,6 +26,7 @@ const Bookings = lazy(() => import('./pages/Bookings'));
 const BookingReview = lazy(() => import('./pages/BookingReview'));
 const MyBookings = lazy(() => import('./pages/MyBookings'));
 const DestinationDetail = lazy(() => import('./pages/DestinationDetail'));
+const Favourites = lazy(() => import('./pages/Favourites'));
 
 // AI Pages (named exports → wrapped for React.lazy)
 const TranslationPage = lazy(() => import('./pages/ai/TranslationPage').then(m => ({ default: m.TranslationPage })));
@@ -92,6 +93,7 @@ function App() {
 
                   <Route path="/discover" element={<Discover />} />
                   <Route path="/destination/:id" element={<DestinationDetail />} />
+                  <Route path="/favourites" element={<Favourites />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<Signup />} />

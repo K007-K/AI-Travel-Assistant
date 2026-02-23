@@ -9,6 +9,7 @@ import {
 import { getDestinationById } from '../api/places';
 import { getLandmarkDetails, enrichDestinationWithGemini } from '../api/geminiService';
 import { loadDestinationImage, getFallbackImage } from '../utils/destinationImages';
+import useFavourites from '../hooks/useFavourites';
 
 
 /* ─── Reusable section wrapper ──────────────────────────────────── */
@@ -294,7 +295,8 @@ export default function DestinationDetail() {
     const [selectedHighlight, setSelectedHighlight] = useState(null);
 
     const [heroImg, setHeroImg] = useState(null);
-    const [liked, setLiked] = useState(false);
+    const { isFavourite, toggleFavourite } = useFavourites();
+    const liked = dest ? isFavourite(dest.id) : false;
 
     const heroRef = useRef(null);
     const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
@@ -368,7 +370,7 @@ export default function DestinationDetail() {
                     <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-white/90 hover:text-white bg-white/15 backdrop-blur-md rounded-xl px-4 py-2.5 transition-all hover:bg-white/25 text-sm font-medium">
                         <ArrowLeft className="w-4 h-4" /> Back
                     </button>
-                    <button onClick={() => setLiked(!liked)} className={`p-3 rounded-full backdrop-blur-md transition-all ${liked ? 'bg-red-500 text-white' : 'bg-white/15 text-white/90 hover:bg-white/25'}`}>
+                    <button onClick={() => dest && toggleFavourite(dest)} className={`p-3 rounded-full backdrop-blur-md transition-all ${liked ? 'bg-red-500 text-white' : 'bg-white/15 text-white/90 hover:bg-white/25'}`}>
                         <Heart className={`w-5 h-5 ${liked ? 'fill-current' : ''}`} />
                     </button>
                 </div>

@@ -10,7 +10,8 @@ import {
     LogOut,
     Settings,
     Moon,
-    Sun
+    Sun,
+    Heart
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useAuthStore from '../../store/authStore';
@@ -167,6 +168,7 @@ const Navbar = () => {
                     <NavLink to="/bookings" icon={<CreditCard className="w-4 h-4" />} label="Bookings" active={isActive('/bookings')} isLight={isLight} isDark={isDark} />
                     <NavLink to="/budget" icon={<Wallet className="w-4 h-4" />} label="Budget" active={isActive('/budget')} isLight={isLight} isDark={isDark} />
                     <NavLink to="/ai/translate" icon={<Globe className="w-4 h-4" />} label="Translate" active={isActive('/ai/translate')} isLight={isLight} isDark={isDark} />
+                    <NavLink to="/favourites" icon={<Heart className="w-4 h-4" />} label="Favourites" active={isActive('/favourites')} isLight={isLight} isDark={isDark} />
                 </div>
 
                 {/* Right Actions */}
