@@ -10,6 +10,7 @@
  */
 
 import curatedDestinations from '../data/destinations.json';
+import { geocodeSearch } from './geocode';
 
 // ── Curated Data (instant, offline-safe) ─────────────────────────────
 
@@ -20,24 +21,18 @@ export const getCuratedDestinations = () => curatedDestinations;
 export const getDestinationById = (id) =>
     curatedDestinations.find(d => d.id === id) || null;
 
-// ── Live Search (Nominatim + Wikipedia enrichment) ───────────────────
+// ── Live Search (Nominatim via Edge Function) ───────────────────
 
 /**
- * Search for destinations using Nominatim (OSM) and enrich the top results
- * with Wikipedia descriptions and images.
- *
- * Flow: Nominatim geocode → get place names → Wikipedia summary for each
+ * Search for destinations using Nominatim (OSM) via Supabase Edge Function.
+ * No CORS issues in any environment.
  */
 export const searchDestinations = async (query) => {
     if (!query?.trim()) return curatedDestinations;
 
     try {
-        // 1. Geocode via Nominatim (proxied in dev to avoid CORS)
-        const nominatimBase = import.meta.env.DEV ? '/nominatim' : 'https://nominatim.openstreetmap.org';
-        const response = await fetch(
-            `${nominatimBase}/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1`
-        );
-        const places = await response.json();
+        // 1. Geocode via edge function (no CORS issues)
+        const places = await geocodeSearch(query, 8);
 
         if (!places.length) return [];
 

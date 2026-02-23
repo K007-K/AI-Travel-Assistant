@@ -1,50 +1,31 @@
 import { useMemo, useState, useEffect } from 'react';
+import { geocodeSearch } from '../api/geocode';
 
 /**
- * Geocode a location string using Nominatim with localStorage caching.
- * Optionally accepts a viewbox to bias results toward a region.
+ * Geocode a location string using the geocode edge function with localStorage caching.
  */
-async function geocode(query, viewbox = null) {
+async function geocode(query) {
     if (!query) return null;
 
-    const cacheKey = viewbox ? `geo:${query}:vb` : `geo:${query}`;
+    const cacheKey = `geo:${query}`;
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
         try { return JSON.parse(cached); }
         catch { localStorage.removeItem(cacheKey); }
     }
 
-    // Retry up to 2 times for 425 "Too Early" responses
-    const nominatimBase = typeof import.meta !== 'undefined' && import.meta.env?.DEV
-        ? '/nominatim' : 'https://nominatim.openstreetmap.org';
-
-    for (let attempt = 0; attempt < 2; attempt++) {
-        try {
-            await new Promise(r => setTimeout(r, 1200 + attempt * 800)); // Increase delay on retry
-
-            let url = `${nominatimBase}/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
-            if (viewbox) {
-                url += `&viewbox=${viewbox}&bounded=0`;
-            }
-
-            const res = await fetch(url);
-
-            if (res.status === 425 && attempt < 1) continue; // Retry on "Too Early"
-            if (!res.ok) return null;
-
-            const data = await res.json();
-            if (data?.[0]) {
-                const coords = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-                localStorage.setItem(cacheKey, JSON.stringify(coords));
-                return coords;
-            }
-            return null;
-        } catch (e) {
-            if (attempt < 1) continue; // Retry on network error
-            console.warn(`Geocode failed for "${query}":`, e.message);
+    try {
+        const data = await geocodeSearch(query, 1);
+        if (data?.[0]) {
+            const coords = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+            localStorage.setItem(cacheKey, JSON.stringify(coords));
+            return coords;
         }
+        return null;
+    } catch (e) {
+        console.warn(`Geocode failed for "${query}":`, e.message);
+        return null;
     }
-    return null;
 }
 
 /**

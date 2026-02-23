@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MapPin, Building2, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { geocodeSearch } from '../../api/geocode';
 
 const LocationInput = ({
     label,
@@ -36,20 +37,13 @@ const LocationInput = ({
 
         setIsLoading(true);
         try {
-            const nominatimBase = import.meta.env.DEV ? '/nominatim' : 'https://nominatim.openstreetmap.org';
-            const response = await fetch(
-                `${nominatimBase}/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`
-            );
-
-            if (!response.ok) throw new Error('Network response was not ok');
-
-            const data = await response.json();
+            const data = await geocodeSearch(query, 5);
 
             const formatted = data.map(item => {
                 // Extract meaningful parts
-                const city = item.address.city || item.address.town || item.address.village || item.name;
-                const country = item.address.country;
-                const state = item.address.state;
+                const city = item.address?.city || item.address?.town || item.address?.village || item.name;
+                const country = item.address?.country;
+                const state = item.address?.state;
 
                 return {
                     displayName: item.display_name,
