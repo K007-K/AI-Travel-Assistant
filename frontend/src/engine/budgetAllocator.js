@@ -91,8 +91,8 @@ const BUDGET_RATIOS = {
  *
  * @param {number} totalBudget       — Total trip budget in currency units
  * @param {object} options
- * @param {string} options.travelStyle    — 'road_trip' | 'adventure' | 'relaxation' | etc.
- * @param {string} options.budgetTier     — 'budget' | 'mid-range' | 'luxury' | 'low' | 'mid' | 'high'
+ * @param {string} options.travelStyle    — Normalized: 'road_trip' | 'city_explorer' | 'relaxation' | 'business'
+ * @param {string} options.budgetTier     — Normalized: 'budget' | 'mid-range' | 'luxury'
  * @param {number} options.totalDays      — Number of days
  * @param {number} options.totalNights    — Number of overnight stays (usually totalDays - 1)
  * @param {number} options.travelers      — Number of travelers
@@ -109,19 +109,19 @@ export function allocateBudget(totalBudget, options = {}) {
         hasOwnVehicle = false,
     } = options;
 
-    // Select ratio set
+    // Select ratio set (receives normalized values from orchestrator)
     let ratios;
     if (travelStyle === 'road_trip') {
         ratios = { ...ROAD_TRIP_RATIOS };
-    } else if (budgetTier === 'luxury' || budgetTier === 'high') {
+    } else if (budgetTier === 'luxury') {
         ratios = { ...LUXURY_RATIOS };
-    } else if (budgetTier === 'budget' || budgetTier === 'low') {
+    } else if (budgetTier === 'budget') {
         ratios = { ...BUDGET_RATIOS };
     } else {
         ratios = { ...DEFAULT_RATIOS };
     }
 
-    // Adjustment: own vehicle reduces intercity, adds to activity
+    // Road trip style implies own vehicle — intercity savings go to activities
     if (hasOwnVehicle && travelStyle !== 'road_trip') {
         const saved = ratios.intercity * 0.5;
         ratios.intercity -= saved;

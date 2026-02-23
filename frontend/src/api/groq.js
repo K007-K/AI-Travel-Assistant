@@ -63,6 +63,7 @@ export const generateTripPlan = async (destination, days, budget, travelers, cur
                 activityBudget: lifecycleOpts.activityBudget || null,
                 travelStyle: lifecycleOpts.travelStyle || null,
                 pace: lifecycleOpts.pace || null,
+                activityCountTarget: lifecycleOpts.pace || null,
                 excludeTransport: lifecycleOpts.excludeTransport || false,
                 excludeAccommodation: lifecycleOpts.excludeAccommodation || false,
             }

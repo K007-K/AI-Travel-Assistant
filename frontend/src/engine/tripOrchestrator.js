@@ -41,6 +41,7 @@ import {
 } from '../utils/transportEngine.js';
 import { generateTripPlan, getHiddenGems } from '../api/groq.js';
 import { getCityCoordsLong, CITY_COORDINATES } from '../data/cityCoordinates.js';
+import { normalizeTrip } from '../utils/tripDefaults.js';
 
 // ── Geocoder (Phase 4c) — Nominatim API + local cache ────────────────
 
@@ -352,12 +353,13 @@ export async function orchestrateTrip(trip, callbacks = {}) {
     const totalNights = Math.max(0, totalDays - 1);
     const currency = trip.currency || 'USD';
     const currencyRate = CURRENCY_MULTIPLIERS[currency] || 1;
-    // Map new tier IDs → old engine labels
-    const tierMap = { low: 'budget', mid: 'mid-range', high: 'luxury' };
-    const rawTier = trip.budget_tier || trip.accommodation_preference || 'mid-range';
-    const budgetTier = tierMap[rawTier] || rawTier;
-    const travelStyle = trip.travel_style || '';
-    const _isLuxury = budgetTier === 'luxury';
+
+    // Single normalization point — all phases use these values
+    const { normalizedStyle, normalizedTier, userStyle, hasOwnVehicle, pace } = normalizeTrip(trip);
+    const budgetTier = normalizedTier;    // 'budget' | 'mid-range' | 'luxury'
+    const travelStyle = normalizedStyle;  // 'relaxation' | 'city_explorer' | 'road_trip' | 'business'
+
+    if (import.meta.env.DEV) console.log('[Orchestrator] Normalized:', { userStyle, travelStyle, budgetTier, hasOwnVehicle, pace });
 
     // Build day-to-location mapping
     const dayLocations = [];
@@ -380,7 +382,7 @@ export async function orchestrateTrip(trip, callbacks = {}) {
         totalDays,
         totalNights,
         travelers: trip.travelers || 1,
-        hasOwnVehicle: trip.own_vehicle_type && !['none', 'auto'].includes(trip.own_vehicle_type),
+        hasOwnVehicle,
     });
 
     if (import.meta.env.DEV) console.log('[Orchestrator] Phase 1 — Budget allocated:', allocation);
@@ -446,6 +448,7 @@ export async function orchestrateTrip(trip, callbacks = {}) {
                 activityBudget,
                 activityPerDay,
                 travelStyle,
+                pace,                          // activity count target per style
                 excludeTransport: true,
                 excludeAccommodation: true,
             }

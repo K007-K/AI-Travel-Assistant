@@ -102,6 +102,7 @@ serve(async (req: Request) => {
         const activityBudget = toPositiveNumber(rawBody.activityBudget, 0) || null
         const travelStyle = sanitizeString(rawBody.travelStyle)
         const pace = sanitizeString(rawBody.pace)
+        const activityCountTarget = Math.max(2, Math.min(8, Math.floor(toPositiveNumber(rawBody.activityCountTarget, 5))))
         const excludeTransport = rawBody.excludeTransport === true
         const excludeAccommodation = rawBody.excludeAccommodation === true
 
@@ -232,6 +233,9 @@ serve(async (req: Request) => {
     - Prefer: free walking tours, public parks, beaches, markets, street food.
     - AVOID: paid museums over ${caps.typical} ${currency}, fancy restaurants, private tours.` : ''}
     ═══════════════════════════════════════════════════════════════
+
+    ACTIVITY COUNT: Generate exactly ${activityCountTarget} activities per day.
+    This is a ${travelStyle || 'balanced'}-style trip — pace the activities accordingly.
     ${constraintBlock}
     ${styleHint}
     ${paceHint}

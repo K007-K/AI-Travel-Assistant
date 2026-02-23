@@ -21,6 +21,77 @@ export const TRANSPORT_RULES = {
     LOCAL_THRESHOLD: 50,       // < 50km → local transport
 };
 
+// ── Style normalization: user-facing → internal engine values ─────────
+// The engine uses these internally for ratio selection and transport logic
+export const STYLE_NORMALIZATION_MAP = {
+    relax: 'relaxation',
+    explore: 'city_explorer',
+    adventure: 'road_trip',       // adventure implies road trip in engine
+    business: 'business',
+};
+
+// ── Legacy style → new user-facing style (backward compat for old DB trips)
+export const LEGACY_STYLE_MAP = {
+    road_trip: 'adventure',
+    city_exploration: 'explore',
+    luxury_escape: 'relax',
+    backpacking: 'adventure',
+    business_travel: 'business',
+    // Passthrough for already-new styles
+    relax: 'relax',
+    explore: 'explore',
+    adventure: 'adventure',
+    business: 'business',
+    // Internal styles → user-facing (for old trips stored with internal names)
+    relaxation: 'relax',
+    city_explorer: 'explore',
+};
+
+// ── Tier normalization: user-facing → internal engine values ──────────
+export const TIER_NORMALIZATION_MAP = {
+    low: 'budget',
+    mid: 'mid-range',
+    high: 'luxury',
+    // Passthrough for already-normalized values
+    budget: 'budget',
+    'mid-range': 'mid-range',
+    luxury: 'luxury',
+};
+
+// ── Activity count targets per style ─────────────────────────────────
+export const PACE_BY_STYLE = {
+    relax: 3,          // spa, beach — few activities, longer duration each
+    explore: 5,        // sightseeing — balanced pace
+    adventure: 4,      // outdoor activities — moderate but intense
+    business: 2,       // meetings leave little time — efficient schedule
+};
+
+/**
+ * Normalize a trip object's style and tier into engine-compatible values.
+ * This is the SINGLE normalization point — call once at orchestrator entry.
+ *
+ * @param {object} trip — Raw trip from DB
+ * @returns {{ normalizedStyle: string, normalizedTier: string, userStyle: string, userTier: string, hasOwnVehicle: boolean, pace: number }}
+ */
+export function normalizeTrip(trip) {
+    const rawStyle = trip.travel_style || 'explore';
+    // First map legacy → user-facing, then user-facing → engine internal
+    const userStyle = LEGACY_STYLE_MAP[rawStyle] || rawStyle;
+    const normalizedStyle = STYLE_NORMALIZATION_MAP[userStyle] || 'city_explorer';
+
+    const rawTier = trip.budget_tier || trip.accommodation_preference || 'mid';
+    const userTier = rawTier; // Already user-facing from form
+    const normalizedTier = TIER_NORMALIZATION_MAP[rawTier] || 'mid-range';
+
+    // Vehicle: adventure (road_trip internally) implies own vehicle behavior
+    const hasOwnVehicle = normalizedStyle === 'road_trip';
+
+    // Pace target
+    const pace = PACE_BY_STYLE[userStyle] || 5;
+
+    return { normalizedStyle, normalizedTier, userStyle, userTier, hasOwnVehicle, pace };
+}
+
 // ── Base daily budgets by tier and currency ──────────────────────────
 const BASE_DAILY_BUDGET = {
     low:  { INR: 3000,  USD: 40,  EUR: 35,  GBP: 30,  JPY: 5000,  AUD: 55,  CAD: 50 },
@@ -183,13 +254,5 @@ export function getDisplayTier(trip) {
  */
 export function getDisplayStyle(trip) {
     const style = trip.travel_style || '';
-    // Map old style IDs to new ones
-    const OLD_TO_NEW = {
-        road_trip: 'adventure',
-        city_exploration: 'explore',
-        luxury_escape: 'relax',
-        backpacking: 'adventure',
-        business_travel: 'business',
-    };
-    return OLD_TO_NEW[style] || style || 'explore';
+    return LEGACY_STYLE_MAP[style] || style || 'explore';
 }
