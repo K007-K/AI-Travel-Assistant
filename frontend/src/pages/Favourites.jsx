@@ -156,7 +156,7 @@ const Favourites = () => {
                     </div>
                 ) : (
                     /* Grid */
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 max-w-6xl mx-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
                         <AnimatePresence mode="popLayout">
                             {filtered.map((dest) => (
                                 <FavouriteCard key={dest.id} dest={dest} onRemove={removeFavourite} />
