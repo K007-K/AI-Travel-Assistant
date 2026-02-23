@@ -144,6 +144,11 @@ const HighlightDrawer = ({ highlight, onClose }) => {
                         </div>
                     ) : wikiData?.extract ? (
                         <div className="space-y-4">
+                            {wikiData.title && wikiData.title !== highlight.name && (
+                                <p className="text-xs text-slate-400 italic">
+                                    Showing Wikipedia article: {wikiData.title}
+                                </p>
+                            )}
                             <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-[15px]">
                                 {wikiData.extract}
                             </p>
@@ -155,7 +160,14 @@ const HighlightDrawer = ({ highlight, onClose }) => {
                             )}
                         </div>
                     ) : (
-                        <p className="text-slate-500 text-center py-8">No additional details available for this landmark.</p>
+                        <div className="space-y-4">
+                            <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-[15px]">
+                                {highlight.desc}
+                            </p>
+                            <p className="text-xs text-slate-400 italic text-center pt-4">
+                                No Wikipedia article found for this landmark — showing AI-generated description.
+                            </p>
+                        </div>
                     )}
                 </div>
 
