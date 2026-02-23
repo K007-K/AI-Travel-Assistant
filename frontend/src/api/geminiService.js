@@ -7,9 +7,59 @@
  */
 
 const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
+const GEMINI_MODEL = 'gemini-1.5-flash';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`;
 
 const CACHE_PREFIX = 'landmark:';
+
+/**
+ * Shared Gemini API caller with retry on 429 rate-limit.
+ */
+async function callGemini(prompt, { temperature = 0.3, maxOutputTokens = 512, retries = 2 } = {}) {
+    if (!GEMINI_KEY) {
+        console.warn('[GeminiService] VITE_GEMINI_API_KEY not set');
+        return null;
+    }
+
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+            const res = await fetch(GEMINI_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { temperature, maxOutputTokens },
+                }),
+            });
+
+            if (res.status === 429 && attempt < retries) {
+                // Exponential backoff: 2s, 4s
+                const delay = 2000 * (attempt + 1);
+                console.warn(`[GeminiService] Rate limited, retrying in ${delay}ms...`);
+                await new Promise(r => setTimeout(r, delay));
+                continue;
+            }
+
+            if (!res.ok) {
+                console.warn(`[GeminiService] API error: ${res.status}`);
+                return null;
+            }
+
+            const data = await res.json();
+            const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!rawText) return null;
+
+            // Strip markdown fences if present
+            const clean = rawText.replace(/```(?:json)?\s*/gi, '').replace(/```\s*$/gi, '').trim();
+            return JSON.parse(clean);
+        } catch (err) {
+            if (attempt < retries) continue;
+            console.warn(`[GeminiService] Failed:`, err.message);
+            return null;
+        }
+    }
+    return null;
+}
 
 /**
  * Get rich details about a landmark/highlight via Gemini.
@@ -25,11 +75,6 @@ export async function getLandmarkDetails(landmarkName, destinationName = '') {
         const cached = localStorage.getItem(cacheKey);
         if (cached) return JSON.parse(cached);
     } catch { /* ignore */ }
-
-    if (!GEMINI_KEY) {
-        console.warn('[GeminiService] VITE_GEMINI_API_KEY not set');
-        return null;
-    }
 
     const prompt = `You are a travel expert. Provide detailed information about "${landmarkName}"${destinationName ? ` in ${destinationName}` : ''}.
 
@@ -48,41 +93,12 @@ Rules:
 - Keep it concise and traveler-friendly
 - If unsure about entry fee, say "Check locally"`;
 
-    try {
-        const res = await fetch(GEMINI_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: {
-                    temperature: 0.3,
-                    maxOutputTokens: 512,
-                },
-            }),
-        });
+    const parsed = await callGemini(prompt, { temperature: 0.3, maxOutputTokens: 512 });
 
-        if (!res.ok) {
-            console.warn(`[GeminiService] API error: ${res.status}`);
-            return null;
-        }
-
-        const data = await res.json();
-        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-        if (!rawText) return null;
-
-        // Strip markdown fences if present
-        const clean = rawText.replace(/```(?:json)?\s*/gi, '').replace(/```\s*$/gi, '').trim();
-        const parsed = JSON.parse(clean);
-
-        // Cache result
+    if (parsed) {
         try { localStorage.setItem(cacheKey, JSON.stringify(parsed)); } catch { /* quota */ }
-
-        return parsed;
-    } catch (err) {
-        console.warn(`[GeminiService] Failed for "${landmarkName}":`, err.message);
-        return null;
     }
+    return parsed;
 }
 
 /**
@@ -96,11 +112,6 @@ export async function enrichDestinationWithGemini(destinationName, country = '')
         const cached = sessionStorage.getItem(cacheKey);
         if (cached) return JSON.parse(cached);
     } catch { /* ignore */ }
-
-    if (!GEMINI_KEY) {
-        console.warn('[GeminiService] VITE_GEMINI_API_KEY not set');
-        return null;
-    }
 
     const prompt = `You are a travel expert API. Generate detailed travel information for "${destinationName}"${country ? `, ${country}` : ''}.
 
@@ -143,37 +154,10 @@ Rules:
 - Budget estimates should be realistic for the local economy
 - All 5 highlights must be real, well-known attractions`;
 
-    try {
-        const res = await fetch(GEMINI_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: {
-                    temperature: 0.4,
-                    maxOutputTokens: 1024,
-                },
-            }),
-        });
+    const parsed = await callGemini(prompt, { temperature: 0.4, maxOutputTokens: 1024 });
 
-        if (!res.ok) {
-            console.warn(`[GeminiService] Enrichment API error: ${res.status}`);
-            return null;
-        }
-
-        const data = await res.json();
-        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!rawText) return null;
-
-        const clean = rawText.replace(/```(?:json)?\s*/gi, '').replace(/```\s*$/gi, '').trim();
-        const parsed = JSON.parse(clean);
-
-        // Cache result
+    if (parsed) {
         try { sessionStorage.setItem(cacheKey, JSON.stringify(parsed)); } catch { /* quota */ }
-
-        return parsed;
-    } catch (err) {
-        console.warn(`[GeminiService] Enrichment failed for "${destinationName}":`, err.message);
-        return null;
     }
+    return parsed;
 }
