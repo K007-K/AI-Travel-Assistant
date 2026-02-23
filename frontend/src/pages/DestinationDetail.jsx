@@ -7,8 +7,7 @@ import {
     Camera, Mountain, Shield, Plane, X, ExternalLink, Loader2
 } from 'lucide-react';
 import { getDestinationById } from '../api/places';
-import { fetchWikiSummary } from '../api/wikipediaService';
-import { enrichDestinationWithAI } from '../api/destinationEnrichment';
+import { getLandmarkDetails, enrichDestinationWithGemini } from '../api/geminiService';
 import { loadDestinationImage, getFallbackImage } from '../utils/destinationImages';
 
 
@@ -71,24 +70,21 @@ const HighlightCard = ({ highlight, index, onSelect }) => {
 };
 
 /* ─── Highlight Detail Drawer (inline Wikipedia modal) ───────────── */
-const HighlightDrawer = ({ highlight, onClose }) => {
-    const [wikiData, setWikiData] = useState(null);
+const HighlightDrawer = ({ highlight, destinationName, onClose }) => {
+    const [details, setDetails] = useState(null);
     const [loading, setLoading] = useState(true);
     const [imgUrl, setImgUrl] = useState(null);
 
-    const wikiUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent(highlight.name.replace(/ /g, '_'))}`;
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(highlight.name + (destinationName ? ', ' + destinationName : ''))}`;
 
     useEffect(() => {
         setLoading(true);
         loadDestinationImage(highlight.name, setImgUrl);
-        fetchWikiSummary(highlight.name).then(data => {
-            setWikiData(data);
-            if (data?.originalImage || data?.thumbnail) {
-                setImgUrl(data.originalImage || data.thumbnail);
-            }
+        getLandmarkDetails(highlight.name, destinationName).then(data => {
+            setDetails(data);
             setLoading(false);
         });
-    }, [highlight.name]);
+    }, [highlight.name, destinationName]);
 
     // Close on Escape
     useEffect(() => {
@@ -140,22 +136,51 @@ const HighlightDrawer = ({ highlight, onClose }) => {
                     {loading ? (
                         <div className="flex items-center justify-center py-12">
                             <Loader2 className="w-6 h-6 animate-spin text-primary-500" />
-                            <span className="ml-3 text-slate-500">Loading details from Wikipedia...</span>
+                            <span className="ml-3 text-slate-500">Loading landmark details...</span>
                         </div>
-                    ) : wikiData?.extract ? (
-                        <div className="space-y-4">
-                            {wikiData.title && wikiData.title !== highlight.name && (
-                                <p className="text-xs text-slate-400 italic">
-                                    Showing Wikipedia article: {wikiData.title}
-                                </p>
+                    ) : details ? (
+                        <div className="space-y-5">
+                            {/* History */}
+                            {details.history && (
+                                <div>
+                                    <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">History</h3>
+                                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-[15px]">{details.history}</p>
+                                </div>
                             )}
-                            <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-[15px]">
-                                {wikiData.extract}
-                            </p>
-                            {wikiData.coordinates && (
-                                <div className="flex items-center gap-2 text-sm text-slate-500">
-                                    <MapPin className="w-4 h-4" />
-                                    <span>{wikiData.coordinates.lat.toFixed(4)}°N, {wikiData.coordinates.lon.toFixed(4)}°E</span>
+                            {/* Significance */}
+                            {details.significance && (
+                                <div>
+                                    <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Why Visit</h3>
+                                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-[15px]">{details.significance}</p>
+                                </div>
+                            )}
+                            {/* Entry fee + Best time */}
+                            <div className="flex gap-4 flex-wrap">
+                                {details.entryFee && (
+                                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-white/5 px-3 py-1.5 rounded-lg">
+                                        <DollarSign className="w-3.5 h-3.5" />
+                                        <span>{details.entryFee}</span>
+                                    </div>
+                                )}
+                                {details.bestTime && (
+                                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-white/5 px-3 py-1.5 rounded-lg">
+                                        <Clock className="w-3.5 h-3.5" />
+                                        <span>{details.bestTime}</span>
+                                    </div>
+                                )}
+                            </div>
+                            {/* Local Tips */}
+                            {details.localTips?.length > 0 && (
+                                <div>
+                                    <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Local Tips</h3>
+                                    <ul className="space-y-1.5">
+                                        {details.localTips.map((tip, i) => (
+                                            <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+                                                <Lightbulb className="w-3.5 h-3.5 mt-0.5 text-amber-500 flex-shrink-0" />
+                                                <span>{tip}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
                                 </div>
                             )}
                         </div>
@@ -163,9 +188,6 @@ const HighlightDrawer = ({ highlight, onClose }) => {
                         <div className="space-y-4">
                             <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-[15px]">
                                 {highlight.desc}
-                            </p>
-                            <p className="text-xs text-slate-400 italic text-center pt-4">
-                                No Wikipedia article found for this landmark — showing AI-generated description.
                             </p>
                         </div>
                     )}
@@ -180,12 +202,12 @@ const HighlightDrawer = ({ highlight, onClose }) => {
                         Close
                     </button>
                     <a
-                        href={wikiUrl}
+                        href={mapsUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
                     >
-                        Read more on Wikipedia <ExternalLink className="w-3.5 h-3.5" />
+                        Open in Google Maps <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                 </div>
             </motion.div>
@@ -287,22 +309,17 @@ export default function DestinationDetail() {
         setIsEnriching(true);
 
         (async () => {
-            // 1. Wikipedia — for hero image
-            const wiki = await fetchWikiSummary(dest.name);
-
-            // 2. Groq AI — for highlights, cuisine, culture, tips (same shape as curated)
-            const aiData = await enrichDestinationWithAI(dest.name, dest.country);
+            // Gemini AI — for highlights, cuisine, culture, tips (same shape as curated)
+            const aiData = await enrichDestinationWithGemini(dest.name, dest.country);
 
             if (cancelled) return;
 
             setDest(prev => ({
                 ...prev,
-                // Wikipedia image
-                image: wiki?.originalImage || wiki?.thumbnail || prev.image,
                 // AI-generated rich content
                 ...(aiData || {}),
-                // Keep original description if AI provided a better one; prefer AI
-                description: aiData?.description || wiki?.extract || prev.description,
+                // Keep original description; prefer AI
+                description: aiData?.description || prev.description,
                 _enriched: true,
             }));
             setIsEnriching(false);
@@ -527,6 +544,7 @@ export default function DestinationDetail() {
                 {selectedHighlight && (
                     <HighlightDrawer
                         highlight={selectedHighlight}
+                        destinationName={dest?.name || ''}
                         onClose={() => setSelectedHighlight(null)}
                     />
                 )}

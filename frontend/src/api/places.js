@@ -10,7 +10,6 @@
  */
 
 import curatedDestinations from '../data/destinations.json';
-import { fetchWikiSummary } from './wikipediaService';
 
 // ── Curated Data (instant, offline-safe) ─────────────────────────────
 
@@ -33,10 +32,10 @@ export const searchDestinations = async (query) => {
     if (!query?.trim()) return curatedDestinations;
 
     try {
-        // 1. Geocode via Nominatim (already used in old version)
+        // 1. Geocode via Nominatim (proxied in dev to avoid CORS)
+        const nominatimBase = import.meta.env.DEV ? '/nominatim' : 'https://nominatim.openstreetmap.org';
         const response = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1`,
-            { headers: { 'User-Agent': 'AITravelAssistant/1.0' } }
+            `${nominatimBase}/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&extratags=1`
         );
         const places = await response.json();
 
@@ -51,32 +50,25 @@ export const searchDestinations = async (query) => {
             return true;
         });
 
-        // 3. Enrich each result with Wikipedia data (parallel)
-        const enriched = await Promise.all(
-            unique.map(async (item) => {
-                const name = item.name || item.display_name.split(',')[0];
-                const wiki = await fetchWikiSummary(name);
+        // 3. Build results (images loaded lazily on render, full enrichment on detail page)
+        const results = unique.map((item) => {
+            const name = item.name || item.display_name.split(',')[0];
+            return {
+                id: `osm-${item.place_id}`,
+                name,
+                location: item.display_name,
+                country: item.address?.country || '',
+                coordinates: [parseFloat(item.lat), parseFloat(item.lon)],
+                type: item.type,
+                description: item.display_name,
+                image: null, // Loaded lazily by component
+                rating: (4.0 + Math.random() * 0.9).toFixed(1),
+                tags: buildTags(item),
+                _source: 'search',
+            };
+        });
 
-                return {
-                    id: `osm-${item.place_id}`,
-                    name,
-                    location: item.display_name,
-                    country: item.address?.country || '',
-                    coordinates: [parseFloat(item.lat), parseFloat(item.lon)],
-                    type: item.type,
-                    // Enrich with Wikipedia data
-                    description: wiki?.extract || item.display_name,
-                    image: wiki?.originalImage || wiki?.thumbnail || null,
-                    rating: wiki ? (4.0 + Math.random() * 0.9).toFixed(1) : null,
-                    tags: buildTags(item),
-                    // Wikipedia source flag — detail page knows this is dynamic
-                    _source: 'search',
-                    _wikiTitle: wiki?.title || null,
-                };
-            })
-        );
-
-        return enriched;
+        return results;
     } catch (error) {
         console.error('[Places] Search failed:', error);
         return [];
