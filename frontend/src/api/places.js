@@ -48,6 +48,9 @@ export const searchDestinations = async (query) => {
         // 3. Build results (images loaded lazily on render, full enrichment on detail page)
         const results = unique.map((item) => {
             const name = item.name || item.display_name.split(',')[0];
+            // Deterministic rating based on name hash (4.0–4.9)
+            const hash = name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+            const rating = (4.0 + (hash % 10) * 0.1).toFixed(1);
             return {
                 id: `osm-${item.place_id}`,
                 name,
@@ -57,7 +60,7 @@ export const searchDestinations = async (query) => {
                 type: item.type,
                 description: item.display_name,
                 image: null, // Loaded lazily by component
-                rating: (4.0 + Math.random() * 0.9).toFixed(1),
+                rating,
                 tags: buildTags(item),
                 _source: 'search',
             };
