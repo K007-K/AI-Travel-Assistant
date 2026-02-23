@@ -17,6 +17,16 @@ export default defineConfig({
   server: {
     port: 6006,
     open: true,
+    proxy: {
+      '/nominatim': {
+        target: 'https://nominatim.openstreetmap.org',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/nominatim/, ''),
+        headers: {
+          'User-Agent': 'TravelAI/1.0 (travel-planner)',
+        },
+      },
+    },
   },
   build: {
     rollupOptions: {

@@ -36,12 +36,9 @@ const LocationInput = ({
 
         setIsLoading(true);
         try {
+            const nominatimBase = import.meta.env.DEV ? '/nominatim' : 'https://nominatim.openstreetmap.org';
             const response = await fetch(
-                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`,
-                { headers: {
-                    'Accept-Language': 'en-US,en;q=0.9',
-                    'User-Agent': 'TravelAI/1.0 (travel-planner)',
-                } }
+                `${nominatimBase}/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`
             );
 
             if (!response.ok) throw new Error('Network response was not ok');
@@ -66,7 +63,7 @@ const LocationInput = ({
             setSuggestions(formatted);
             setIsOpen(true);
         } catch (error) {
-            console.error("Location search failed:", error);
+            console.warn("Location search failed:", error.message);
             setSuggestions([]);
         } finally {
             setIsLoading(false);
