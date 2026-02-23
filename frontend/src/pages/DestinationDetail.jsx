@@ -32,11 +32,11 @@ const Section = ({ icon: Icon, title, children, delay = 0 }) => (
 );
 
 /* ─── Highlight Card with Wikipedia image ───────────────────────── */
-const HighlightCard = ({ highlight, index, onSelect }) => {
+const HighlightCard = ({ highlight, index, onSelect, destinationName = '' }) => {
     const [imgUrl, setImgUrl] = useState(null);
     useEffect(() => {
-        loadDestinationImage(highlight.name, setImgUrl);
-    }, [highlight.name]);
+        loadDestinationImage(highlight.name, setImgUrl, destinationName);
+    }, [highlight.name, destinationName]);
 
     const fallback = getFallbackImage(highlight.name);
 
@@ -79,7 +79,7 @@ const HighlightDrawer = ({ highlight, destinationName, onClose }) => {
 
     useEffect(() => {
         setLoading(true);
-        loadDestinationImage(highlight.name, setImgUrl);
+        loadDestinationImage(highlight.name, setImgUrl, destinationName);
         getLandmarkDetails(highlight.name, destinationName).then(data => {
             setDetails(data);
             setLoading(false);
@@ -216,11 +216,11 @@ const HighlightDrawer = ({ highlight, destinationName, onClose }) => {
 };
 
 /* ─── Cuisine Card with photo ──────────────────────────────────────────── */
-const CuisineCard = ({ item, index, destinationName: _destinationName }) => {
+const CuisineCard = ({ item, index, destinationName = '' }) => {
     const [imgUrl, setImgUrl] = useState(null);
     useEffect(() => {
-        loadDestinationImage(item.name, setImgUrl);
-    }, [item.name]);
+        loadDestinationImage(item.name, setImgUrl, destinationName);
+    }, [item.name, destinationName]);
 
     const fallback = getFallbackImage(item.name);
     return (
@@ -453,7 +453,7 @@ export default function DestinationDetail() {
                 <Section icon={Landmark} title="Top Highlights" delay={0.1}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                         {dest.highlights.map((h, i) => (
-                            <HighlightCard key={h.name} highlight={h} index={i} onSelect={setSelectedHighlight} />
+                            <HighlightCard key={h.name} highlight={h} index={i} onSelect={setSelectedHighlight} destinationName={dest.name} />
                         ))}
                     </div>
                 </Section>

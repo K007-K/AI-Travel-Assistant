@@ -11,8 +11,11 @@
  *   7. Gradient fallback SVG (always works)
  */
 
-const CACHE_KEY = 'destination_image_cache_v4';
+const CACHE_KEY = 'destination_image_cache_v5';
 const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+// Words in Wikipedia descriptions that indicate a wrong article (film, TV, etc.)
+const BAD_DESCRIPTION_WORDS = ['film', 'movie', 'television', 'tv series', 'album', 'song', 'novel', 'video game', 'actress', 'actor', 'singer', 'band'];
 
 // ─── Comprehensive map: attraction/cuisine name → Wikipedia article title ───
 // This covers ALL curated destination highlights and cuisines for 100% reliability.
@@ -252,6 +255,11 @@ async function fetchFromWikipedia(query) {
         );
         if (!res.ok) return null;
         const data = await res.json();
+
+        // Reject articles about films, TV, albums, etc.
+        const desc = (data.description || '').toLowerCase();
+        if (BAD_DESCRIPTION_WORDS.some(w => desc.includes(w))) return null;
+
         return data.originalimage?.source || data.thumbnail?.source || null;
     } catch {
         return null;
@@ -288,14 +296,21 @@ async function findWikipediaTitle(query) {
         const params = new URLSearchParams({
             action: 'opensearch',
             search: query,
-            limit: '5',
+            limit: '8',
             format: 'json',
             origin: '*',
         });
         const res = await fetch(`https://en.wikipedia.org/w/api.php?${params}`);
         if (!res.ok) return [];
         const data = await res.json();
-        return data[1] || [];
+        const titles = data[1] || [];
+        const descriptions = data[2] || [];
+
+        // Filter out film, TV, album, and other non-place articles
+        return titles.filter((_, i) => {
+            const desc = (descriptions[i] || '').toLowerCase();
+            return !BAD_DESCRIPTION_WORDS.some(w => desc.includes(w));
+        });
     } catch {
         return [];
     }
@@ -378,7 +393,7 @@ export function getFallbackImage(destination) {
  * @param {string} query   – e.g. "Hawa Mahal", "Vada Pav", "Visakhapatnam"
  * @param {function} setUrl – React state setter
  */
-export async function loadDestinationImage(query, setUrl) {
+export async function loadDestinationImage(query, setUrl, destinationContext = '') {
     if (!query) return;
 
     const key = query.toLowerCase().trim();
@@ -429,7 +444,18 @@ export async function loadDestinationImage(query, setUrl) {
         return;
     }
 
-    // 5. Try MediaWiki pageimages API directly
+    // 5. Try with destination context for disambiguation (e.g. "Ramana Ashram Tiruvannamalai")
+    if (destinationContext) {
+        directUrl = await fetchFromWikipedia(`${query} ${destinationContext}`);
+        if (!directUrl) directUrl = await fetchPageImage(`${query} ${destinationContext}`);
+        if (directUrl) {
+            setCache(key, directUrl);
+            setUrl(directUrl);
+            return;
+        }
+    }
+
+    // 6. Try MediaWiki pageimages API directly
     directUrl = await fetchPageImage(query);
     if (directUrl) {
         setCache(key, directUrl);
@@ -437,8 +463,9 @@ export async function loadDestinationImage(query, setUrl) {
         return;
     }
 
-    // 6. Use Wikipedia opensearch to find the closest article title
-    const titles = await findWikipediaTitle(query);
+    // 7. Use Wikipedia opensearch to find the closest article title
+    const searchQuery = destinationContext ? `${query} ${destinationContext}` : query;
+    const titles = await findWikipediaTitle(searchQuery);
     for (const title of titles) {
         let url = await fetchFromWikipedia(title);
         if (!url) url = await fetchPageImage(title);
@@ -449,13 +476,13 @@ export async function loadDestinationImage(query, setUrl) {
         }
     }
 
-    // 7. Search Wikimedia Commons
-    const commonsUrl = await fetchFromWikimediaCommons(query);
+    // 8. Search Wikimedia Commons
+    const commonsUrl = await fetchFromWikimediaCommons(searchQuery);
     if (commonsUrl) {
         setCache(key, commonsUrl);
         setUrl(commonsUrl);
         return;
     }
 
-    // 8. Fallback: gradient remains (no broken external URL)
+    // 9. Fallback: gradient remains (no broken external URL)
 }
