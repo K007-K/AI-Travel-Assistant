@@ -1,75 +1,73 @@
 /**
- * Gemini API Service — AI-powered landmark & destination details.
+ * AI Service — landmark & destination details via Gemini → Groq fallback.
  *
- * Replaces Wikipedia for landmark info. Uses Google Gemini API
- * (via VITE_GEMINI_API_KEY) to generate rich details about landmarks.
- * Results are cached in localStorage to avoid repeat API calls.
+ * Strategy: Try Gemini API first (free, no edge function needed).
+ * If rate-limited (429), automatically falls back to Groq via edge function.
+ * Results are cached in localStorage/sessionStorage to minimize API calls.
  */
 
+import { makeGroqRequest } from './groq';
+
 const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_MODEL = 'gemini-1.5-flash';
+const GEMINI_MODEL = 'gemini-2.0-flash-lite';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`;
 
 const CACHE_PREFIX = 'landmark:';
 
 /**
- * Shared Gemini API caller with retry on 429 rate-limit.
+ * Call Gemini first; if 429/fail, fall back to Groq edge function.
  */
-async function callGemini(prompt, { temperature = 0.3, maxOutputTokens = 512, retries = 2 } = {}) {
-    if (!GEMINI_KEY) {
-        console.warn('[GeminiService] VITE_GEMINI_API_KEY not set');
-        return null;
-    }
-
-    for (let attempt = 0; attempt <= retries; attempt++) {
+async function callAI(prompt) {
+    // 1. Try Gemini (free, direct)
+    if (GEMINI_KEY) {
         try {
             const res = await fetch(GEMINI_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { temperature, maxOutputTokens },
+                    generationConfig: { temperature: 0.3, maxOutputTokens: 1024 },
                 }),
             });
 
-            if (res.status === 429 && attempt < retries) {
-                // Exponential backoff: 2s, 4s
-                const delay = 2000 * (attempt + 1);
-                console.warn(`[GeminiService] Rate limited, retrying in ${delay}ms...`);
-                await new Promise(r => setTimeout(r, delay));
-                continue;
+            if (res.ok) {
+                const data = await res.json();
+                const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (rawText) {
+                    const clean = rawText.replace(/```(?:json)?\s*/gi, '').replace(/```\s*$/gi, '').trim();
+                    return JSON.parse(clean);
+                }
+            } else {
+                console.warn(`[AIService] Gemini ${res.status}, falling back to Groq...`);
             }
-
-            if (!res.ok) {
-                console.warn(`[GeminiService] API error: ${res.status}`);
-                return null;
-            }
-
-            const data = await res.json();
-            const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!rawText) return null;
-
-            // Strip markdown fences if present
-            const clean = rawText.replace(/```(?:json)?\s*/gi, '').replace(/```\s*$/gi, '').trim();
-            return JSON.parse(clean);
-        } catch (err) {
-            if (attempt < retries) continue;
-            console.warn(`[GeminiService] Failed:`, err.message);
-            return null;
+        } catch (e) {
+            console.warn('[AIService] Gemini failed, falling back to Groq:', e.message);
         }
     }
-    return null;
+
+    // 2. Fallback to Groq (via edge function — always works)
+    try {
+        const response = await makeGroqRequest([
+            { role: 'system', content: 'You are a travel data API. Return strict JSON only. Never wrap in markdown code fences.' },
+            { role: 'user', content: prompt },
+        ], true);
+
+        const clean = response.replace(/```(?:json)?\s*/gi, '').replace(/```\s*$/gi, '').trim();
+        return JSON.parse(clean);
+    } catch (e) {
+        console.warn('[AIService] Groq fallback failed:', e.message);
+        return null;
+    }
 }
 
 /**
- * Get rich details about a landmark/highlight via Gemini.
+ * Get rich details about a landmark/highlight.
  * Returns: { history, significance, localTips, bestTime, entryFee }
  * Cached in localStorage.
  */
 export async function getLandmarkDetails(landmarkName, destinationName = '') {
     if (!landmarkName) return null;
 
-    // Check localStorage cache
     const cacheKey = `${CACHE_PREFIX}${landmarkName}:${destinationName}`;
     try {
         const cached = localStorage.getItem(cacheKey);
@@ -93,7 +91,7 @@ Rules:
 - Keep it concise and traveler-friendly
 - If unsure about entry fee, say "Check locally"`;
 
-    const parsed = await callGemini(prompt, { temperature: 0.3, maxOutputTokens: 512 });
+    const parsed = await callAI(prompt);
 
     if (parsed) {
         try { localStorage.setItem(cacheKey, JSON.stringify(parsed)); } catch { /* quota */ }
@@ -102,7 +100,7 @@ Rules:
 }
 
 /**
- * Generate rich destination data via Gemini (replaces Groq-based enrichment).
+ * Generate rich destination data (replaces Groq-only enrichment).
  * Returns same shape as curated destinations: highlights, cuisine, culture, etc.
  * Cached in sessionStorage.
  */
@@ -154,7 +152,7 @@ Rules:
 - Budget estimates should be realistic for the local economy
 - All 5 highlights must be real, well-known attractions`;
 
-    const parsed = await callGemini(prompt, { temperature: 0.4, maxOutputTokens: 1024 });
+    const parsed = await callAI(prompt);
 
     if (parsed) {
         try { sessionStorage.setItem(cacheKey, JSON.stringify(parsed)); } catch { /* quota */ }
