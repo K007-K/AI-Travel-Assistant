@@ -109,8 +109,11 @@ const useTripStore = create((set, get) => ({
                 start_location: tripData.start_location || null,
                 return_location: tripData.return_location || null,
                 travel_style: tripData.travel_style || null,
-                own_vehicle_type: tripData.own_vehicle_type || 'none',
-                travel_preference: tripData.travel_preference || 'any',
+                // DB CHECK constraints only allow specific values — send safe defaults
+                own_vehicle_type: (tripData.own_vehicle_type && tripData.own_vehicle_type !== 'auto')
+                    ? tripData.own_vehicle_type : 'none',
+                travel_preference: (tripData.travel_preference && tripData.travel_preference !== 'auto')
+                    ? tripData.travel_preference : 'any',
                 accommodation_preference: tripData.accommodation_preference || 'mid-range',
             };
 
@@ -122,8 +125,10 @@ const useTripStore = create((set, get) => ({
 
             if (error) throw error;
 
-            // Attach budget_tier client-side (not in DB schema yet)
+            // Attach engine-only values client-side (not persisted to DB)
             data.budget_tier = tripData.budget_tier || null;
+            data.own_vehicle_type = tripData.own_vehicle_type || 'auto';
+            data.travel_preference = tripData.travel_preference || 'auto';
 
             // Create placeholder segments for each day
             const segmentRows = [];
