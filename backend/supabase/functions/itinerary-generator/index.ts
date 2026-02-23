@@ -180,6 +180,14 @@ serve(async (req: Request) => {
         const dailyBudget = Math.round(effectiveBudget / Math.max(days, 1))
         const effectivePace = pace || 'moderate'
 
+        // Per-activity cost caps by tier
+        const tierCostCaps: Record<string, { max: number; typical: number }> = {
+            'budget': { max: Math.round(dailyBudget * 0.25), typical: Math.round(dailyBudget * 0.10) },
+            'mid-range': { max: Math.round(dailyBudget * 0.35), typical: Math.round(dailyBudget * 0.15) },
+            'luxury': { max: Math.round(dailyBudget * 0.50), typical: Math.round(dailyBudget * 0.25) },
+        }
+        const caps = tierCostCaps[budgetTier] || tierCostCaps['mid-range']
+
         // Constraint block: tell AI what NOT to generate
         const constraintBlock = (excludeTransport || excludeAccommodation) ? `
     GENERATION CONSTRAINTS:
@@ -210,6 +218,20 @@ serve(async (req: Request) => {
     ${scheduleContext}
 
     ${budgetGuidance}
+
+    ═══════════════════════════════════════════════════════════════
+    🚨 BUDGET TIER IS THE #1 PRIORITY CONSTRAINT 🚨
+    The "${budgetTier.toUpperCase()}" tier OVERRIDES all other considerations.
+    Even if the budget allows more expensive options, you MUST recommend
+    ${budgetTier.toUpperCase()}-appropriate options ONLY.
+    
+    PER-ACTIVITY COST RULES:
+    - NO single activity should cost more than ${caps.max} ${currency}.
+    - MOST activities should cost around ${caps.typical} ${currency} or less.
+    ${budgetTier === 'budget' ? `- At least 50% of activities should be FREE (estimated_cost: 0).
+    - Prefer: free walking tours, public parks, beaches, markets, street food.
+    - AVOID: paid museums over ${caps.typical} ${currency}, fancy restaurants, private tours.` : ''}
+    ═══════════════════════════════════════════════════════════════
     ${constraintBlock}
     ${styleHint}
     ${paceHint}
@@ -217,8 +239,6 @@ serve(async (req: Request) => {
     REAL-WORLD CONTEXT (Use this to ground your detailed recommendations):
     ${contextData || "No specific verified data found in knowledge base. Rely on general knowledge."}
 
-    ABSOLUTE REQUIREMENT: Your recommendations MUST strictly adhere to the ${budgetTier.toUpperCase()} tier guidelines above.
-    
     CRITICAL BUDGET RULE: The sum of ALL estimated_cost values across ALL days MUST NOT EXCEED ${effectiveBudget} ${currency}.
     Each day's total should be approximately ${dailyBudget} ${currency}.
     

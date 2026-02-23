@@ -208,8 +208,10 @@ function estimateDistanceTier(from, to) {
 // ── Transport Mode Decision (Rule 3 + Rule 4 + Road Trip enforced) ───────
 
 function decideTransportMode(trip, distanceTier) {
-    const pref = trip.travel_preference || 'any';
-    const vehicle = trip.own_vehicle_type || 'none';
+    const rawPref = trip.travel_preference || 'any';
+    const pref = rawPref === 'auto' ? 'any' : rawPref;
+    const rawVehicle = trip.own_vehicle_type || 'none';
+    const vehicle = rawVehicle === 'auto' ? 'none' : rawVehicle;
     const distanceKm = KM_ESTIMATES[distanceTier] || 500;
     const drivingHours = estimateDrivingTime(distanceKm);
     const travelStyle = trip.travel_style || '';
@@ -419,7 +421,7 @@ export function buildOutboundSegment(trip, allocation, _currencyRate) {
     const preferredMode = decideTransportMode(trip, distTier);
 
     // Fix Group 1: Envelope-aware cost with downgrade ladder
-    const userExplicit = (trip.travel_preference || 'any') !== 'any';
+    const userExplicit = !['any', 'auto'].includes(trip.travel_preference || 'any');
     const { mode, cost, adjusted } = envelopeAwareTransportCost(
         preferredMode, distTier, travelers, currency, remaining, userExplicit
     );
@@ -480,7 +482,7 @@ export function buildIntercitySegments(trip, allocation, _currencyRate) {
             const preferredMode = decideTransportMode(trip, distTier);
 
             // Fix Group 1: Envelope-aware cost with downgrade ladder
-            const userExplicit = (trip.travel_preference || 'any') !== 'any';
+            const userExplicit = !['any', 'auto'].includes(trip.travel_preference || 'any');
             const { mode, cost, adjusted } = envelopeAwareTransportCost(
                 preferredMode, distTier, travelers, currency, remaining, userExplicit
             );
@@ -545,7 +547,7 @@ export function buildReturnSegment(trip, allocation, currencyRate, totalDays) {
     const preferredMode = decideTransportMode(trip, distTier);
 
     // Fix Group 1: Envelope-aware cost with downgrade ladder
-    const userExplicit = (trip.travel_preference || 'any') !== 'any';
+    const userExplicit = !['any', 'auto'].includes(trip.travel_preference || 'any');
     const { mode, cost, adjusted } = envelopeAwareTransportCost(
         preferredMode, distTier, travelers, currency, remaining, userExplicit
     );

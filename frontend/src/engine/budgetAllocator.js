@@ -76,6 +76,14 @@ const LUXURY_RATIOS = {
     upgrade_pool: 0.05,    // Extra pool for premium upgrades
 };
 
+const BUDGET_RATIOS = {
+    intercity: 0.15,         // Cheaper transport options
+    accommodation: 0.15,     // Hostels / budget hotels are cheap
+    local_transport: 0.05,
+    activity: 0.50,          // More activities — but each is cheap
+    buffer: 0.15,            // Higher buffer = savings returned to user
+};
+
 // ── Main Allocator ───────────────────────────────────────────────────
 
 /**
@@ -84,7 +92,7 @@ const LUXURY_RATIOS = {
  * @param {number} totalBudget       — Total trip budget in currency units
  * @param {object} options
  * @param {string} options.travelStyle    — 'road_trip' | 'adventure' | 'relaxation' | etc.
- * @param {string} options.budgetTier     — 'budget' | 'mid-range' | 'luxury'
+ * @param {string} options.budgetTier     — 'budget' | 'mid-range' | 'luxury' | 'low' | 'mid' | 'high'
  * @param {number} options.totalDays      — Number of days
  * @param {number} options.totalNights    — Number of overnight stays (usually totalDays - 1)
  * @param {number} options.travelers      — Number of travelers
@@ -105,8 +113,10 @@ export function allocateBudget(totalBudget, options = {}) {
     let ratios;
     if (travelStyle === 'road_trip') {
         ratios = { ...ROAD_TRIP_RATIOS };
-    } else if (budgetTier === 'luxury') {
+    } else if (budgetTier === 'luxury' || budgetTier === 'high') {
         ratios = { ...LUXURY_RATIOS };
+    } else if (budgetTier === 'budget' || budgetTier === 'low') {
+        ratios = { ...BUDGET_RATIOS };
     } else {
         ratios = { ...DEFAULT_RATIOS };
     }

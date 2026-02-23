@@ -352,7 +352,10 @@ export async function orchestrateTrip(trip, callbacks = {}) {
     const totalNights = Math.max(0, totalDays - 1);
     const currency = trip.currency || 'USD';
     const currencyRate = CURRENCY_MULTIPLIERS[currency] || 1;
-    const budgetTier = trip.accommodation_preference || 'mid-range';
+    // Map new tier IDs → old engine labels
+    const tierMap = { low: 'budget', mid: 'mid-range', high: 'luxury' };
+    const rawTier = trip.budget_tier || trip.accommodation_preference || 'mid-range';
+    const budgetTier = tierMap[rawTier] || rawTier;
     const travelStyle = trip.travel_style || '';
     const _isLuxury = budgetTier === 'luxury';
 
@@ -377,7 +380,7 @@ export async function orchestrateTrip(trip, callbacks = {}) {
         totalDays,
         totalNights,
         travelers: trip.travelers || 1,
-        hasOwnVehicle: trip.own_vehicle_type && trip.own_vehicle_type !== 'none',
+        hasOwnVehicle: trip.own_vehicle_type && !['none', 'auto'].includes(trip.own_vehicle_type),
     });
 
     if (import.meta.env.DEV) console.log('[Orchestrator] Phase 1 — Budget allocated:', allocation);

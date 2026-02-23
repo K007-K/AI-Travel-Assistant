@@ -135,7 +135,7 @@ const ItineraryBuilder = () => {
             if (storeHiddenGems.length === 0 && hiddenGems.length === 0 && !isLoadingGems) {
                 setIsLoadingGems(true);
                 fetchHiddenGems(foundTrip.destination, {
-                    budgetTier: foundTrip.accommodation_preference || 'mid-range',
+                    budgetTier: foundTrip.budget_tier || foundTrip.accommodation_preference || 'mid-range',
                     travelStyle: foundTrip.travel_style || '',
                     currency: foundTrip.currency || 'USD',
                 })

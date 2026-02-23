@@ -1,45 +1,44 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Car, Bike, MapPin, Calendar, Users, DollarSign,
-    Plane, Train, Bus, Shuffle, Hotel,
-    Mountain, Building2, Gem, Backpack, Briefcase,
-    ChevronRight, ChevronLeft, X, Plus, Trash2
+    MapPin, Calendar, Users,
+    Compass, Mountain, Briefcase, Palmtree,
+    ChevronRight, ChevronLeft, X, Plus, Trash2,
+    Wallet, TrendingUp, Crown
 } from 'lucide-react';
 import LocationInput from '../ui/LocationInput';
 import { getCurrencyForDestination } from '../../utils/currencyMap';
 import { Button } from '../ui/Button';
+import { deriveTripConstraints } from '../../utils/tripDefaults';
 
-// ─── Travel style definitions ───
+// ─── 4 Travel Styles ───
 const TRAVEL_STYLES = [
-    { id: 'road_trip', label: 'Road Trip', icon: Car, color: 'from-amber-500 to-orange-500', desc: 'Scenic routes & stops' },
-    { id: 'city_exploration', label: 'City Explorer', icon: Building2, color: 'from-blue-500 to-indigo-500', desc: 'Urban & cultural' },
-    { id: 'luxury_escape', label: 'Luxury Escape', icon: Gem, color: 'from-purple-500 to-pink-500', desc: 'Premium & exclusive' },
-    { id: 'backpacking', label: 'Backpacking', icon: Backpack, color: 'from-green-500 to-teal-500', desc: 'Budget & adventure' },
-    { id: 'business_travel', label: 'Business', icon: Briefcase, color: 'from-slate-500 to-gray-600', desc: 'Efficient & central' },
+    { id: 'relax', label: 'Relax', icon: Palmtree, color: 'from-teal-500 to-cyan-500', desc: 'Spa, beaches & comfort' },
+    { id: 'explore', label: 'Explore', icon: Compass, color: 'from-blue-500 to-indigo-500', desc: 'Culture & sightseeing' },
+    { id: 'adventure', label: 'Adventure', icon: Mountain, color: 'from-orange-500 to-amber-500', desc: 'Outdoors & thrills' },
+    { id: 'business', label: 'Business', icon: Briefcase, color: 'from-slate-500 to-gray-600', desc: 'Efficient & central' },
 ];
 
-const TRAVEL_PREFS = [
-    { id: 'any', label: 'Any', icon: Shuffle },
-    { id: 'flight', label: 'Flight', icon: Plane },
-    { id: 'train', label: 'Train', icon: Train },
-    { id: 'bus', label: 'Bus', icon: Bus },
+// ─── 3 Budget Tiers ───
+const BUDGET_TIERS = [
+    { id: 'low', label: 'Budget', icon: Wallet, color: 'from-green-500 to-emerald-500', desc: 'Hostels, street food, public transport', tag: 'Best value' },
+    { id: 'mid', label: 'Comfort', icon: TrendingUp, color: 'from-blue-500 to-violet-500', desc: '3-4★ hotels, good dining, mixed transport', tag: 'Most popular' },
+    { id: 'high', label: 'Premium', icon: Crown, color: 'from-amber-500 to-yellow-500', desc: '5★ resorts, fine dining, private transport', tag: 'Luxury' },
 ];
 
-const ACCOM_PREFS = [
-    { id: 'budget', label: 'Budget', desc: 'Hostels & basic hotels' },
-    { id: 'mid-range', label: 'Mid-Range', desc: '3-4 star hotels' },
-    { id: 'luxury', label: 'Luxury', desc: '5-star & resorts' },
-];
-
-const VEHICLE_OPTS = [
-    { id: 'none', label: 'None', icon: null },
-    { id: 'car', label: 'Car', icon: Car },
-    { id: 'bike', label: 'Bike', icon: Bike },
+// ─── Currency options ───
+const CURRENCIES = [
+    { code: 'USD', label: 'USD $' },
+    { code: 'EUR', label: 'EUR €' },
+    { code: 'GBP', label: 'GBP £' },
+    { code: 'INR', label: 'INR ₹' },
+    { code: 'JPY', label: 'JPY ¥' },
+    { code: 'AUD', label: 'AUD $' },
+    { code: 'CAD', label: 'CAD $' },
 ];
 
 const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
-    const [step, setStep] = useState(0); // 0: Basics, 1: Constraints, 2: Budget
+    const [step, setStep] = useState(0); // 0: Basics, 1: Budget & Review
     const [errors, setErrors] = useState({});
 
     const [form, setForm] = useState({
@@ -51,10 +50,7 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
         segments: [{ location: initialDestination || '', days: 3 }],
         startDate: '',
         travelers: 1,
-        travel_preference: 'any',
-        accommodation_preference: 'mid-range',
-        own_vehicle_type: 'none',
-        budget: '',
+        budget_tier: '',
         currency: initialDestination ? getCurrencyForDestination(initialDestination) : 'USD',
     });
 
@@ -94,8 +90,8 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
             if (!form.start_location.trim()) e.start_location = 'Start location is required';
             if (form.segments.some(seg => !seg.location.trim())) e.segments = 'All destinations must be filled';
         }
-        if (s === 2) {
-            if (!form.budget || parseFloat(form.budget) <= 0) e.budget = 'Budget must be greater than 0';
+        if (s === 1) {
+            if (!form.budget_tier) e.budget_tier = 'Choose a budget tier';
         }
         setErrors(e);
         return Object.keys(e).length === 0;
@@ -107,7 +103,7 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (!validateStep(2)) return;
+        if (!validateStep(1)) return;
 
         const totalDuration = form.segments.reduce((s, seg) => s + seg.days, 0);
 
@@ -120,9 +116,22 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
             endDate = end.toISOString();
         }
 
+        // Derive internal fields from travel_style + budget_tier
+        const tripForDerivation = {
+            budget_tier: form.budget_tier,
+            travel_style: form.travel_style,
+            currency: form.currency,
+            travelers: form.travelers,
+            segments: form.segments,
+            start_location: form.start_location,
+            destination: form.segments[0].location,
+        };
+        const derived = deriveTripConstraints(tripForDerivation);
+
         onSubmit({
             title: form.title.trim(),
             travel_style: form.travel_style,
+            budget_tier: form.budget_tier,
             start_location: form.start_location.trim(),
             return_location: form.return_same ? form.start_location.trim() : form.return_location.trim(),
             segments: form.segments,
@@ -131,18 +140,30 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
             duration: totalDuration,
             destination: form.segments[0].location,
             travelers: form.travelers,
-            travel_preference: form.travel_preference,
-            accommodation_preference: form.accommodation_preference,
-            own_vehicle_type: form.own_vehicle_type,
-            budget: parseFloat(form.budget),
             currency: form.currency,
+            // Derived fields (engine reads these)
+            budget: derived.budget,
+            travel_preference: derived.travel_preference,
+            accommodation_preference: derived.accommodation_preference,
+            own_vehicle_type: derived.own_vehicle_type,
         });
     };
 
     const totalDays = form.segments.reduce((s, seg) => s + seg.days, 0);
 
-    // ─── Step indicator ───
-    const steps = ['Trip Basics', 'Travel Constraints', 'Budget & Review'];
+    // Budget preview
+    const budgetPreview = form.budget_tier ? deriveTripConstraints({
+        budget_tier: form.budget_tier,
+        travel_style: form.travel_style || 'explore',
+        currency: form.currency,
+        travelers: form.travelers,
+        segments: form.segments,
+        start_location: form.start_location,
+        destination: form.segments[0]?.location || '',
+    }) : null;
+
+    // ─── Step labels ───
+    const steps = ['Trip Details', 'Budget & Review'];
 
     return (
         <motion.div
@@ -176,16 +197,16 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
 
             <form onSubmit={handleSubmit} className="p-8">
                 <AnimatePresence mode="wait">
-                    {/* ═══════════ STEP 0: Trip Basics ═══════════ */}
+                    {/* ═══════════ STEP 0: Trip Details ═══════════ */}
                     {step === 0 && (
                         <motion.div key="basics" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} className="space-y-6">
 
-                            {/* Travel Style */}
+                            {/* Travel Style — 4 options */}
                             <div>
                                 <label className="block text-sm font-semibold text-foreground mb-3">
                                     Travel Style <span className="text-red-500">*</span>
                                 </label>
-                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                     {TRAVEL_STYLES.map(ts => (
                                         <button
                                             key={ts.id}
@@ -216,7 +237,7 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
                                     type="text"
                                     value={form.title}
                                     onChange={e => update('title', e.target.value)}
-                                    placeholder="e.g. Summer Road Trip to Goa"
+                                    placeholder="e.g. Summer in Goa"
                                     className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
                                 />
                                 {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
@@ -317,7 +338,6 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
                                         min={new Date().toISOString().split('T')[0]}
                                         className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
                                     />
-                                    {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-foreground mb-2">
@@ -346,143 +366,85 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
                         </motion.div>
                     )}
 
-                    {/* ═══════════ STEP 1: Travel Constraints ═══════════ */}
+                    {/* ═══════════ STEP 1: Budget & Review ═══════════ */}
                     {step === 1 && (
-                        <motion.div key="constraints" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} className="space-y-6">
-
-                            {/* Travel Preference */}
-                            <div>
-                                <label className="block text-sm font-semibold text-foreground mb-3">
-                                    Travel Preference
-                                </label>
-                                <div className="grid grid-cols-4 gap-3">
-                                    {TRAVEL_PREFS.map(tp => (
-                                        <button
-                                            key={tp.id}
-                                            type="button"
-                                            onClick={() => update('travel_preference', tp.id)}
-                                            className={`p-4 rounded-2xl border-2 transition-all text-center ${form.travel_preference === tp.id
-                                                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                                                : 'border-border hover:border-primary-300'
-                                                }`}
-                                        >
-                                            <tp.icon className={`w-6 h-6 mx-auto mb-2 ${form.travel_preference === tp.id ? 'text-primary-600' : 'text-muted-foreground'}`} />
-                                            <p className="text-sm font-bold text-foreground">{tp.label}</p>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Accommodation Preference */}
-                            <div>
-                                <label className="block text-sm font-semibold text-foreground mb-3">
-                                    <Hotel className="w-4 h-4 inline mr-1" />Accommodation
-                                </label>
-                                <div className="grid grid-cols-3 gap-3">
-                                    {ACCOM_PREFS.map(ap => (
-                                        <button
-                                            key={ap.id}
-                                            type="button"
-                                            onClick={() => update('accommodation_preference', ap.id)}
-                                            className={`p-4 rounded-2xl border-2 transition-all text-left ${form.accommodation_preference === ap.id
-                                                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                                                : 'border-border hover:border-primary-300'
-                                                }`}
-                                        >
-                                            <p className="text-sm font-bold text-foreground">{ap.label}</p>
-                                            <p className="text-xs text-muted-foreground mt-0.5">{ap.desc}</p>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Own Vehicle */}
-                            <div>
-                                <label className="block text-sm font-semibold text-foreground mb-3">
-                                    Own Vehicle Available?
-                                </label>
-                                <div className="flex gap-3">
-                                    {VEHICLE_OPTS.map(vo => (
-                                        <button
-                                            key={vo.id}
-                                            type="button"
-                                            onClick={() => update('own_vehicle_type', vo.id)}
-                                            className={`flex-1 p-4 rounded-2xl border-2 transition-all text-center ${form.own_vehicle_type === vo.id
-                                                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                                                : 'border-border hover:border-primary-300'
-                                                }`}
-                                        >
-                                            {vo.icon && <vo.icon className={`w-6 h-6 mx-auto mb-2 ${form.own_vehicle_type === vo.id ? 'text-primary-600' : 'text-muted-foreground'}`} />}
-                                            <p className="text-sm font-bold text-foreground">{vo.label}</p>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Constraint summary */}
-                            <div className="bg-muted/50 rounded-xl px-4 py-3 text-sm text-muted-foreground">
-                                <span className="font-medium text-foreground">Constraints: </span>
-                                {TRAVEL_PREFS.find(t => t.id === form.travel_preference)?.label} transport · {ACCOM_PREFS.find(a => a.id === form.accommodation_preference)?.label} stays
-                                {form.own_vehicle_type !== 'none' && ` · Own ${form.own_vehicle_type}`}
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {/* ═══════════ STEP 2: Budget & Review ═══════════ */}
-                    {step === 2 && (
                         <motion.div key="budget" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} className="space-y-6">
 
-                            {/* Budget */}
+                            {/* Budget Tier */}
+                            <div>
+                                <label className="block text-sm font-semibold text-foreground mb-3">
+                                    Budget Tier <span className="text-red-500">*</span>
+                                </label>
+                                <div className="grid grid-cols-3 gap-4">
+                                    {BUDGET_TIERS.map(bt => (
+                                        <button
+                                            key={bt.id}
+                                            type="button"
+                                            onClick={() => update('budget_tier', bt.id)}
+                                            className={`relative p-5 rounded-2xl border-2 transition-all text-left group ${form.budget_tier === bt.id
+                                                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 shadow-lg shadow-primary-500/20'
+                                                : 'border-border hover:border-primary-300 hover:shadow-md'
+                                                }`}
+                                        >
+                                            {/* Tag */}
+                                            <span className={`absolute -top-2.5 right-3 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full ${form.budget_tier === bt.id
+                                                ? 'bg-primary-500 text-white'
+                                                : 'bg-muted text-muted-foreground'
+                                                }`}>
+                                                {bt.tag}
+                                            </span>
+
+                                            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${bt.color} flex items-center justify-center mb-3`}>
+                                                <bt.icon className="w-5 h-5 text-white" />
+                                            </div>
+                                            <p className="text-base font-bold text-foreground">{bt.label}</p>
+                                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{bt.desc}</p>
+                                        </button>
+                                    ))}
+                                </div>
+                                {errors.budget_tier && <p className="text-red-500 text-xs mt-1">{errors.budget_tier}</p>}
+                            </div>
+
+                            {/* Currency selector */}
                             <div>
                                 <label className="block text-sm font-semibold text-foreground mb-2">
-                                    <DollarSign className="w-4 h-4 inline mr-1" />Total Budget <span className="text-red-500">*</span>
+                                    Currency
                                 </label>
-                                <div className="flex gap-3">
-                                    <select
-                                        value={form.currency}
-                                        onChange={e => update('currency', e.target.value)}
-                                        className="px-4 py-3 rounded-xl border border-border bg-background text-foreground focus:ring-2 focus:ring-primary-500 outline-none w-28"
-                                    >
-                                        <option value="USD">USD $</option>
-                                        <option value="EUR">EUR €</option>
-                                        <option value="GBP">GBP £</option>
-                                        <option value="INR">INR ₹</option>
-                                        <option value="JPY">JPY ¥</option>
-                                        <option value="AUD">AUD $</option>
-                                        <option value="CAD">CAD $</option>
-                                    </select>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        value={form.budget}
-                                        onChange={e => update('budget', e.target.value)}
-                                        placeholder="Total trip budget"
-                                        className="flex-1 px-4 py-3 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary-500 outline-none"
-                                    />
-                                </div>
-                                {errors.budget && <p className="text-red-500 text-xs mt-1">{errors.budget}</p>}
-                                {form.budget > 0 && totalDays > 0 && (
-                                    <p className="text-xs text-muted-foreground mt-2">
-                                        ≈ {form.currency} {Math.round(form.budget / totalDays).toLocaleString()} per day · {form.currency} {Math.round(form.budget / totalDays / form.travelers).toLocaleString()} per day per person
-                                    </p>
-                                )}
+                                <select
+                                    value={form.currency}
+                                    onChange={e => update('currency', e.target.value)}
+                                    className="px-4 py-3 rounded-xl border border-border bg-background text-foreground focus:ring-2 focus:ring-primary-500 outline-none w-40"
+                                >
+                                    {CURRENCIES.map(c => (
+                                        <option key={c.code} value={c.code}>{c.label}</option>
+                                    ))}
+                                </select>
                             </div>
+
+                            {/* AI-estimated budget preview */}
+                            {budgetPreview && (
+                                <div className="bg-gradient-to-r from-primary-50 to-blue-50 dark:from-primary-900/20 dark:to-blue-900/20 rounded-2xl p-5 border border-primary-200 dark:border-primary-800">
+                                    <p className="text-xs font-semibold text-primary-600 uppercase tracking-wider mb-2">Estimated Budget</p>
+                                    <p className="text-2xl font-bold text-foreground">
+                                        {form.currency} {budgetPreview.budget.toLocaleString()}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        ~{form.currency} {budgetPreview.budget_per_day.toLocaleString()}/day · {form.travelers} traveler{form.travelers > 1 ? 's' : ''} · {totalDays} days · Includes 12% buffer
+                                    </p>
+                                </div>
+                            )}
 
                             {/* Review summary */}
                             <div className="bg-muted/30 rounded-2xl p-6 space-y-4">
                                 <h3 className="text-lg font-bold text-foreground">Trip Summary</h3>
                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                     <div><span className="text-muted-foreground">Title:</span> <span className="text-foreground font-medium">{form.title || '—'}</span></div>
-                                    <div><span className="text-muted-foreground">Style:</span> <span className="text-foreground font-medium capitalize">{form.travel_style?.replace('_', ' ') || '—'}</span></div>
+                                    <div><span className="text-muted-foreground">Style:</span> <span className="text-foreground font-medium capitalize">{form.travel_style || '—'}</span></div>
                                     <div><span className="text-muted-foreground">From:</span> <span className="text-foreground font-medium">{form.start_location || '—'}</span></div>
                                     <div><span className="text-muted-foreground">Return:</span> <span className="text-foreground font-medium">{form.return_same ? form.start_location || '—' : form.return_location || '—'}</span></div>
                                     <div><span className="text-muted-foreground">Duration:</span> <span className="text-foreground font-medium">{totalDays} days</span></div>
                                     <div><span className="text-muted-foreground">Travelers:</span> <span className="text-foreground font-medium">{form.travelers}</span></div>
-                                    <div><span className="text-muted-foreground">Transport:</span> <span className="text-foreground font-medium capitalize">{form.travel_preference}</span></div>
-                                    <div><span className="text-muted-foreground">Stay:</span> <span className="text-foreground font-medium capitalize">{form.accommodation_preference}</span></div>
-                                    {form.own_vehicle_type !== 'none' && (
-                                        <div><span className="text-muted-foreground">Vehicle:</span> <span className="text-foreground font-medium capitalize">{form.own_vehicle_type}</span></div>
-                                    )}
+                                    <div><span className="text-muted-foreground">Budget:</span> <span className="text-foreground font-medium capitalize">{form.budget_tier ? BUDGET_TIERS.find(b => b.id === form.budget_tier)?.label : '—'}</span></div>
                                 </div>
 
                                 {/* Destinations list */}
@@ -512,7 +474,7 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
                     </div>
                     <div className="flex gap-3">
                         <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>
-                        {step < 2 ? (
+                        {step < 1 ? (
                             <Button type="button" onClick={handleNext} className="gap-2">
                                 Next <ChevronRight className="w-4 h-4" />
                             </Button>

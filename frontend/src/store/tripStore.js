@@ -109,6 +109,7 @@ const useTripStore = create((set, get) => ({
                 start_location: tripData.start_location || null,
                 return_location: tripData.return_location || null,
                 travel_style: tripData.travel_style || null,
+                budget_tier: tripData.budget_tier || null,
                 own_vehicle_type: tripData.own_vehicle_type || 'none',
                 travel_preference: tripData.travel_preference || 'any',
                 accommodation_preference: tripData.accommodation_preference || 'mid-range',
