@@ -1,0 +1,1172 @@
+[
+  {
+    "id": "d1",
+    "name": "Araku Valley",
+    "country": "India",
+    "location": "Andhra Pradesh, India",
+    "description": "A hill station in Visakhapatnam district, known for its coffee plantations and rich tribal culture.",
+    "image": "https://images.unsplash.com/photo-1596021688656-35fdc9ed0274?w=800&q=80",
+    "rating": 4.8,
+    "tags": [
+      "Nature",
+      "Coffee",
+      "Tribal"
+    ],
+    "language": "Telugu / English",
+    "timezone": "IST (UTC+5:30)",
+    "bestFor": "Nature lovers & Couples",
+    "minBudgetPerDay": "₹1,200",
+    "bestTimeToVisit": {
+      "season": "October – March",
+      "note": "Pleasant weather with cool temperatures, ideal for trekking and sightseeing."
+    },
+    "highlights": [
+      {
+        "name": "Borra Caves",
+        "desc": "Million-year-old limestone caves with stunning stalactite formations."
+      },
+      {
+        "name": "Padmapuram Gardens",
+        "desc": "A beautiful botanical garden featuring a tree-top house and floral walkways."
+      },
+      {
+        "name": "Coffee Plantations",
+        "desc": "Walk through lush Arabica coffee estates unique to the Eastern Ghats."
+      },
+      {
+        "name": "Tribal Museum",
+        "desc": "Showcases the heritage, art, and lifestyle of local Dhimsa tribes."
+      },
+      {
+        "name": "Katiki Waterfalls",
+        "desc": "A 50-ft waterfall hidden in dense forest near Borra Caves."
+      }
+    ],
+    "cuisine": [
+      {
+        "name": "Bamboo Chicken",
+        "desc": "Chicken marinated in spices, stuffed inside bamboo, and slow-roasted over fire."
+      },
+      {
+        "name": "Araku Coffee",
+        "desc": "Globally recognised organic coffee grown by tribal communities."
+      },
+      {
+        "name": "Bongulo Chicken",
+        "desc": "Traditional tribal preparation cooked inside bamboo stems."
+      }
+    ],
+    "culture": "Rich tribal heritage of the Dhimsa community with vibrant dance forms, handloom weaving, and harvest festivals like Ituka Pongal.",
+    "travelTips": [
+      "Carry warm clothes — nights can drop to 5°C",
+      "Book the Kirandul Express train for a scenic Araku-Vizag ride",
+      "Visit coffee plantations early morning for the best aroma experience",
+      "Hire a local tribal guide for authentic cave and forest treks"
+    ]
+  },
+  {
+    "id": "d2",
+    "name": "Visakhapatnam",
+    "country": "India",
+    "location": "Andhra Pradesh, India",
+    "description": "The Jewel of the East Coast. Known for its pristine beaches, submarine museum, and scenic Kailasagiri hill.",
+    "image": "https://images.unsplash.com/photo-1594312873175-351e72a4b55b?w=800&q=80",
+    "rating": 4.7,
+    "tags": [
+      "Beach",
+      "Nature",
+      "City"
+    ],
+    "language": "Telugu / English",
+    "timezone": "IST (UTC+5:30)",
+    "bestFor": "Families & Beach lovers",
+    "minBudgetPerDay": "₹1,500",
+    "bestTimeToVisit": {
+      "season": "October – March",
+      "note": "Cool sea breeze, pleasant weather for beach activities and hill visits."
+    },
+    "highlights": [
+      {
+        "name": "Kailasagiri",
+        "desc": "Hilltop park with panoramic city-and-sea views and a ropeway ride."
+      },
+      {
+        "name": "RK Beach",
+        "desc": "The iconic Ramakrishna Beach lined with parks, the submarine museum, and sunset views."
+      },
+      {
+        "name": "INS Kursura Submarine Museum",
+        "desc": "A decommissioned submarine turned into a walk-through museum."
+      },
+      {
+        "name": "Yarada Beach",
+        "desc": "Secluded beach with golden sands surrounded by hills on three sides."
+      },
+      {
+        "name": "Simhachalam Temple",
+        "desc": "11th-century Vaishnavite temple on a hilltop with intricate carvings."
+      }
+    ],
+    "cuisine": [
+      {
+        "name": "Vizag Fish Curry",
+        "desc": "Fiery Andhra-style fish curry with tamarind and red chillies."
+      },
+      {
+        "name": "Punugulu",
+        "desc": "Deep-fried rice batter dumplings served with coconut chutney."
+      },
+      {
+        "name": "Bamboo Chicken",
+        "desc": "Tribal delicacy — chicken roasted inside bamboo over coal fire."
+      }
+    ],
+    "culture": "Maritime heritage with colonial-era lighthouses, vibrant Telugu festivals, and a thriving art scene at Visakha Museum.",
+    "travelTips": [
+      "Rent a two-wheeler to explore the coastal road",
+      "Early mornings are best for Kailasagiri and beach visits",
+      "Try street food at Jagadamba Junction",
+      "Book a boat ride at Rushikonda for water sports"
+    ]
+  },
+  {
+    "id": "d3",
+    "name": "Tirupati",
+    "country": "India",
+    "location": "Andhra Pradesh, India",
+    "description": "A major pilgrimage city, home to the famous Sri Venkateswara Temple sitting atop one of the seven peaks of Tirumala Hills.",
+    "image": "https://images.unsplash.com/photo-1755515957515-a075e22429de?w=800&q=80",
+    "rating": 4.9,
+    "tags": [
+      "Spiritual",
+      "Culture",
+      "History"
+    ],
+    "language": "Telugu / English",
+    "timezone": "IST (UTC+5:30)",
+    "bestFor": "Pilgrims & Culture seekers",
+    "minBudgetPerDay": "₹800",
+    "bestTimeToVisit": {
+      "season": "September – February",
+      "note": "Cooler weather makes the hill climb comfortable. Brahmotsavam in October is spectacular."
+    },
+    "highlights": [
+      {
+        "name": "Tirumala Temple",
+        "desc": "The richest temple in the world, dedicated to Lord Venkateswara."
+      },
+      {
+        "name": "Talakona Waterfall",
+        "desc": "The highest waterfall in Andhra Pradesh, inside a tiger reserve."
+      },
+      {
+        "name": "Sri Padmavathi Temple",
+        "desc": "Ancient temple dedicated to the consort of Lord Venkateswara."
+      },
+      {
+        "name": "Chandragiri Fort",
+        "desc": "11th-century fort where the British signed the founding charter of Chennai."
+      },
+      {
+        "name": "Silathoranam",
+        "desc": "A natural rock arch formation — one of very few on Earth."
+      }
+    ],
+    "cuisine": [
+      {
+        "name": "Tirupati Laddu",
+        "desc": "The world-famous sweet prasadam blessed at Tirumala temple."
+      },
+      {
+        "name": "Pulihora",
+        "desc": "Tangy tamarind rice offered as temple prasadam."
+      },
+      {
+        "name": "Dosa varieties",
+        "desc": "South Indian breakfast staple with unique regional chutneys."
+      }
+    ],
+    "culture": "Deep Vaishnavite heritage with ancient Dravidian temple architecture, Bharatanatyam dance tradition, and the grand Brahmotsavam festival.",
+    "travelTips": [
+      "Book darshan tickets online weeks in advance",
+      "Wear comfortable walking shoes for the hill climb",
+      "Free meals (Anna Prasadam) are served 24/7 at the temple",
+      "Dress modestly — traditional attire is preferred"
+    ]
+  },
+  {
+    "id": "d4",
+    "name": "New York City",
+    "country": "USA",
+    "location": "New York, USA",
+    "description": "The City That Never Sleeps. Iconic landmarks, world-class museums, and diverse neighborhoods.",
+    "image": "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=800&q=80",
+    "rating": 4.8,
+    "tags": [
+      "City",
+      "Urban",
+      "Culture"
+    ],
+    "language": "English",
+    "timezone": "EST (UTC-5)",
+    "bestFor": "Urban explorers & Foodies",
+    "minBudgetPerDay": "$100",
+    "bestTimeToVisit": {
+      "season": "April – June & September – November",
+      "note": "Mild weather, fewer crowds. Fall foliage in Central Park is stunning."
+    },
+    "highlights": [
+      {
+        "name": "Statue of Liberty",
+        "desc": "Iconic symbol of freedom on Liberty Island in New York Harbor."
+      },
+      {
+        "name": "Central Park",
+        "desc": "843-acre urban oasis with lakes, trails, and the Bethesda Fountain."
+      },
+      {
+        "name": "Times Square",
+        "desc": "The dazzling crossroads of the world lit by massive digital billboards."
+      },
+      {
+        "name": "Metropolitan Museum of Art",
+        "desc": "One of the world's largest art museums with 2 million+ works."
+      },
+      {
+        "name": "Brooklyn Bridge",
+        "desc": "Historic suspension bridge with breathtaking Manhattan skyline views."
+      }
+    ],
+    "cuisine": [
+      {
+        "name": "New York Pizza",
+        "desc": "Thin-crust, foldable slices — a NYC institution since the 1900s."
+      },
+      {
+        "name": "Bagels",
+        "desc": "Hand-rolled, boiled, and baked. Best with lox and cream cheese."
+      },
+      {
+        "name": "Cheesecake",
+        "desc": "Creamy New York-style cheesecake from legendary delis."
+      }
+    ],
+    "culture": "A global melting pot — Broadway theatre, jazz clubs in Harlem, street art in Bushwick, and every cuisine imaginable.",
+    "travelTips": [
+      "Get an unlimited MetroCard for subway travel",
+      "Walk the High Line for a unique elevated park experience",
+      "Book Broadway tickets via TKTS booth for same-day discounts",
+      "Visit museums on their free-admission evenings"
+    ]
+  },
+  {
+    "id": "d5",
+    "name": "Banff",
+    "country": "Canada",
+    "location": "Alberta, Canada",
+    "description": "Rocky Mountain peaks, turquoise glacial lakes, a picture-perfect mountain town and abundant wildlife.",
+    "image": "https://images.unsplash.com/photo-1755287802880-f2eeb272a3ed?w=800&q=80",
+    "rating": 4.9,
+    "tags": [
+      "Nature",
+      "Hiking",
+      "Mountains"
+    ],
+    "language": "English / French",
+    "timezone": "MST (UTC-7)",
+    "bestFor": "Hikers & Nature photographers",
+    "minBudgetPerDay": "CAD $120",
+    "bestTimeToVisit": {
+      "season": "June – September",
+      "note": "Warm weather for hiking. December–March for world-class skiing."
+    },
+    "highlights": [
+      {
+        "name": "Lake Louise",
+        "desc": "Turquoise glacial lake backed by Victoria Glacier — Canada's postcard."
+      },
+      {
+        "name": "Moraine Lake",
+        "desc": "Valley of the Ten Peaks with impossibly blue water."
+      },
+      {
+        "name": "Banff Gondola",
+        "desc": "Ride to the summit of Sulphur Mountain for 360° panoramic views."
+      },
+      {
+        "name": "Johnston Canyon",
+        "desc": "Dramatic canyon with catwalks leading to upper and lower waterfalls."
+      },
+      {
+        "name": "Icefields Parkway",
+        "desc": "One of the world's most scenic drives through the Canadian Rockies."
+      }
+    ],
+    "cuisine": [
+      {
+        "name": "Alberta Beef",
+        "desc": "Premium grass-fed beef served at mountain lodge restaurants."
+      },
+      {
+        "name": "Bison Burger",
+        "desc": "Wild bison — leaner and more flavourful than regular beef."
+      },
+      {
+        "name": "Poutine",
+        "desc": "Canadian classic — fries, cheese curds, and rich gravy."
+      }
+    ],
+    "culture": "Indigenous Stoney Nakoda heritage, mountain festivals, the Banff Centre for Arts, and a thriving outdoor adventure community.",
+    "travelTips": [
+      "Book Lake Louise parking or take the shuttle — it fills by 7 AM",
+      "Carry bear spray on all hikes",
+      "Layer clothing — mountain weather changes fast",
+      "Parks Canada pass covers all national parks"
+    ]
+  },
+  {
+    "id": "d6",
+    "name": "Dubai",
+    "country": "UAE",
+    "location": "Dubai, UAE",
+    "description": "Known for luxury shopping, ultramodern architecture, and a lively nightlife scene.",
+    "image": "https://images.unsplash.com/photo-1550779864-6ccb28702fdb?w=800&q=80",
+    "rating": 4.7,
+    "tags": [
+      "Luxury",
+      "City",
+      "Desert"
+    ],
+    "language": "Arabic / English",
+    "timezone": "GST (UTC+4)",
+    "bestFor": "Luxury travellers & Shoppers",
+    "minBudgetPerDay": "$50",
+    "bestTimeToVisit": {
+      "season": "November – March",
+      "note": "Pleasant temperatures around 25°C. Summers exceed 45°C."
+    },
+    "highlights": [
+      {
+        "name": "Burj Khalifa",
+        "desc": "The world's tallest building at 828m with observation decks on floors 124 and 148."
+      },
+      {
+        "name": "Dubai Mall",
+        "desc": "The world's largest mall with 1,200+ shops, an aquarium, and ice rink."
+      },
+      {
+        "name": "Palm Jumeirah",
+        "desc": "Iconic palm-shaped artificial island with luxury resorts."
+      },
+      {
+        "name": "Dubai Marina",
+        "desc": "Stunning waterfront promenade with skyscrapers, dining, and yacht tours."
+      },
+      {
+        "name": "Desert Safari",
+        "desc": "Dune bashing, camel riding, and traditional Bedouin camp dinner."
+      }
+    ],
+    "cuisine": [
+      {
+        "name": "Al Machboos",
+        "desc": "Emirati spiced rice with meat — the national dish."
+      },
+      {
+        "name": "Shawarma",
+        "desc": "Perfectly spiced meat wraps found at every street corner."
+      },
+      {
+        "name": "Luqaimat",
+        "desc": "Golden dumplings drizzled with date syrup — a traditional dessert."
+      }
+    ],
+    "culture": "Blend of traditional Bedouin heritage and futuristic ambition. Gold souks, Al Fahidi historic district, and the Dubai Opera.",
+    "travelTips": [
+      "Metro is the cheapest way to travel — get a Nol card",
+      "Dress modestly in public areas and malls",
+      "Fridays are weekend — many attractions are crowded",
+      "Haggle at the Gold and Spice Souks"
+    ]
+  },
+  {
+    "id": "d7",
+    "name": "Queenstown",
+    "country": "New Zealand",
+    "location": "Otago, New Zealand",
+    "description": "The adventure capital of the world. Bungy jumping, jet boating, skiing, and hiking.",
+    "image": "https://plus.unsplash.com/premium_photo-1754337709293-b486b3a9b374?w=800&q=80",
+    "rating": 4.9,
+    "tags": [
+      "Adventure",
+      "Nature",
+      "Extreme"
+    ],
+    "language": "English",
+    "timezone": "NZST (UTC+12)",
+    "bestFor": "Adrenaline junkies & Hikers",
+    "minBudgetPerDay": "NZD $90",
+    "bestTimeToVisit": {
+      "season": "December – February (summer)",
+      "note": "Longest days, warmest weather. June–August for skiing."
+    },
+    "highlights": [
+      {
+        "name": "Milford Sound",
+        "desc": "Fiordland's crown jewel — dramatic cliffs, waterfalls, and dolphins."
+      },
+      {
+        "name": "Bungy at Kawarau Bridge",
+        "desc": "The birthplace of commercial bungy jumping — 43m over the river."
+      },
+      {
+        "name": "Skyline Gondola",
+        "desc": "Ride to Bob's Peak for lake and mountain views, plus a luge track."
+      },
+      {
+        "name": "Glenorchy",
+        "desc": "Gateway to Mount Aspiring National Park and LOTR filming locations."
+      },
+      {
+        "name": "Shotover Jet",
+        "desc": "High-speed jet boat through narrow canyon walls at 85 km/h."
+      }
+    ],
+    "cuisine": [
+      {
+        "name": "Fergburger",
+        "desc": "Legendary gourmet burger joint — worth the queue."
+      },
+      {
+        "name": "NZ Lamb",
+        "desc": "World-famous grass-fed lamb rack with mint sauce."
+      },
+      {
+        "name": "Hokey Pokey Ice Cream",
+        "desc": "Vanilla ice cream with honeycomb toffee pieces — a NZ icon."
+      }
+    ],
+    "culture": "Māori heritage, Lord of the Rings filming locations, a vibrant après-ski scene, and New Zealand's wine country.",
+    "travelTips": [
+      "Book Milford Sound cruise at least 2 weeks ahead",
+      "Rent a car — public transport is limited",
+      "Weather changes rapidly — pack layers and rain gear",
+      "The Routeburn Track requires DOC hut bookings"
+    ]
+  },
+  {
+    "id": "d8",
+    "name": "Mumbai",
+    "country": "India",
+    "location": "Maharashtra, India",
+    "description": "The City of Dreams. Home to the Gateway of India, Bollywood, and vibrant street life.",
+    "image": "https://images.unsplash.com/photo-1566552881560-0be862a7c445?w=800&q=80",
+    "rating": 4.6,
+    "tags": [
+      "City",
+      "History",
+      "Culture"
+    ],
+    "language": "Hindi / Marathi / English",
+    "timezone": "IST (UTC+5:30)",
+    "bestFor": "Culture enthusiasts & Foodies",
+    "minBudgetPerDay": "₹2,000",
+    "bestTimeToVisit": {
+      "season": "November – February",
+      "note": "Cool and dry. Avoid June–September monsoon unless you love heavy rains."
+    },
+    "highlights": [
+      {
+        "name": "Gateway of India",
+        "desc": "Iconic waterfront arch built to commemorate King George V's visit in 1911."
+      },
+      {
+        "name": "Marine Drive",
+        "desc": "The Queen's Necklace — a 3.6 km crescent-shaped boulevard along the sea."
+      },
+      {
+        "name": "Elephanta Caves",
+        "desc": "UNESCO World Heritage cave temples on an island in Mumbai Harbour."
+      },
+      {
+        "name": "Chhatrapati Shivaji Terminus",
+        "desc": "Victorian Gothic architecture masterpiece — a functioning railway station."
+      },
+      {
+        "name": "Dharavi",
+        "desc": "One of Asia's largest slums with an inspiring entrepreneurial spirit and guided tours."
+      }
+    ],
+    "cuisine": [
+      {
+        "name": "Vada Pav",
+        "desc": "Mumbai's iconic street burger — spiced potato fritter in a bun."
+      },
+      {
+        "name": "Pav Bhaji",
+        "desc": "Buttery mashed vegetable curry served with toasted bread rolls."
+      },
+      {
+        "name": "Bombay Sandwich",
+        "desc": "Layered chutney sandwich with cucumber, tomato, and cheese."
+      }
+    ],
+    "culture": "Bollywood film city tours, colonial-era architecture, Ganesh Chaturthi festival, and the vibrant Colaba Causeway art scene.",
+    "travelTips": [
+      "Use local trains during off-peak hours to avoid crowds",
+      "Street food at Chowpatty Beach is a must-try experience",
+      "Carry an umbrella — even in dry season",
+      "Uber and Ola are cheaper and easier than auto-rickshaws"
+    ]
+  },
+  {
+    "id": "d9",
+    "name": "Jaipur",
+    "country": "India",
+    "location": "Rajasthan, India",
+    "description": "The Pink City. Famous for Hawa Mahal, Amer Fort, and its royal heritage.",
+    "image": "https://images.unsplash.com/photo-1477587458883-47145ed94245?w=800&q=80",
+    "rating": 4.8,
+    "tags": [
+      "History",
+      "Culture",
+      "Architecture"
+    ],
+    "language": "Hindi / Rajasthani / English",
+    "timezone": "IST (UTC+5:30)",
+    "bestFor": "History buffs & Photographers",
+    "minBudgetPerDay": "₹1,200",
+    "bestTimeToVisit": {
+      "season": "October – March",
+      "note": "Pleasant 15–25°C days. Summers hit 45°C+."
+    },
+    "highlights": [
+      {
+        "name": "Hawa Mahal",
+        "desc": "Palace of Winds — 953 windows in a honeycomb façade for royal women to observe street life."
+      },
+      {
+        "name": "Amer Fort",
+        "desc": "Majestic hilltop fortress with Mirror Palace and elephant rides."
+      },
+      {
+        "name": "City Palace",
+        "desc": "Royal residence blending Rajput and Mughal architecture — still home to the royal family."
+      },
+      {
+        "name": "Jantar Mantar",
+        "desc": "UNESCO-listed 18th-century astronomical observatory with the world's largest sundial."
+      },
+      {
+        "name": "Nahargarh Fort",
+        "desc": "Hilltop fort offering stunning sunset views over the Pink City."
+      }
+    ],
+    "cuisine": [
+      {
+        "name": "Dal Baati Churma",
+        "desc": "Hard wheat rolls baked in coal, served with lentils and sweet crushed wheat."
+      },
+      {
+        "name": "Laal Maas",
+        "desc": "Fiery red mutton curry — Rajasthan's signature non-veg dish."
+      },
+      {
+        "name": "Ghewar",
+        "desc": "Honeycomb-shaped Rajasthani sweet made from flour and soaked in sugar syrup."
+      }
+    ],
+    "culture": "Royal Rajput heritage, traditional block-printing textiles, Rajasthani folk music and dance, and the famous Jaipur Literature Festival.",
+    "travelTips": [
+      "Visit Amer Fort first thing in the morning to beat the crowds",
+      "Negotiate prices at Johari Bazaar before buying gems",
+      "Combo tickets cover multiple forts and save money",
+      "Sunset from Nahargarh Fort is unforgettable"
+    ]
+  },
+  {
+    "id": "d10",
+    "name": "Kerala",
+    "country": "India",
+    "location": "Kerala, India",
+    "description": "God's Own Country. Serene backwaters, lush tea plantations, and pristine beaches.",
+    "image": "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=800&q=80",
+    "rating": 4.9,
+    "tags": [
+      "Nature",
+      "Relaxation",
+      "Beach"
+    ],
+    "language": "Malayalam / English",
+    "timezone": "IST (UTC+5:30)",
+    "bestFor": "Couples & Wellness seekers",
+    "minBudgetPerDay": "₹1,500",
+    "bestTimeToVisit": {
+      "season": "September – March",
+      "note": "Post-monsoon greenery and cooler weather. Monsoon (June–Aug) for Ayurveda retreats."
+    },
+    "highlights": [
+      {
+        "name": "Alleppey Backwaters",
+        "desc": "Overnight houseboat cruise through palm-fringed canals and lagoons."
+      },
+      {
+        "name": "Munnar Tea Gardens",
+        "desc": "Emerald green tea plantations stretching across rolling hills."
+      },
+      {
+        "name": "Periyar Wildlife Sanctuary",
+        "desc": "Spot wild elephants, tigers, and bison in this protected forest."
+      },
+      {
+        "name": "Varkala Beach",
+        "desc": "Cliff-side beach with mineral-spring water and dramatic red laterite cliffs."
+      },
+      {
+        "name": "Fort Kochi",
+        "desc": "Historic quarter with Chinese fishing nets, colonial churches, and art cafés."
+      }
+    ],
+    "cuisine": [
+      {
+        "name": "Malabar Fish Curry",
+        "desc": "Coconut-based fish curry with kodampuli (Garcinia) — Kerala's signature."
+      },
+      {
+        "name": "Appam & Stew",
+        "desc": "Lace-edged rice pancakes with creamy coconut vegetable stew."
+      },
+      {
+        "name": "Kerala Sadya",
+        "desc": "Elaborate vegetarian feast of 24+ dishes served on a banana leaf."
+      }
+    ],
+    "culture": "Kathakali dance-drama, snake boat races (Vallam Kali), ancient Ayurvedic healing traditions, and vibrant Onam harvest festival.",
+    "travelTips": [
+      "Book a Kumarakom or Alleppey houseboat for an overnight experience",
+      "Carry mosquito repellent — backwater areas are humid",
+      "Monsoon season is best for Ayurveda treatments",
+      "Drive from Munnar to Thekkady for one of India's most scenic roads"
+    ]
+  },
+  {
+    "id": "d11",
+    "name": "London",
+    "country": "UK",
+    "location": "England, UK",
+    "description": "A 21st-century city with history stretching back to Roman times. Big Ben, London Eye, and more.",
+    "image": "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=800&q=80",
+    "rating": 4.8,
+    "tags": [
+      "City",
+      "History",
+      "Culture"
+    ],
+    "language": "English",
+    "timezone": "GMT (UTC+0)",
+    "bestFor": "History buffs & Theatre lovers",
+    "minBudgetPerDay": "£60",
+    "bestTimeToVisit": {
+      "season": "May – September",
+      "note": "Longer days and warmer weather. December for festive markets and lights."
+    },
+    "highlights": [
+      {
+        "name": "Tower of London",
+        "desc": "1000-year-old castle housing the Crown Jewels and Beefeater guards."
+      },
+      {
+        "name": "British Museum",
+        "desc": "World's greatest museum of human history — free admission."
+      },
+      {
+        "name": "Buckingham Palace",
+        "desc": "The King's official residence with the iconic Changing of the Guard."
+      },
+      {
+        "name": "London Eye",
+        "desc": "135m observation wheel with panoramic views of the Thames and city."
+      },
+      {
+        "name": "Westminster Abbey",
+        "desc": "Gothic masterpiece — coronation church of English monarchs since 1066."
+      }
+    ],
+    "cuisine": [
+      {
+        "name": "Fish and Chips",
+        "desc": "Battered cod with chunky chips — best from a Brick Lane chippy."
+      },
+      {
+        "name": "Full English Breakfast",
+        "desc": "Eggs, bacon, sausage, beans, toast, and black pudding."
+      },
+      {
+        "name": "Afternoon Tea",
+        "desc": "Scones with clotted cream, finger sandwiches, and fine teas."
+      }
+    ],
+    "culture": "West End theatre capital, Royal pageantry, world-class galleries (Tate Modern, National Gallery), and multicultural Borough Market.",
+    "travelTips": [
+      "Get an Oyster card or use contactless for all public transport",
+      "Most major museums are free — skip the ticket scams",
+      "Walk along the South Bank for the best riverside experience",
+      "Book West End shows on TodayTix for discounts"
+    ]
+  },
+  {
+    "id": "d12",
+    "name": "Rome",
+    "country": "Italy",
+    "location": "Lazio, Italy",
+    "description": "The Eternal City. The Colosseum, Roman Forum, and Trevi Fountain await.",
+    "image": "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=800&q=80",
+    "rating": 4.8,
+    "tags": [
+      "History",
+      "Art",
+      "Culture"
+    ],
+    "language": "Italian",
+    "timezone": "CET (UTC+1)",
+    "bestFor": "Art & History enthusiasts",
+    "minBudgetPerDay": "€55",
+    "bestTimeToVisit": {
+      "season": "April – June & September – October",
+      "note": "Warm but not scorching. July–August is 35°C+ and very crowded."
+    },
+    "highlights": [
+      {
+        "name": "Colosseum",
+        "desc": "Iconic amphitheatre that once held 50,000 spectators for gladiator battles."
+      },
+      {
+        "name": "Vatican City",
+        "desc": "St. Peter's Basilica, Sistine Chapel, and priceless art treasures."
+      },
+      {
+        "name": "Trevi Fountain",
+        "desc": "Baroque masterpiece — throw a coin to ensure your return to Rome."
+      },
+      {
+        "name": "Roman Forum",
+        "desc": "Ancient center of Roman public life — temples, arches, and Senate ruins."
+      },
+      {
+        "name": "Pantheon",
+        "desc": "2,000-year-old temple with the world's largest unreinforced concrete dome."
+      }
+    ],
+    "cuisine": [
+      {
+        "name": "Cacio e Pepe",
+        "desc": "Simple yet addictive pasta with pecorino cheese and black pepper."
+      },
+      {
+        "name": "Supplì",
+        "desc": "Fried rice balls stuffed with mozzarella — Rome's street snack."
+      },
+      {
+        "name": "Gelato",
+        "desc": "Italian ice cream — look for \"artigianale\" (artisanal) shops."
+      }
+    ],
+    "culture": "Layers of civilization from ancient Rome through the Renaissance. Piazzas alive with street performers, trattorias, and espresso bars.",
+    "travelTips": [
+      "Book Colosseum and Vatican tickets online to skip 2+ hour queues",
+      "Carry a water bottle — free drinking fountains (nasoni) everywhere",
+      "Dress code enforced at Vatican — cover shoulders and knees",
+      "Avoid restaurants with pictures on the menu near tourist sites"
+    ]
+  },
+  {
+    "id": "d13",
+    "name": "Sydney",
+    "country": "Australia",
+    "location": "New South Wales, Australia",
+    "description": "Harbour city known for the Sydney Opera House, Harbour Bridge, and Bondi Beach.",
+    "image": "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=800&q=80",
+    "rating": 4.8,
+    "tags": [
+      "Beach",
+      "City",
+      "Culture"
+    ],
+    "language": "English",
+    "timezone": "AEST (UTC+10)",
+    "bestFor": "Beach lovers & Urban explorers",
+    "minBudgetPerDay": "AUD $80",
+    "bestTimeToVisit": {
+      "season": "September – November & March – May",
+      "note": "Mild weather. December–February is summer with beach vibes."
+    },
+    "highlights": [
+      {
+        "name": "Sydney Opera House",
+        "desc": "UNESCO-listed architectural masterpiece on Bennelong Point."
+      },
+      {
+        "name": "Harbour Bridge",
+        "desc": "Climb to the summit for iconic views — or walk across for free."
+      },
+      {
+        "name": "Bondi Beach",
+        "desc": "World-famous surf beach with the Bondi to Coogee coastal walk."
+      },
+      {
+        "name": "Taronga Zoo",
+        "desc": "Harbourside zoo with native Australian wildlife and city skyline views."
+      },
+      {
+        "name": "Blue Mountains",
+        "desc": "UNESCO World Heritage area with eucalyptus forests and the Three Sisters."
+      }
+    ],
+    "cuisine": [
+      {
+        "name": "Meat Pie",
+        "desc": "Flaky pastry filled with minced meat and gravy — the Aussie icon."
+      },
+      {
+        "name": "Flat White",
+        "desc": "Australian coffee culture staple — micro-foam espresso."
+      },
+      {
+        "name": "Barramundi",
+        "desc": "Premium Australian fish, grilled or battered, served with lemon."
+      }
+    ],
+    "culture": "Aboriginal heritage, world-class surf culture, vibrant arts (Vivid Sydney festival), and multicultural food scenes in Chinatown and Newtown.",
+    "travelTips": [
+      "Get an Opal card for all public transport",
+      "Walk from Bondi to Coogee for stunning coastal views",
+      "Ferry to Manly Beach is the best harbour experience",
+      "Slip-slop-slap — sunscreen is essential year-round"
+    ]
+  },
+  {
+    "id": "d14",
+    "name": "Santorini",
+    "country": "Greece",
+    "location": "Cyclades, Greece",
+    "description": "Famous for its white-washed buildings, blue domes, and stunning sunsets.",
+    "image": "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=800&q=80",
+    "rating": 4.9,
+    "tags": [
+      "Beach",
+      "Romance",
+      "Views"
+    ],
+    "language": "Greek / English",
+    "timezone": "EET (UTC+2)",
+    "bestFor": "Couples & Photographers",
+    "minBudgetPerDay": "€80",
+    "bestTimeToVisit": {
+      "season": "April – June & September – October",
+      "note": "Perfect weather, fewer crowds. July–August is peak — very busy and expensive."
+    },
+    "highlights": [
+      {
+        "name": "Oia Sunset",
+        "desc": "The world's most photographed sunset from the blue-domed village of Oia."
+      },
+      {
+        "name": "Red Beach",
+        "desc": "Dramatic volcanic red cliffs meeting crystal-clear waters."
+      },
+      {
+        "name": "Ancient Akrotiri",
+        "desc": "Minoan ruins preserved under volcanic ash — the \"Pompeii of the Aegean\"."
+      },
+      {
+        "name": "Fira to Oia Hike",
+        "desc": "10 km clifftop trail with caldera views connecting the two main towns."
+      },
+      {
+        "name": "Wine Tasting",
+        "desc": "Volcanic soil produces unique Assyrtiko wines — visit local wineries."
+      }
+    ],
+    "cuisine": [
+      {
+        "name": "Tomatokeftedes",
+        "desc": "Fried Santorini cherry tomato fritters — a unique island delicacy."
+      },
+      {
+        "name": "Fava",
+        "desc": "Yellow split pea purée drizzled with olive oil and capers."
+      },
+      {
+        "name": "Fresh Seafood",
+        "desc": "Grilled octopus and calamari at clifftop tavernas with caldera views."
+      }
+    ],
+    "culture": "Volcanic island heritage, ancient Minoan civilization ruins, traditional cave houses, and Greek Orthodox churches with iconic blue domes.",
+    "travelTips": [
+      "Book caldera-view hotels months in advance for summer",
+      "Rent an ATV — the island is small and roads are narrow",
+      "Watch the sunset from Oia castle ruins, not the main viewpoint",
+      "Take a boat tour to the volcanic hot springs"
+    ]
+  },
+  {
+    "id": "d15",
+    "name": "Kyoto",
+    "country": "Japan",
+    "location": "Kyoto Prefecture, Japan",
+    "description": "Classical Buddhist temples, gardens, imperial palaces, and Shinto shrines.",
+    "image": "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800&q=80",
+    "rating": 4.9,
+    "tags": [
+      "Culture",
+      "History",
+      "Peace"
+    ],
+    "language": "Japanese",
+    "timezone": "JST (UTC+9)",
+    "bestFor": "Culture seekers & Zen lovers",
+    "minBudgetPerDay": "¥6,500",
+    "bestTimeToVisit": {
+      "season": "March – May & October – November",
+      "note": "Cherry blossoms in spring, fiery autumn foliage. Both seasons are magical."
+    },
+    "highlights": [
+      {
+        "name": "Fushimi Inari Shrine",
+        "desc": "Thousands of vermilion torii gates winding up Mount Inari."
+      },
+      {
+        "name": "Kinkaku-ji (Golden Pavilion)",
+        "desc": "Gold-leaf-covered Zen temple reflected in a tranquil mirror pond."
+      },
+      {
+        "name": "Arashiyama Bamboo Grove",
+        "desc": "Towering bamboo stalks creating an ethereal natural corridor."
+      },
+      {
+        "name": "Kiyomizu-dera",
+        "desc": "Wooden temple perched on a hillside with panoramic city views."
+      },
+      {
+        "name": "Geisha District (Gion)",
+        "desc": "Historic entertainment district where geiko and maiko still practise traditional arts."
+      }
+    ],
+    "cuisine": [
+      {
+        "name": "Kaiseki",
+        "desc": "Multi-course Japanese haute cuisine — art on a plate."
+      },
+      {
+        "name": "Matcha Everything",
+        "desc": "Kyoto is the matcha capital — try parfaits, lattes, and wagashi sweets."
+      },
+      {
+        "name": "Yudofu (Hot Tofu)",
+        "desc": "Simple simmered tofu — a Zen Buddhist temple speciality."
+      }
+    ],
+    "culture": "Japan's cultural heart — tea ceremony traditions, Zen gardens, geisha arts, traditional machiya townhouses, and over 2,000 temples and shrines.",
+    "travelTips": [
+      "Get a bus day pass (¥700) for unlimited travel",
+      "Visit Fushimi Inari at dawn to avoid crowds",
+      "Rent a bicycle — Kyoto is very bike-friendly",
+      "Book a tea ceremony experience at a traditional machiya"
+    ]
+  },
+  {
+    "id": "d16",
+    "name": "Paris",
+    "country": "France",
+    "location": "Île-de-France, France",
+    "description": "The City of Light. World capital of art, fashion, gastronomy, and culture with iconic landmarks at every turn.",
+    "image": "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&q=80&w=800",
+    "rating": 4.9,
+    "tags": [
+      "Art",
+      "Romance",
+      "Culture"
+    ],
+    "language": "French / English",
+    "timezone": "CET (UTC+1)",
+    "bestFor": "Couples & Culture seekers",
+    "minBudgetPerDay": "€80",
+    "bestTimeToVisit": {
+      "season": "April – June & September – October",
+      "note": "Mild weather, blooming gardens, and fewer crowds than peak summer."
+    },
+    "highlights": [
+      {
+        "name": "Eiffel Tower",
+        "desc": "The 330m iron lattice icon — climb or take the lift for sweeping city views."
+      },
+      {
+        "name": "Louvre Museum",
+        "desc": "World's largest art museum housing the Mona Lisa and 380,000+ works."
+      },
+      {
+        "name": "Montmartre & Sacré-Cœur",
+        "desc": "Bohemian hilltop village crowned by a stunning white basilica."
+      },
+      {
+        "name": "Champs-Élysées & Arc de Triomphe",
+        "desc": "Iconic boulevard leading to Napoleon's triumphal arch."
+      },
+      {
+        "name": "Seine River Cruise",
+        "desc": "Float past Notre-Dame, the Louvre, and illuminated bridges at night."
+      }
+    ],
+    "cuisine": [
+      {
+        "name": "Croissants & Baguettes",
+        "desc": "Buttery, flaky pastries and crusty bread from neighbourhood boulangeries."
+      },
+      {
+        "name": "Coq au Vin",
+        "desc": "Classic French braised chicken in red wine with mushrooms and herbs."
+      },
+      {
+        "name": "Crème Brûlée",
+        "desc": "Rich vanilla custard with a caramelised sugar crust — pure indulgence."
+      }
+    ],
+    "culture": "Centuries of artistic legacy from Impressionism to haute couture. Café culture, literary salons, jazz clubs, and the world's most celebrated cuisine.",
+    "travelTips": [
+      "Get a Paris Museum Pass for skip-the-line access",
+      "The Métro is the fastest way around — buy a carnet of 10 tickets",
+      "Visit the Eiffel Tower at sunset for golden-hour views",
+      "Explore Le Marais for vintage shops and the best falafel in town"
+    ]
+  },
+  {
+    "id": "d17",
+    "name": "Tokyo",
+    "country": "Japan",
+    "location": "Tokyo, Japan",
+    "description": "Where ancient tradition meets ultra-modern innovation. Neon-lit streets, serene temples, and the world's best food scene.",
+    "image": "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&q=80&w=800",
+    "rating": 4.9,
+    "tags": [
+      "City",
+      "Technology",
+      "Food"
+    ],
+    "language": "Japanese / English",
+    "timezone": "JST (UTC+9)",
+    "bestFor": "Foodies & Tech enthusiasts",
+    "minBudgetPerDay": "¥8,000",
+    "bestTimeToVisit": {
+      "season": "March – May & October – November",
+      "note": "Cherry blossoms in spring, vibrant autumn colours. Mild and comfortable weather."
+    },
+    "highlights": [
+      {
+        "name": "Shibuya Crossing",
+        "desc": "The world's busiest intersection — a mesmerising scramble of thousands."
+      },
+      {
+        "name": "Senso-ji Temple",
+        "desc": "Tokyo's oldest temple in Asakusa with the iconic Thunder Gate entrance."
+      },
+      {
+        "name": "Akihabara",
+        "desc": "Electric Town — paradise for anime, manga, and electronics fans."
+      },
+      {
+        "name": "Meiji Shrine",
+        "desc": "Tranquil Shinto shrine surrounded by 170,000 trees in central Tokyo."
+      },
+      {
+        "name": "Tsukiji Outer Market",
+        "desc": "Street food heaven — freshest sushi, tamagoyaki, and matcha treats."
+      }
+    ],
+    "cuisine": [
+      {
+        "name": "Sushi & Sashimi",
+        "desc": "The freshest fish artfully prepared — from conveyor belt to omakase."
+      },
+      {
+        "name": "Ramen",
+        "desc": "Rich tonkotsu, shoyu, or miso broth with springy noodles and chashu."
+      },
+      {
+        "name": "Wagyu Beef",
+        "desc": "Melt-in-your-mouth marbled beef grilled teppanyaki-style."
+      }
+    ],
+    "culture": "A city of contrasts — ancient Shinto rituals alongside robot restaurants, traditional kabuki theatre near Harajuku street fashion, and zen gardens beside towering skyscrapers.",
+    "travelTips": [
+      "Get a Suica or Pasmo card for seamless transit",
+      "Visit Tsukiji market early morning for the best experience",
+      "Download Google Translate — English signage is limited outside tourist areas",
+      "Try a capsule hotel for a uniquely Japanese overnight experience"
+    ]
+  },
+  {
+    "id": "d18",
+    "name": "Bali",
+    "country": "Indonesia",
+    "location": "Bali, Indonesia",
+    "description": "The Island of the Gods. Lush rice terraces, ancient temples, world-class surfing, and a deeply spiritual culture.",
+    "image": "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&q=80&w=800",
+    "rating": 4.8,
+    "tags": [
+      "Beach",
+      "Spiritual",
+      "Nature"
+    ],
+    "language": "Bahasa Indonesian / English",
+    "timezone": "WITA (UTC+8)",
+    "bestFor": "Couples, Surfers & Wellness seekers",
+    "minBudgetPerDay": "Rp 500,000",
+    "bestTimeToVisit": {
+      "season": "April – October",
+      "note": "Dry season with sunny skies, perfect for beaches, temples, and outdoor adventures."
+    },
+    "highlights": [
+      {
+        "name": "Tegallalang Rice Terraces",
+        "desc": "Stunning emerald-green terraced paddies carved into the hillside near Ubud."
+      },
+      {
+        "name": "Uluwatu Temple",
+        "desc": "Clifftop sea temple with dramatic sunset views and traditional Kecak dance."
+      },
+      {
+        "name": "Sacred Monkey Forest",
+        "desc": "Ancient temple complex in Ubud home to 1,000+ long-tailed macaques."
+      },
+      {
+        "name": "Tanah Lot",
+        "desc": "Iconic offshore temple perched on a rocky outcrop — Bali's most photographed spot."
+      },
+      {
+        "name": "Mount Batur Sunrise Trek",
+        "desc": "Pre-dawn hike to an active volcano crater for breathtaking sunrise views."
+      }
+    ],
+    "cuisine": [
+      {
+        "name": "Nasi Goreng",
+        "desc": "Indonesian fried rice with sweet soy, egg, and crispy shallots."
+      },
+      {
+        "name": "Babi Guling",
+        "desc": "Balinese suckling pig roasted with a blend of turmeric and spices."
+      },
+      {
+        "name": "Smoothie Bowls",
+        "desc": "Bali's wellness scene serves stunning acai and dragon fruit bowls."
+      }
+    ],
+    "culture": "Unique Hindu culture with daily flower offerings (canang sari), colourful temple ceremonies, traditional Balinese dance, and a philosophy of Tri Hita Karana — harmony with God, people, and nature.",
+    "travelTips": [
+      "Rent a scooter — it's the easiest way to explore",
+      "Always carry a sarong for temple visits",
+      "Book a Ubud rice terrace walk early morning to beat the heat",
+      "Negotiate prices at local markets — friendly haggling is expected"
+    ]
+  }
+]

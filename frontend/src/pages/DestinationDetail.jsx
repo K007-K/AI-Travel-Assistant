@@ -7,6 +7,7 @@ import {
     Camera, Mountain, Shield, Plane
 } from 'lucide-react';
 import { getDestinationById } from '../api/places';
+import { fetchWikiSummary } from '../api/wikipediaService';
 import { loadDestinationImage, getFallbackImage } from '../utils/destinationImages';
 
 
@@ -130,10 +131,20 @@ const TipCard = ({ tip, index }) => {
 export default function DestinationDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const dest = getDestinationById(id);
+
+    // Try curated first, then sessionStorage for search results
+    const [dest, setDest] = useState(() => {
+        const curated = getDestinationById(id);
+        if (curated) return curated;
+        // Check sessionStorage for search-result destination
+        try {
+            const cached = sessionStorage.getItem(`dest_${id}`);
+            return cached ? JSON.parse(cached) : null;
+        } catch { return null; /* sessionStorage unavailable */ }
+    });
+    const [isEnriching, setIsEnriching] = useState(false);
 
     const [heroImg, setHeroImg] = useState(null);
-
     const [liked, setLiked] = useState(false);
 
     const heroRef = useRef(null);
@@ -141,7 +152,25 @@ export default function DestinationDetail() {
     const heroY = useTransform(scrollYProgress, [0, 1], ['0%', '30%']);
     const heroOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0.3]);
 
-    // Use high-quality Unsplash image directly
+    // Enrich dynamic destinations with Wikipedia data
+    useEffect(() => {
+        if (dest && dest._source === 'search' && !dest._enriched) {
+            setIsEnriching(true);
+            fetchWikiSummary(dest.name).then(wiki => {
+                if (wiki) {
+                    setDest(prev => ({
+                        ...prev,
+                        description: wiki.extract || prev.description,
+                        image: wiki.originalImage || wiki.thumbnail || prev.image,
+                        _enriched: true,
+                    }));
+                }
+                setIsEnriching(false);
+            });
+        }
+    }, [dest]);
+
+    // Use high-quality image
     useEffect(() => {
         if (dest) setHeroImg(dest.image);
     }, [dest]);
@@ -155,12 +184,15 @@ export default function DestinationDetail() {
         );
     }
 
+    const isCurated = !dest._source;
+
     const statItems = [
-        { icon: Globe, label: 'Language', value: dest.language },
-        { icon: Clock, label: 'Timezone', value: dest.timezone },
-        { icon: Calendar, label: 'Best Time', value: dest.bestTimeToVisit?.season },
-        { icon: Users, label: 'Best For', value: dest.bestFor },
-    ];
+        dest.language && { icon: Globe, label: 'Language', value: dest.language },
+        dest.timezone && { icon: Clock, label: 'Timezone', value: dest.timezone },
+        dest.bestTimeToVisit?.season && { icon: Calendar, label: 'Best Time', value: dest.bestTimeToVisit.season },
+        dest.bestFor && { icon: Users, label: 'Best For', value: dest.bestFor },
+        dest.country && !dest.language && { icon: Globe, label: 'Country', value: dest.country },
+    ].filter(Boolean);
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-[#0a0a0a]">
@@ -234,7 +266,8 @@ export default function DestinationDetail() {
                     ))}
                 </motion.div>
 
-                {/* ESTIMATED BUDGET */}
+                {/* ESTIMATED BUDGET — curated only */}
+                {isCurated && dest.minBudgetPerDay && (
                 <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}
                     className="mb-10 p-5 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40 border border-emerald-300 dark:border-emerald-800/50 flex items-center gap-4 shadow-sm">
                     <div className="w-11 h-11 rounded-xl bg-emerald-500 shadow-md flex items-center justify-center flex-shrink-0">
@@ -245,33 +278,46 @@ export default function DestinationDetail() {
                         <span className="font-bold text-emerald-600 dark:text-emerald-400 text-lg">{dest.minBudgetPerDay}</span> per day.
                     </p>
                 </motion.div>
+                )}
 
-                {/* TOP HIGHLIGHTS */}
+                {/* Enriching indicator */}
+                {isEnriching && (
+                    <div className="mb-6 text-center text-sm text-slate-400 animate-pulse">Fetching destination details from Wikipedia...</div>
+                )}
+
+                {/* TOP HIGHLIGHTS — curated only */}
+                {dest.highlights?.length > 0 && (
                 <Section icon={Landmark} title="Top Highlights" delay={0.1}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                        {dest.highlights?.map((h, i) => (
+                        {dest.highlights.map((h, i) => (
                             <HighlightCard key={h.name} highlight={h} index={i} destinationName={dest.name} />
                         ))}
                     </div>
                 </Section>
+                )}
 
-                {/* LOCAL CUISINE */}
+                {/* LOCAL CUISINE — curated only */}
+                {dest.cuisine?.length > 0 && (
                 <Section icon={Utensils} title="Local Cuisine" delay={0.1}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {dest.cuisine?.map((c, i) => (
+                        {dest.cuisine.map((c, i) => (
                             <CuisineCard key={c.name} item={c} index={i} destinationName={dest.name} />
                         ))}
                     </div>
                 </Section>
+                )}
 
-                {/* CULTURE & FESTIVALS */}
+                {/* CULTURE & FESTIVALS — curated only */}
+                {dest.culture && (
                 <Section icon={Globe} title="Culture & Festivals" delay={0.1}>
                     <div className="p-6 rounded-2xl bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-950/40 dark:via-purple-950/40 dark:to-pink-950/40 border border-indigo-200 dark:border-indigo-800/50">
                         <p className="text-base text-slate-700 dark:text-slate-200 leading-relaxed">{dest.culture}</p>
                     </div>
                 </Section>
+                )}
 
-                {/* BEST TIME TO VISIT */}
+                {/* BEST TIME TO VISIT — curated only */}
+                {dest.bestTimeToVisit && (
                 <Section icon={Sun} title="Best Time to Visit" delay={0.1}>
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="flex-shrink-0 w-full md:w-56 p-5 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-lg">
@@ -284,15 +330,18 @@ export default function DestinationDetail() {
                         </div>
                     </div>
                 </Section>
+                )}
 
-                {/* TRAVEL TIPS */}
+                {/* TRAVEL TIPS — curated only */}
+                {dest.travelTips?.length > 0 && (
                 <Section icon={Lightbulb} title="Travel Tips" delay={0.1}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {dest.travelTips?.map((tip, i) => (
+                        {dest.travelTips.map((tip, i) => (
                             <TipCard key={i} tip={tip} index={i} />
                         ))}
                     </div>
                 </Section>
+                )}
 
                 {/* ── PLAN A TRIP CTA ─────────────────────────────── */}
                 <motion.div

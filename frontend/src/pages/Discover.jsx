@@ -28,11 +28,11 @@ const Discover = () => {
 
         setIsLoading(true);
         try {
-            // Mock search mostly for curated feels better, but we can mix or just use curated for now
-            // if user wants real search, we use the API
             const results = await searchDestinations(query);
-            // Fallback to curated filter if API returns nothing useful/no images (since mock images might fail)
-            // But let's try to mix or just show results
+            // Cache each result in sessionStorage so DestinationDetail can find them
+            results.forEach(d => {
+                try { sessionStorage.setItem(`dest_${d.id}`, JSON.stringify(d)); } catch { /* ignore quota errors */ }
+            });
             setDestinations(results.length > 0 ? results : []);
         } catch (err) {
             console.error(err);
