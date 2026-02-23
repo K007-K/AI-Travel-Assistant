@@ -40,13 +40,18 @@ const HighlightCard = ({ highlight, index, destinationName: _destinationName }) 
     }, [highlight.name]);
 
     const fallback = getFallbackImage(highlight.name);
+    const wikiUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent(highlight.name.replace(/ /g, '_'))}`;
+
     return (
-        <motion.div
+        <motion.a
+            href={wikiUrl}
+            target="_blank"
+            rel="noopener noreferrer"
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: index * 0.1, duration: 0.45 }}
-            className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-slate-700"
+            className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-slate-700 cursor-pointer"
         >
             <div className="h-44 overflow-hidden relative">
                 <img
@@ -61,10 +66,10 @@ const HighlightCard = ({ highlight, index, destinationName: _destinationName }) 
                 </span>
             </div>
             <div className="p-4">
-                <h3 className="font-bold text-base text-slate-800 dark:text-white mb-1.5">{highlight.name}</h3>
+                <h3 className="font-bold text-base text-slate-800 dark:text-white mb-1.5 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">{highlight.name}</h3>
                 <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{highlight.desc}</p>
             </div>
-        </motion.div>
+        </motion.a>
     );
 };
 
