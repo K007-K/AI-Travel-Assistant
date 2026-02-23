@@ -13,6 +13,23 @@ const GEMINI_MODEL = 'gemini-2.0-flash-lite';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`;
 
 const CACHE_PREFIX = 'landmark:';
+const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+/** Read from localStorage with TTL check */
+function cacheGet(key) {
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        const { data, ts } = JSON.parse(raw);
+        if (Date.now() - ts > CACHE_TTL) { localStorage.removeItem(key); return null; }
+        return data;
+    } catch { return null; }
+}
+
+/** Write to localStorage with timestamp */
+function cacheSet(key, data) {
+    try { localStorage.setItem(key, JSON.stringify({ data, ts: Date.now() })); } catch { /* quota */ }
+}
 
 /**
  * Call Gemini first; if 429/fail, fall back to Groq edge function.
@@ -69,10 +86,8 @@ export async function getLandmarkDetails(landmarkName, destinationName = '') {
     if (!landmarkName) return null;
 
     const cacheKey = `${CACHE_PREFIX}${landmarkName}:${destinationName}`;
-    try {
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) return JSON.parse(cached);
-    } catch { /* ignore */ }
+    const cached = cacheGet(cacheKey);
+    if (cached) return cached;
 
     const prompt = `You are a travel expert. Provide detailed information about "${landmarkName}"${destinationName ? ` in ${destinationName}` : ''}.
 
@@ -93,9 +108,7 @@ Rules:
 
     const parsed = await callAI(prompt);
 
-    if (parsed) {
-        try { localStorage.setItem(cacheKey, JSON.stringify(parsed)); } catch { /* quota */ }
-    }
+    if (parsed) cacheSet(cacheKey, parsed);
     return parsed;
 }
 
@@ -106,10 +119,8 @@ Rules:
  */
 export async function enrichDestinationWithGemini(destinationName, country = '') {
     const cacheKey = `dest_enriched_${destinationName}`;
-    try {
-        const cached = sessionStorage.getItem(cacheKey);
-        if (cached) return JSON.parse(cached);
-    } catch { /* ignore */ }
+    const cached = cacheGet(cacheKey);
+    if (cached) return cached;
 
     const prompt = `You are a travel expert API. Generate detailed travel information for "${destinationName}"${country ? `, ${country}` : ''}.
 
@@ -154,8 +165,6 @@ Rules:
 
     const parsed = await callAI(prompt);
 
-    if (parsed) {
-        try { sessionStorage.setItem(cacheKey, JSON.stringify(parsed)); } catch { /* quota */ }
-    }
+    if (parsed) cacheSet(cacheKey, parsed);
     return parsed;
 }
