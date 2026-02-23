@@ -38,7 +38,10 @@ const LocationInput = ({
         try {
             const response = await fetch(
                 `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`,
-                { headers: { 'Accept-Language': 'en-US,en;q=0.9' } }
+                { headers: {
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'User-Agent': 'TravelAI/1.0 (travel-planner)',
+                } }
             );
 
             if (!response.ok) throw new Error('Network response was not ok');

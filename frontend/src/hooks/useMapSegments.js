@@ -14,27 +14,37 @@ async function geocode(query, viewbox = null) {
         catch { localStorage.removeItem(cacheKey); }
     }
 
-    try {
-        await new Promise(r => setTimeout(r, 1200)); // Rate-limit Nominatim
+    // Retry up to 2 times for 425 "Too Early" responses
+    for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+            await new Promise(r => setTimeout(r, 1200 + attempt * 800)); // Increase delay on retry
 
-        let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
-        if (viewbox) {
-            url += `&viewbox=${viewbox}&bounded=0`;
+            let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
+            if (viewbox) {
+                url += `&viewbox=${viewbox}&bounded=0`;
+            }
+
+            const res = await fetch(url, {
+                headers: {
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'User-Agent': 'TravelAI/1.0 (travel-planner)',
+                }
+            });
+
+            if (res.status === 425 && attempt < 1) continue; // Retry on "Too Early"
+            if (!res.ok) return null;
+
+            const data = await res.json();
+            if (data?.[0]) {
+                const coords = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+                localStorage.setItem(cacheKey, JSON.stringify(coords));
+                return coords;
+            }
+            return null;
+        } catch (e) {
+            if (attempt < 1) continue; // Retry on network error
+            console.warn(`Geocode failed for "${query}":`, e.message);
         }
-
-        const res = await fetch(url, {
-            headers: { 'Accept-Language': 'en-US,en;q=0.9' }
-        });
-        if (!res.ok) return null;
-        const data = await res.json();
-
-        if (data?.[0]) {
-            const coords = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-            localStorage.setItem(cacheKey, JSON.stringify(coords));
-            return coords;
-        }
-    } catch (e) {
-        console.error(`Geocode failed for "${query}":`, e);
     }
     return null;
 }
