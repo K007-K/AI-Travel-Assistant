@@ -106,9 +106,9 @@ const Discover = () => {
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, scale: 0.9 }}
                                     transition={{ delay: index * 0.1 }}
-                                    className="group bg-white dark:bg-white/[0.03] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 dark:border-slate-800"
+                                    className="group bg-white dark:bg-white/[0.03] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 dark:border-slate-800 flex flex-col h-full"
                                 >
-                                    <div className="relative h-64 overflow-hidden">
+                                    <div className="relative h-56 overflow-hidden flex-shrink-0">
                                         <img
                                             src={dest.image || `https://source.unsplash.com/800x600/?${encodeURIComponent(dest.name)}`}
                                             alt={dest.name}
@@ -125,20 +125,18 @@ const Discover = () => {
                                         </div>
                                     </div>
 
-                                    <div className="p-6">
+                                    <div className="p-6 flex flex-col flex-1">
                                         <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">{dest.name}</h3>
-                                        <div className="flex items-center text-slate-500 mb-4 text-sm">
-                                            <MapPin className="w-4 h-4 mr-1" />
-                                            {dest.location || dest.country}
+                                        <div className="flex items-center text-slate-500 mb-3 text-sm">
+                                            <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
+                                            <span className="truncate">{dest.location || dest.country}</span>
                                         </div>
 
-                                        {dest.description && (
-                                            <p className="text-slate-600 dark:text-slate-400 text-sm line-clamp-2 mb-4">
-                                                {dest.description}
-                                            </p>
-                                        )}
+                                        <p className="text-slate-600 dark:text-slate-400 text-sm line-clamp-2 mb-4 min-h-[2.5rem]">
+                                            {dest.description || 'Discover this amazing destination.'}
+                                        </p>
 
-                                        <div className="flex flex-wrap gap-2 mb-6">
+                                        <div className="flex flex-wrap gap-2 mb-4 min-h-[1.75rem]">
                                             {dest.tags?.slice(0, 3).map(tag => (
                                                 <span key={tag} className="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-medium">
                                                     {tag}
@@ -146,12 +144,14 @@ const Discover = () => {
                                             ))}
                                         </div>
 
-                                        <Link
-                                            to={`/destination/${dest.id}`}
-                                            className="btn btn-outline w-full flex items-center justify-center gap-2 group-hover:bg-primary-50 dark:group-hover:bg-primary-950"
-                                        >
-                                            Explore Details <ChevronRight className="w-4 h-4" />
-                                        </Link>
+                                        <div className="mt-auto">
+                                            <Link
+                                                to={`/destination/${dest.id}`}
+                                                className="btn btn-outline w-full flex items-center justify-center gap-2 group-hover:bg-primary-50 dark:group-hover:bg-primary-950"
+                                            >
+                                                Explore Details <ChevronRight className="w-4 h-4" />
+                                            </Link>
+                                        </div>
                                     </div>
                                 </motion.div>
                             ))
