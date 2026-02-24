@@ -157,6 +157,12 @@ function estimateDistanceTier(from, to) {
         ['bangalore', 'hampi'], ['bengaluru', 'mysuru'], ['bengaluru', 'coorg'],
         ['hyderabad', 'bangalore'], ['hyderabad', 'goa'], ['hyderabad', 'chennai'],
         ['hyderabad', 'vijayawada'], ['hyderabad', 'visakhapatnam'],
+        ['visakhapatnam', 'tirupati'], ['visakhapatnam', 'vijayawada'],
+        ['vijayawada', 'tirupati'], ['hyderabad', 'tirupati'],
+        ['chennai', 'tirupati'], ['bangalore', 'tirupati'],
+        ['visakhapatnam', 'araku'], ['visakhapatnam', 'srikakulam'],
+        ['vijayawada', 'guntur'], ['vijayawada', 'hyderabad'],
+        ['hyderabad', 'vijayawada'], ['hyderabad', 'visakhapatnam'],
         ['chennai', 'pondicherry'], ['chennai', 'kochi'], ['chennai', 'ooty'],
         ['kolkata', 'darjeeling'], ['kolkata', 'varanasi'],
         ['jaipur', 'udaipur'], ['jaipur', 'jodhpur'], ['jaipur', 'agra'],
@@ -252,11 +258,11 @@ function decideTransportMode(trip, distanceTier) {
         return 'flight';
     }
 
-    // Sub-5h routes: prefer train for short/medium, bus for local
+    // Sub-5h routes: prefer train for short/medium, bus only for local
     switch (distanceTier) {
         case 'local': return 'bus';
-        case 'short': return 'train';
-        case 'medium': return 'train'; // Was flight — now train (< 5h)
+        case 'short': return 'train';  // 200-500km — train is faster & cheaper
+        case 'medium': return 'train';
         default: return 'train';
     }
 }
@@ -539,18 +545,12 @@ export function buildReturnSegment(trip, allocation, currencyRate, totalDays) {
         return null;
     }
 
-    // Fix Group 4: Skip if no intercity budget remaining
-    const remaining = allocation?.intercity_remaining ?? Infinity;
-    if (remaining <= 0) return null;
-
     const distTier = estimateDistanceTier(lastDest, returnLoc);
     const preferredMode = decideTransportMode(trip, distTier);
 
-    // Fix Group 1: Envelope-aware cost with downgrade ladder
-    const userExplicit = !['any', 'auto'].includes(trip.travel_preference || 'any');
-    const { mode, cost, adjusted } = envelopeAwareTransportCost(
-        preferredMode, distTier, travelers, currency, remaining, userExplicit
-    );
+    // Return trip uses the ACTUAL cost (same as outbound direction)
+    // NOT clamped to remaining envelope — round trips should cost the same both ways
+    const cost = calculateTransportCost(preferredMode, distTier, travelers, currency);
 
     if (allocation) {
         allocation.intercity_remaining = Math.max(0, (allocation.intercity_remaining || 0) - cost);
@@ -559,18 +559,17 @@ export function buildReturnSegment(trip, allocation, currencyRate, totalDays) {
     return {
         trip_id: trip.id,
         type: 'return_travel',
-        title: `${MODE_LABELS[mode] || mode} — ${lastDest} → ${returnLoc}`,
+        title: `${MODE_LABELS[preferredMode] || preferredMode} — ${lastDest} → ${returnLoc}`,
         day_number: totalDays,
         location: lastDest,
         estimated_cost: cost,
         order_index: 1000,
         metadata: {
-            transport_mode: mode,
+            transport_mode: preferredMode,
             from: lastDest,
             to: returnLoc,
             distance_tier: distTier,
             per_person: Math.round(cost / travelers),
-            adjusted_for_budget: adjusted || undefined,
         },
     };
 }

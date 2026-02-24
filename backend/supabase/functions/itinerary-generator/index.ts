@@ -220,79 +220,83 @@ serve(async (req: Request) => {
                 : '\n    PACE: Moderate — 5-6 activities per day with reasonable breaks.'
 
         const prompt = `
-    Generate a comprehensive, fully detailed ${days}-day itinerary for ${travelers} traveler(s).
-    ACTIVITY BUDGET ONLY: ${effectiveBudget} ${currency} total for all days.
-    Daily activity budget: ~${dailyBudget} ${currency}/day.
+    You are a LOCAL TRAVEL EXPERT for ${destination}. Generate a ${days}-day itinerary for ${travelers} traveler(s).
+
+    ACTIVITY BUDGET: ${effectiveBudget} ${currency} total (${dailyBudget} ${currency}/day).
     ${scheduleContext}
 
     ${budgetGuidance}
 
     ═══════════════════════════════════════════════════════════════
-    🚨 BUDGET TIER IS THE #1 PRIORITY CONSTRAINT 🚨
-    The "${budgetTier.toUpperCase()}" tier OVERRIDES all other considerations.
-    Even if the budget allows more expensive options, you MUST recommend
-    ${budgetTier.toUpperCase()}-appropriate options ONLY.
-    
-    PER-ACTIVITY COST RULES:
-    - NO single activity should cost more than ${caps.max} ${currency}.
-    - MOST activities should cost around ${caps.typical} ${currency} or less.
-    ${budgetTier === 'budget' ? `- At least 50% of activities should be FREE (estimated_cost: 0).
-    - Prefer: free walking tours, public parks, beaches, markets, street food.
-    - AVOID: paid museums over ${caps.typical} ${currency}, fancy restaurants, private tours.` : ''}
+    🚨 QUALITY RULES — YOUR ITINERARY MUST FEEL LIKE A LOCAL'S GUIDE 🚨
+
+    1. SPECIFIC FAMOUS PLACES: Recommend THE most popular and well-known attractions.
+       ❌ BAD: "Visit a local temple", "Evening Walk", "National Park"
+       ✅ GOOD: "Tirumala Venkateswara Temple", "RK Beach Sunset Walk", "Borra Caves"
+
+    2. NAMED RESTAURANTS & FOOD STALLS: Give actual restaurant/stall names.
+       ❌ BAD: "Lunch at a Local Market", "Breakfast at a Local Eatery"
+       ✅ GOOD: "Dosa at Sri Sai Ram Tiffins", "Idli at MVR Grand"
+
+    3. PRACTICAL TIPS in "notes" field — act like a LOCAL friend advising:
+       - Booking requirements (e.g., "Book TTD ₹300 special darshan online 2 days in advance")
+       - What to carry/wear (e.g., "Wear traditional clothes, no leather items allowed")
+       - Phone/bag rules (e.g., "Deposit phones at cloakroom before entering")
+       - Best timing (e.g., "Arrive before 7 AM to avoid 3-hour queue")
+       - Transport tips (e.g., "Take APSRTC bus from Tirupati to Tirumala, ₹50")
+
+    4. REALISTIC LOCAL PRICES in ${currency}:
+       - Use ACTUAL prices a local would pay, not inflated tourist prices
+       - Street food: ₹30-80 | Restaurant meal: ₹100-300 | Auto ride: ₹50-150
+       - Temple entry: usually FREE or ₹50-300 for special darshan
+       - Museum: ₹20-100 | Beach/park: FREE | Boat ride: ₹100-300
+
+    5. CULTURAL CONTEXT: Include temple etiquette, local customs, dress codes,
+       religious significance, best photo spots, and safety warnings where relevant.
+
+    6. NO GENERIC FILLERS: Every activity must be a REAL, specific place that
+       exists and is worth visiting. If you don't know specific places, recommend
+       the MOST FAMOUS attractions that destination is known for.
     ═══════════════════════════════════════════════════════════════
 
-    ACTIVITY COUNT: Generate exactly ${activityCountTarget} activities per day.
-    This is a ${travelStyle || 'balanced'}-style trip — pace the activities accordingly.
+    BUDGET TIER: "${budgetTier.toUpperCase()}" — stick to ${budgetTier}-appropriate options only.
+    PER-ACTIVITY COST: Max ${caps.max} ${currency}, typical ${caps.typical} ${currency}.
+    ${budgetTier === 'budget' ? `At least 50% of activities should be FREE (estimated_cost: 0).` : ''}
+
+    ACTIVITY COUNT: Exactly ${activityCountTarget} activities per day.
     ${constraintBlock}
     ${styleHint}
     ${paceHint}
 
-    REAL-WORLD CONTEXT (Use this to ground your detailed recommendations):
-    ${contextData || "No specific verified data found in knowledge base. Rely on general knowledge."}
+    ${contextData ? `VERIFIED LOCAL DATA:\n    ${contextData}` : ''}
 
-    CRITICAL BUDGET RULE: The sum of ALL estimated_cost values across ALL days MUST NOT EXCEED ${effectiveBudget} ${currency}.
-    Each day's total should be approximately ${dailyBudget} ${currency}.
-    
     ═══════════════════════════════════════════════════════════════
-    🚨🚨🚨 FULL DAY SCHEDULE IS MANDATORY 🚨🚨🚨
-    
-    EVERY day MUST have activities spanning from MORNING (8:00-9:00 AM) to EVENING (8:00-9:00 PM).
-    DO NOT generate a half-day or partial schedule. A day that stops at lunch/afternoon is UNACCEPTABLE.
-    
-    REQUIRED TIME COVERAGE for EACH day:
-    - MORNING (8:00-12:00): At least 2 activities (e.g., breakfast spot, sightseeing)
-    - AFTERNOON (12:00-17:00): At least 2 activities (e.g., lunch, cultural experience)
-    - EVENING (17:00-21:00): At least 2 activities (e.g., sunset viewpoint, dinner, night market)
-    
-    Example time distribution:
-    08:00 - Breakfast / Morning activity
-    09:30 - Main attraction visit
-    12:00 - Lunch at local restaurant
-    14:00 - Afternoon activity
-    16:00 - Cultural experience / Shopping
-    18:00 - Sunset viewpoint / Evening walk
-    19:30 - Dinner at recommended restaurant
-    21:00 - Night market / Evening entertainment (optional)
-    
-    IF YOU STOP BEFORE 18:00, YOUR RESPONSE IS REJECTED AND INVALID.
+    🚨 FULL DAY SCHEDULE MANDATORY (8 AM to 9 PM) 🚨
+
+    EACH day MUST cover:
+    - MORNING (08:00-12:00): 2+ activities (breakfast + main attraction)
+    - AFTERNOON (12:00-17:00): 2+ activities (lunch + cultural/nature experience)  
+    - EVENING (17:00-21:00): 2+ activities (sunset spot + dinner/night experience)
+
+    IF ANY DAY STOPS BEFORE 18:00, THE RESPONSE IS INVALID.
     ═══════════════════════════════════════════════════════════════
-    
-    PRICING: Include realistic estimated costs in ${currency} for EVERY activity as a NUMBER in the "estimated_cost" field.
-    
-    Return ONLY valid JSON in the following format:
+
+    Budget total for ALL days: ${effectiveBudget} ${currency}. Each day ≈ ${dailyBudget} ${currency}.
+
+    Return ONLY valid JSON:
     {
       "days": [
         {
           "dayNumber": 1,
           "activities": [
             {
-              "title": "Activity Name",
+              "title": "Specific Place Name (not generic)",
               "time": "09:00",
-              "location": "Specific location name",
-              "type": "sightseeing",
-              "estimated_cost": 500,
-              "safety_warning": "Warning text or null",
-              "notes": "Detailed description including what to expect"
+              "location": "Exact location with area/landmark",
+              "type": "sightseeing|food|culture|nature|shopping|nightlife",
+              "estimated_cost": 100,
+              "safety_warning": "Warning or null",
+              "notes": "Practical details: booking tips, what to carry, best timing, local advice"
             }
           ]
         }
@@ -301,8 +305,8 @@ serve(async (req: Request) => {
     `
 
         // ── Call Groq API ───────────────────────────────────
-        // Dynamic max_tokens: ~1200 tokens per day for full-day schedules, capped at 8192
-        const maxTokens = Math.min(8192, Math.max(3000, days * 1200))
+        // Dynamic max_tokens: ~1500 tokens per day for detailed schedules, capped at 8192
+        const maxTokens = Math.min(8192, Math.max(3500, days * 1500))
 
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
@@ -313,7 +317,7 @@ serve(async (req: Request) => {
             body: JSON.stringify({
                 model: 'llama-3.3-70b-versatile',
                 messages: [
-                    { role: "system", content: "You are a travel API that outputs strict JSON. Never include markdown, code fences, or explanation outside the JSON object." },
+                    { role: "system", content: `You are a local travel expert and trip planner for ${destination}. You know every famous attraction, restaurant, street food stall, temple, and hidden gem. You give practical, specific advice like a local friend would — with real place names, realistic local prices in ${currency}, and insider tips. Output strict JSON only, never markdown or explanations.` },
                     { role: "user", content: prompt }
                 ],
                 temperature: 0.7,

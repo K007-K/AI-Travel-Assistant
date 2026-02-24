@@ -128,6 +128,12 @@ export function allocateBudget(totalBudget, options = {}) {
         ratios.activity += saved;
     }
 
+    // 0-night trips (day trips): redirect accommodation budget to activities
+    if (totalNights === 0) {
+        ratios.activity += ratios.accommodation;
+        ratios.accommodation = 0;
+    }
+
     // Normalize ratios to sum to 1.0
     const ratioSum = Object.values(ratios).reduce((s, v) => s + v, 0);
     Object.keys(ratios).forEach(k => {
