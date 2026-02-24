@@ -30,10 +30,10 @@ describe('decideTransportMode', () => {
             expect(mode).not.toBe('flight');
         });
 
-        it('should choose flight for short distances (300km = exactly 5h → >= 5h boundary)', () => {
+        it('should choose train for short distances (300km = 5h, under 8h threshold)', () => {
             const mode = decideTransportMode(makeTrip(), 'short');
-            // 300km / 60km/h = 5h exactly → triggers flight (>= 5h rule)
-            expect(mode).toBe('flight');
+            // 300km / 60km/h = 5h → under 8h threshold → train
+            expect(mode).toBe('train');
         });
 
         it('should choose flight for long distances (auto mode)', () => {
@@ -118,8 +118,8 @@ describe('decideTransportMode', () => {
             expect(decideTransportMode(makeTrip(), 'local')).toBe('bus');
         });
 
-        it('should choose flight for short (300km = 5h exactly → hits >= 5h threshold)', () => {
-            expect(decideTransportMode(makeTrip(), 'short')).toBe('flight');
+        it('should choose train for short (300km = 5h, under 8h flight threshold)', () => {
+            expect(decideTransportMode(makeTrip(), 'short')).toBe('train');
         });
 
         it('should choose flight for medium (1000km >> 5h → flight)', () => {
