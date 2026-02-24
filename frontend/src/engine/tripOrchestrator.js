@@ -441,7 +441,9 @@ export async function orchestrateTrip(trip, callbacks = {}) {
             trip.budget || 2000,
             trip.travelers || 1,
             currency,
-            trip.days || dayLocations.map(dl => ({ dayNumber: dl.dayNumber, location: dl.location })),
+            // ALWAYS use dayLocations (derived from trip.segments → trip.destination)
+            // trip.days may contain wrong locations (e.g., start_location instead of destination)
+            dayLocations.map(dl => ({ dayNumber: dl.dayNumber, location: dl.location })),
             budgetTier,
             // New fields for constrained generation
             {

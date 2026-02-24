@@ -125,8 +125,11 @@ serve(async (req: Request) => {
         }
 
         const scheduleContext = tripDays && tripDays.length > 0
-            ? `\n    ITINERARY SCHEDULE:\n    ${formatItineraryStructure(tripDays)}\n    Generate activities SPECIFIC to the location mentioned for each day.`
-            : `\n    Trip to: ${destination}`
+            ? `\n    DESTINATION: ${destination}
+    ITINERARY SCHEDULE:\n    ${formatItineraryStructure(tripDays)}
+    ⚠️ Generate activities ONLY for ${destination}. Do NOT generate activities for the traveler's home city or departure city.`
+            : `\n    DESTINATION: ${destination}
+    ⚠️ ALL activities must be in ${destination}. Do NOT generate activities for any other city.`
 
         // ── RAG retrieval (optional, gracefully degrades) ───
         let contextData = ""
