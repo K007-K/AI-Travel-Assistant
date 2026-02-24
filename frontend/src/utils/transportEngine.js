@@ -253,12 +253,13 @@ function decideTransportMode(trip, distanceTier) {
     }
 
     // Auto-decide based on distance + time
-    // ── Rule 3: Flight only when driving time ≥ 5 hours ──
-    if (drivingHours >= 5) {
+    // ── Rule 3: Flight only when driving time ≥ 8 hours (~480km+) ──
+    // 5-7 hour routes are standard train territory worldwide (India, Europe, Japan)
+    if (drivingHours >= 8) {
         return 'flight';
     }
 
-    // Sub-5h routes: prefer train for short/medium, bus only for local
+    // Sub-8h routes: prefer train for short/medium, bus only for local
     switch (distanceTier) {
         case 'local': return 'bus';
         case 'short': return 'train';  // 200-500km — train is faster & cheaper
