@@ -253,8 +253,29 @@ serve(async (req: Request) => {
     CRITICAL BUDGET RULE: The sum of ALL estimated_cost values across ALL days MUST NOT EXCEED ${effectiveBudget} ${currency}.
     Each day's total should be approximately ${dailyBudget} ${currency}.
     
-    CRITICAL: You must provide a FULL day's schedule for EVERY day. 
-    Each day MUST include at least 5-6 activities covering Morning, Afternoon, and Evening.
+    ═══════════════════════════════════════════════════════════════
+    🚨🚨🚨 FULL DAY SCHEDULE IS MANDATORY 🚨🚨🚨
+    
+    EVERY day MUST have activities spanning from MORNING (8:00-9:00 AM) to EVENING (8:00-9:00 PM).
+    DO NOT generate a half-day or partial schedule. A day that stops at lunch/afternoon is UNACCEPTABLE.
+    
+    REQUIRED TIME COVERAGE for EACH day:
+    - MORNING (8:00-12:00): At least 2 activities (e.g., breakfast spot, sightseeing)
+    - AFTERNOON (12:00-17:00): At least 2 activities (e.g., lunch, cultural experience)
+    - EVENING (17:00-21:00): At least 2 activities (e.g., sunset viewpoint, dinner, night market)
+    
+    Example time distribution:
+    08:00 - Breakfast / Morning activity
+    09:30 - Main attraction visit
+    12:00 - Lunch at local restaurant
+    14:00 - Afternoon activity
+    16:00 - Cultural experience / Shopping
+    18:00 - Sunset viewpoint / Evening walk
+    19:30 - Dinner at recommended restaurant
+    21:00 - Night market / Evening entertainment (optional)
+    
+    IF YOU STOP BEFORE 18:00, YOUR RESPONSE IS REJECTED AND INVALID.
+    ═══════════════════════════════════════════════════════════════
     
     PRICING: Include realistic estimated costs in ${currency} for EVERY activity as a NUMBER in the "estimated_cost" field.
     
@@ -280,8 +301,8 @@ serve(async (req: Request) => {
     `
 
         // ── Call Groq API ───────────────────────────────────
-        // Dynamic max_tokens: ~800 tokens per day, capped at 8192
-        const maxTokens = Math.min(8192, Math.max(2048, days * 800))
+        // Dynamic max_tokens: ~1200 tokens per day for full-day schedules, capped at 8192
+        const maxTokens = Math.min(8192, Math.max(3000, days * 1200))
 
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
