@@ -43,6 +43,7 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
     const [step, setStep] = useState(0); // 0: Basics, 1: Budget & Review
     const [errors, setErrors] = useState({});
     const [durationResult, setDurationResult] = useState(null);
+    const [isCheckingDuration, setIsCheckingDuration] = useState(false);
 
     const [form, setForm] = useState({
         title: initialDestination ? `Trip to ${initialDestination}` : '',
@@ -151,29 +152,36 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
         };
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateStep(1)) return;
 
         const returnLoc = form.return_same ? form.start_location : form.return_location;
 
-        // ── Duration feasibility check ──
-        const result = planTripDuration({
-            startLocation: form.start_location.trim(),
-            returnLocation: (returnLoc || '').trim(),
-            destinations: form.segments.map(s => ({ location: s.location, days: s.days })),
-            requestedDays: form.segments.reduce((s, seg) => s + seg.days, 0),
-            travelStyle: form.travel_style,
-        });
+        // ── Duration feasibility check (async — uses OSRM for real times) ──
+        setIsCheckingDuration(true);
+        try {
+            const result = await planTripDuration({
+                startLocation: form.start_location.trim(),
+                returnLocation: (returnLoc || '').trim(),
+                destinations: form.segments.map(s => ({ location: s.location, days: s.days })),
+                requestedDays: form.segments.reduce((s, seg) => s + seg.days, 0),
+            });
 
-        if (!result.feasible) {
-            // Show duration modal — don't submit yet
-            setDurationResult(result);
-            return;
+            if (!result.feasible) {
+                setDurationResult(result);
+                return;
+            }
+
+            // Feasible — submit directly
+            onSubmit(buildTripData());
+        } catch (err) {
+            console.error('[DurationCheck] Failed:', err);
+            // On error, submit anyway (don't block the user)
+            onSubmit(buildTripData());
+        } finally {
+            setIsCheckingDuration(false);
         }
-
-        // Feasible — submit directly
-        onSubmit(buildTripData());
     };
 
     const handleDurationConfirm = (suggestedDays) => {
@@ -520,8 +528,12 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
                                 Next <ChevronRight className="w-4 h-4" />
                             </Button>
                         ) : (
-                            <Button type="submit" className="gap-2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800">
-                                Create Trip <ChevronRight className="w-4 h-4" />
+                            <Button
+                                type="submit"
+                                disabled={isCheckingDuration}
+                                className="gap-2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800"
+                            >
+                                {isCheckingDuration ? 'Checking routes…' : 'Create Trip'} <ChevronRight className="w-4 h-4" />
                             </Button>
                         )}
                     </div>

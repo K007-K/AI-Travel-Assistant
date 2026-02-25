@@ -1,17 +1,21 @@
 /**
- * Trip Duration Planner — Unit Tests (Strict Realistic Mode)
+ * Trip Duration Planner — Unit Tests (OSRM-powered)
+ *
+ * Note: These tests mock getRouteTime to avoid real OSRM calls.
  */
-import { describe, it, expect } from 'vitest';
-import {
-    planTripDuration,
-    _TIER_HOURS as TIER_HOURS,
-} from '@/engine/tripDurationPlanner.js';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// ── Same-city trips ──────────────────────────────────────────────────
+// Mock the routeTime module BEFORE importing the planner
+vi.mock('@/api/routeTime.js', () => ({
+    getRouteTime: vi.fn(),
+}));
+
+import { planTripDuration } from '@/engine/tripDurationPlanner.js';
+import { getRouteTime } from '@/api/routeTime.js';
 
 describe('planTripDuration — same-city', () => {
-    it('should be feasible immediately (no expansion)', () => {
-        const result = planTripDuration({
+    it('should be feasible immediately (no expansion, no API call)', async () => {
+        const result = await planTripDuration({
             startLocation: 'Tirupati',
             returnLocation: 'Tirupati',
             destinations: [{ location: 'Tirupati', days: 2 }],
@@ -20,59 +24,79 @@ describe('planTripDuration — same-city', () => {
         expect(result.feasible).toBe(true);
         expect(result.travelDaysRequired).toBe(0);
         expect(result.explorationDays).toBe(2);
+        expect(getRouteTime).not.toHaveBeenCalled();
     });
 });
 
-// ── Single destination intercity ─────────────────────────────────────
-
 describe('planTripDuration — single destination intercity', () => {
-    it('should require travel days for Vizag → Tirupati', () => {
-        const result = planTripDuration({
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('should require travel days for long routes (OSRM hours)', async () => {
+        // Mock: Vizag→Tirupati = 9.4h, Tirupati→Vizag = 9.4h
+        getRouteTime.mockResolvedValue({ hours: 9.4, distanceKm: 766, source: 'osrm' });
+
+        const result = await planTripDuration({
             startLocation: 'Visakhapatnam',
             returnLocation: 'Visakhapatnam',
             destinations: [{ location: 'Tirupati', days: 1 }],
             requestedDays: 1,
         });
-        // short tier = 5h > 3h → ceil(5/6)=1 travel day each way = 2 travel days
+
+        // 9.4h > 3h → ceil(9.4/6) = 2 travel days each way = 4 travel days
         expect(result.feasible).toBe(false);
-        expect(result.travelDaysRequired).toBe(2);
+        expect(result.travelDaysRequired).toBe(4);
         expect(result.explorationDays).toBe(1);
-        expect(result.suggestedDays).toBe(3);
+        expect(result.suggestedDays).toBe(5);
+        expect(result.segments[0].source).toBe('osrm');
     });
 
-    it('should be feasible when enough days requested', () => {
-        const result = planTripDuration({
+    it('should be feasible when enough days requested', async () => {
+        getRouteTime.mockResolvedValue({ hours: 9.4, distanceKm: 766, source: 'osrm' });
+
+        const result = await planTripDuration({
             startLocation: 'Visakhapatnam',
             returnLocation: 'Visakhapatnam',
             destinations: [{ location: 'Tirupati', days: 1 }],
             requestedDays: 5,
         });
         expect(result.feasible).toBe(true);
-        expect(result.suggestedDays).toBe(5);
     });
 });
 
-// ── Short segments merge ─────────────────────────────────────────────
-
 describe('planTripDuration — short segment merge', () => {
-    it('should NOT add travel day for ≤3h segments', () => {
-        // local tier = 0.5h → merges, no travel day
-        const result = planTripDuration({
-            startLocation: 'Tirupati',
-            returnLocation: 'Tirupati',
-            destinations: [{ location: 'Tirupati', days: 2 }],
-            requestedDays: 2,
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('should NOT add travel day for ≤3h segments', async () => {
+        getRouteTime.mockResolvedValue({ hours: 2.5, distanceKm: 80, source: 'osrm' });
+
+        const result = await planTripDuration({
+            startLocation: 'CityA',
+            returnLocation: 'CityA',
+            destinations: [{ location: 'CityB', days: 1 }],
+            requestedDays: 1,
         });
         expect(result.travelDaysRequired).toBe(0);
         expect(result.feasible).toBe(true);
     });
 });
 
-// ── Multi-destination ────────────────────────────────────────────────
-
 describe('planTripDuration — multi-destination', () => {
-    it('should sum travel between all cities', () => {
-        const result = planTripDuration({
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('should sum travel between all cities', async () => {
+        // Hyd→Vizag: 8h, Vizag→Tirupati: 9.4h, Tirupati→Hyd: 12h
+        getRouteTime
+            .mockResolvedValueOnce({ hours: 8, distanceKm: 600, source: 'osrm' })
+            .mockResolvedValueOnce({ hours: 9.4, distanceKm: 766, source: 'osrm' })
+            .mockResolvedValueOnce({ hours: 12, distanceKm: 560, source: 'osrm' });
+
+        const result = await planTripDuration({
             startLocation: 'Hyderabad',
             returnLocation: 'Hyderabad',
             destinations: [
@@ -82,17 +106,16 @@ describe('planTripDuration — multi-destination', () => {
             requestedDays: 3,
         });
         expect(result.explorationDays).toBe(3);
-        expect(result.travelDaysRequired).toBeGreaterThanOrEqual(2);
+        // ceil(8/6)=2 + ceil(9.4/6)=2 + ceil(12/6)=2 = 6 travel days
+        expect(result.travelDaysRequired).toBe(6);
         expect(result.feasible).toBe(false);
-        expect(result.segments.length).toBeGreaterThanOrEqual(2);
+        expect(result.segments.length).toBe(3);
     });
 });
 
-// ── Edge cases ───────────────────────────────────────────────────────
-
 describe('planTripDuration — edge cases', () => {
-    it('should handle empty destinations', () => {
-        const result = planTripDuration({
+    it('should handle empty destinations', async () => {
+        const result = await planTripDuration({
             startLocation: 'Delhi',
             destinations: [],
             requestedDays: 3,
@@ -101,8 +124,10 @@ describe('planTripDuration — edge cases', () => {
         expect(result.travelDaysRequired).toBe(0);
     });
 
-    it('should include reason when infeasible', () => {
-        const result = planTripDuration({
+    it('should include reason when infeasible', async () => {
+        getRouteTime.mockResolvedValue({ hours: 9.4, distanceKm: 766, source: 'osrm' });
+
+        const result = await planTripDuration({
             startLocation: 'Visakhapatnam',
             returnLocation: 'Visakhapatnam',
             destinations: [{ location: 'Tirupati', days: 1 }],
@@ -110,12 +135,5 @@ describe('planTripDuration — edge cases', () => {
         });
         expect(result.reason).toBeTruthy();
         expect(result.reason).toContain('requires');
-    });
-
-    it('should have correct TIER_HOURS', () => {
-        expect(TIER_HOURS.short).toBe(5);
-        expect(TIER_HOURS.medium).toBe(8);
-        expect(TIER_HOURS.long).toBe(12);
-        expect(TIER_HOURS.local).toBe(0.5);
     });
 });

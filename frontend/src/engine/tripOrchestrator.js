@@ -373,7 +373,7 @@ export async function orchestrateTrip(trip, callbacks = {}) {
         }
     });
     // Build travel timeline to determine TRAVEL vs EXPLORE days
-    const timeline = buildTravelTimeline({
+    const timeline = await buildTravelTimeline({
         startLocation: trip.start_location || trip.destination,
         returnLocation: trip.return_location || trip.start_location || '',
         destinations: tripSegments,

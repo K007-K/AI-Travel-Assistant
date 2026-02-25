@@ -1,12 +1,22 @@
 /**
- * Travel Timeline Builder — Unit Tests
+ * Travel Timeline Builder — Unit Tests (OSRM-powered)
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+vi.mock('@/api/routeTime.js', () => ({
+    getRouteTime: vi.fn(),
+}));
+
 import { buildTravelTimeline } from '@/engine/travelTimelineBuilder.js';
+import { getRouteTime } from '@/api/routeTime.js';
 
 describe('buildTravelTimeline', () => {
-    it('should return empty for no destinations', () => {
-        const timeline = buildTravelTimeline({
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('should return empty for no destinations', async () => {
+        const timeline = await buildTravelTimeline({
             startLocation: 'Delhi',
             returnLocation: 'Delhi',
             destinations: [],
@@ -14,68 +24,73 @@ describe('buildTravelTimeline', () => {
         expect(timeline).toEqual([]);
     });
 
-    it('should return EXPLORE-only for same-city trip', () => {
-        const timeline = buildTravelTimeline({
+    it('should return EXPLORE-only for same-city trip', async () => {
+        const timeline = await buildTravelTimeline({
             startLocation: 'Tirupati',
             returnLocation: 'Tirupati',
             destinations: [{ location: 'Tirupati', days: 2 }],
         });
-        // Same city — no travel segments
+        expect(timeline.length).toBe(2);
+        expect(timeline.every(t => t.type === 'EXPLORE')).toBe(true);
+        expect(getRouteTime).not.toHaveBeenCalled();
+    });
+
+    it('should insert TRAVEL days for intercity trip (OSRM)', async () => {
+        // 9.4h each way → ceil(9.4/6)=2 travel days each way
+        getRouteTime.mockResolvedValue({ hours: 9.4, distanceKm: 766, source: 'osrm' });
+
+        const timeline = await buildTravelTimeline({
+            startLocation: 'Visakhapatnam',
+            returnLocation: 'Visakhapatnam',
+            destinations: [{ location: 'Tirupati', days: 1 }],
+        });
+
+        const travelDays = timeline.filter(t => t.type === 'TRAVEL');
+        const exploreDays = timeline.filter(t => t.type === 'EXPLORE');
+
+        expect(travelDays.length).toBe(4); // 2 outbound + 2 return
+        expect(exploreDays.length).toBe(1);
+        expect(timeline[0].type).toBe('TRAVEL');
+        expect(travelDays[0].source).toBe('osrm');
+        expect(travelDays[0].distanceKm).toBe(766);
+    });
+
+    it('should NOT insert travel day for ≤3h segments', async () => {
+        getRouteTime.mockResolvedValue({ hours: 2.0, distanceKm: 50, source: 'osrm' });
+
+        const timeline = await buildTravelTimeline({
+            startLocation: 'CityA',
+            returnLocation: 'CityA',
+            destinations: [{ location: 'CityB', days: 2 }],
+        });
+
+        // ≤3h → no travel days, just EXPLORE
         expect(timeline.length).toBe(2);
         expect(timeline.every(t => t.type === 'EXPLORE')).toBe(true);
     });
 
-    it('should insert TRAVEL days for intercity trip', () => {
-        const timeline = buildTravelTimeline({
-            startLocation: 'Visakhapatnam',
-            returnLocation: 'Visakhapatnam',
-            destinations: [{ location: 'Tirupati', days: 1 }],
-        });
-        // Vizag→Tirupati: short tier (5h > 3h → 1 travel day)
-        // 1 explore day
-        // Tirupati→Vizag: 1 travel day
-        const travelDays = timeline.filter(t => t.type === 'TRAVEL');
-        const exploreDays = timeline.filter(t => t.type === 'EXPLORE');
+    it('should mark arrivalNextDay for >10h', async () => {
+        getRouteTime.mockResolvedValue({ hours: 12, distanceKm: 1200, source: 'osrm' });
 
-        expect(travelDays.length).toBe(2);
-        expect(exploreDays.length).toBe(1);
-        expect(timeline[0].type).toBe('TRAVEL'); // outbound first
-        expect(timeline[1].type).toBe('EXPLORE');
-        expect(timeline[2].type).toBe('TRAVEL'); // return last
+        const timeline = await buildTravelTimeline({
+            startLocation: 'Delhi',
+            returnLocation: 'Delhi',
+            destinations: [{ location: 'Mumbai', days: 1 }],
+        });
+
+        const travelDays = timeline.filter(t => t.type === 'TRAVEL');
+        expect(travelDays[0].arrivalNextDay).toBe(true);
     });
 
-    it('should handle multi-destination', () => {
-        const timeline = buildTravelTimeline({
-            startLocation: 'Hyderabad',
-            returnLocation: 'Hyderabad',
-            destinations: [
-                { location: 'Visakhapatnam', days: 2 },
-                { location: 'Tirupati', days: 1 },
-            ],
-        });
-        const travelDays = timeline.filter(t => t.type === 'TRAVEL');
-        const exploreDays = timeline.filter(t => t.type === 'EXPLORE');
+    it('should have sequential day_number', async () => {
+        getRouteTime.mockResolvedValue({ hours: 5, distanceKm: 300, source: 'osrm' });
 
-        expect(travelDays.length).toBeGreaterThanOrEqual(2);
-        expect(exploreDays.length).toBe(3); // 2 + 1
-    });
-
-    it('should mark fullDay for >3h segments', () => {
-        const timeline = buildTravelTimeline({
-            startLocation: 'Visakhapatnam',
-            returnLocation: 'Visakhapatnam',
-            destinations: [{ location: 'Tirupati', days: 1 }],
+        const timeline = await buildTravelTimeline({
+            startLocation: 'CityA',
+            returnLocation: 'CityA',
+            destinations: [{ location: 'CityB', days: 1 }],
         });
-        const travelDays = timeline.filter(t => t.type === 'TRAVEL');
-        expect(travelDays[0].fullDay).toBe(true);
-    });
 
-    it('should have sequential day_number', () => {
-        const timeline = buildTravelTimeline({
-            startLocation: 'Visakhapatnam',
-            returnLocation: 'Visakhapatnam',
-            destinations: [{ location: 'Tirupati', days: 1 }],
-        });
         timeline.forEach((t, i) => {
             expect(t.day_number).toBe(i + 1);
         });

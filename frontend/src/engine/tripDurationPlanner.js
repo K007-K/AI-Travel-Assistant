@@ -2,27 +2,14 @@
  * Trip Duration Planner — STRICT REALISTIC MODE
  *
  * Deterministic feasibility check for trip duration.
- * Estimates travel hours between destinations using transportEngine's
- * distance tiers, computes required travel days, and validates against
- * user-requested duration.
+ * Uses OSRM for real driving times (async), falls back to tier estimate.
  *
- * NO AI calls. Pure math. Under 90 lines.
+ * NO AI calls. Pure math + real route data.
  *
  * @module engine/tripDurationPlanner
  */
 
-import {
-    _estimateDistanceTier as estimateDistanceTier,
-} from '../utils/transportEngine.js';
-
-// ── Tier → Hours mapping ─────────────────────────────────────────────
-
-const TIER_HOURS = {
-    local:     0.5,
-    short:     5,
-    medium:    8,
-    long:      12,
-};
+import { getRouteTime } from '../api/routeTime.js';
 
 // ── Main Entry ───────────────────────────────────────────────────────
 
@@ -32,9 +19,9 @@ const TIER_HOURS = {
  * @param {string} [params.returnLocation]
  * @param {Array<{location: string, days: number}>} params.destinations
  * @param {number} params.requestedDays
- * @returns {object} Feasibility result
+ * @returns {Promise<object>} Feasibility result
  */
-export function planTripDuration({
+export async function planTripDuration({
     startLocation,
     returnLocation,
     destinations,
@@ -57,19 +44,24 @@ export function planTripDuration({
     const route = [startLocation, ...destinations.map(d => d.location)];
     if (returnLoc) route.push(returnLoc);
 
-    // 3. Estimate hours for each transit pair
-    const segments = [];
+    // 3. Fetch real driving times for each transit pair (parallel)
+    const pairs = [];
     for (let i = 0; i < route.length - 1; i++) {
         const from = route[i], to = route[i + 1];
         if (from.toLowerCase().trim() === to.toLowerCase().trim()) continue;
-        const tier = estimateDistanceTier(from, to);
-        const hours = TIER_HOURS[tier] || 6;
-        segments.push({ from, to, tier, hours });
+        pairs.push({ from, to });
     }
+
+    const routeResults = await Promise.all(
+        pairs.map(async ({ from, to }) => {
+            const result = await getRouteTime(from, to);
+            return { from, to, ...result };
+        })
+    );
 
     // 4. Compute travel days: merge short segments (≤3h), ceil long ones
     let travelDaysRequired = 0;
-    for (const seg of segments) {
+    for (const seg of routeResults) {
         if (seg.hours > 3) {
             travelDaysRequired += Math.ceil(seg.hours / 6);
         }
@@ -95,10 +87,7 @@ export function planTripDuration({
         minimumRequiredDays,
         travelDaysRequired,
         explorationDays,
-        segments,
+        segments: routeResults,
         reason,
     };
 }
-
-// ── Test Exports ─────────────────────────────────────────────────────
-export { TIER_HOURS as _TIER_HOURS };
