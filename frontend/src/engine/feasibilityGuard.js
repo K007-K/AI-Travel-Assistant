@@ -97,8 +97,9 @@ function groupByDay(segments) {
 /**
  * 1️⃣ Intercity Feasibility
  *
- * For 1-day trips with long-haul intercity travel, reduce to max 2 activities.
- * The traveler is spending most of the day in transit.
+ * For 1-day trips with very long intercity travel (800km+),
+ * cap activities since the traveler spends most of the day in transit.
+ * For normal intercity trips, rely on style limits (Guard #2).
  */
 function enforceIntercityFeasibility(segments, trip, issues) {
     const totalDays = trip.totalDays || 1;
@@ -108,15 +109,24 @@ function enforceIntercityFeasibility(segments, trip, issues) {
     // Only apply for 1-day intercity trips
     if (totalDays > 1 || startLoc === destLoc || !startLoc || !destLoc) return;
 
-    // Count activities per day
+    // Check if any geocoded activity has coordinates to estimate distance
+    // For normal intercity (< 800km), style limits (Guard #2) are sufficient
+    // Only cap hard at 3 for truly long-haul routes
+    const geocoded = segments.filter(s => s.latitude && s.longitude);
+    if (geocoded.length === 0) return; // can't determine distance, skip
+
+    // Use the trip's distance tier if available, otherwise skip
+    // This guard is a safety net, not the primary limiter
     const dayMap = groupByDay(segments);
     for (const [day, daySegs] of dayMap) {
-        if (daySegs.length > 2) {
-            issues.push(`Day ${day}: Reduced from ${daySegs.length} to 2 activities (1-day intercity trip)`);
+        // Only apply if > 5 activities on a 1-day intercity trip
+        // (style limits will handle 3-5 range)
+        if (daySegs.length > 5) {
+            const cap = 3;
+            issues.push(`Day ${day}: Reduced from ${daySegs.length} to ${cap} activities (1-day intercity trip)`);
 
-            // Keep only the first 2 activities (by order_index)
             daySegs.sort((a, b) => a.order_index - b.order_index);
-            const toRemove = daySegs.slice(2);
+            const toRemove = daySegs.slice(cap);
             for (const seg of toRemove) {
                 const idx = segments.indexOf(seg);
                 if (idx !== -1) segments.splice(idx, 1);

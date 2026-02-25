@@ -210,7 +210,7 @@ describe('nearestNeighborSort', () => {
 // ── Full Integration ─────────────────────────────────────────────────
 
 describe('applyFeasibilityGuard (full)', () => {
-    it('should enforce intercity feasibility for 1-day long-haul', () => {
+    it('should enforce style limit for 1-day intercity trip', () => {
         const trip = makeTrip({ totalDays: 1 });
         const segments = Array.from({ length: 5 }, (_, i) =>
             makeActivity({ title: `Act${i + 1}`, order_index: i })
@@ -225,8 +225,8 @@ describe('applyFeasibilityGuard (full)', () => {
             totalDays: 1,
         });
 
-        // Should be reduced: intercity (max 2) then style limit doesn't apply (2 < 4)
-        expect(segments.length).toBe(2);
+        // Style limit (city_explorer: 4) kicks in, intercity guard doesn't (only >5)
+        expect(segments.length).toBe(4);
         expect(result.issues.length).toBeGreaterThanOrEqual(1);
     });
 
