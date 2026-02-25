@@ -51,11 +51,7 @@ const DEFAULT_ACTIVITY_DURATION = 60;
 /** Buffer between activities (minutes) */
 const ACTIVITY_BUFFER = 30;
 
-/** Earliest usable time */
-const DAY_START = '08:00';
 
-/** Latest usable time */
-const DAY_END = '21:00';
 
 // ── Utilities ────────────────────────────────────────────────────────
 
@@ -116,7 +112,6 @@ function enforceIntercityFeasibility(segments, trip, issues) {
     const dayMap = groupByDay(segments);
     for (const [day, daySegs] of dayMap) {
         if (daySegs.length > 2) {
-            const removed = daySegs.length - 2;
             issues.push(`Day ${day}: Reduced from ${daySegs.length} to 2 activities (1-day intercity trip)`);
 
             // Keep only the first 2 activities (by order_index)
