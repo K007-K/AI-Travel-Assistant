@@ -5,23 +5,43 @@
 [![Supabase](https://img.shields.io/badge/Supabase-Backend-3ECF8E.svg)](https://supabase.com)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-06B6D4.svg)](https://tailwindcss.com)
 [![Docker](https://img.shields.io/badge/Docker-Deployed-2496ED.svg)](https://www.docker.com)
+[![OSRM](https://img.shields.io/badge/OSRM-Driving%20Times-orange.svg)](https://project-osrm.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Roameo** is an advanced AI-powered travel planning web application that leverages multiple LLM providers (Google Gemini & Groq) to create personalized, optimized travel itineraries. Built with React, Supabase, and modern web technologies, it features smart budgeting, interactive maps, real-time AI chat, and a comprehensive booking system.
+**Roameo** is an advanced AI-powered travel planning web application that
+leverages multiple LLM providers (Google Gemini & Groq) to create personalized,
+optimized travel itineraries. Built with React, Supabase, and modern web
+technologies, it features smart budgeting, real driving time estimation via
+OSRM, overnight travel detection, interactive maps, real-time AI chat, and a
+comprehensive booking system.
 
-🌐 **Live Demo**: [https://roameo-rz80.onrender.com](https://roameo-rz80.onrender.com)
+🌐 **Live Demo**:
+[https://roameo-rz80.onrender.com](https://roameo-rz80.onrender.com)
 
 ---
 
 ## 🌟 Key Features
 
-- **AI-Powered Itinerary Generation** — Create detailed day-by-day schedules tailored to your destination, duration, and preferences
-- **Multi-LLM Support** — Powered by Google Gemini and Groq (Llama 3, Mixtral) for fast, intelligent responses
-- **Smart Budget Planning** — Budget-aware trip plans with expense tracking, category breakdowns, and currency support
-- **Interactive Maps** — Real-time route visualization with Leaflet, walking/driving directions via OpenRouteService
-- **AI Travel Companion** — Real-time chat with an AI assistant for travel tips, cultural insights, and recommendations
-- **Destination Discovery** — Explore curated destinations with detailed info, weather, and local highlights
-- **Hotel & Flight Booking** — Integrated booking system with search, comparison, and management
+- **AI-Powered Itinerary Generation** — Create detailed day-by-day schedules
+  tailored to your destination, duration, and preferences
+- **Multi-LLM Support** — Powered by Google Gemini and Groq (Llama 3, Mixtral)
+  for fast, intelligent responses
+- **Real Driving Times (OSRM)** — Actual road-based travel duration via Open
+  Source Routing Machine, with localStorage caching and auto-geocoding
+- **Overnight Travel Detection** — Budget/mid-tier routes 6–16h automatically
+  detected as overnight bus/train, eliminating unnecessary travel days
+- **Per-Person Budget Planning** — Budget-aware trip plans showing
+  per-person/day costs, with solo vs group activity generation
+- **Smart Budget Allocation** — Category-wise breakdown (transport,
+  accommodation, activities) with per-person derived values
+- **Interactive Maps** — Real-time route visualization with Leaflet,
+  walking/driving directions via OpenRouteService
+- **AI Travel Companion** — Real-time chat with an AI assistant for travel tips,
+  cultural insights, and recommendations
+- **Destination Discovery** — Explore curated destinations with detailed info,
+  weather, and local highlights
+- **Hotel & Flight Booking** — Integrated booking system with search,
+  comparison, and management
 - **PDF Export** — Download beautifully formatted itineraries as PDF documents
 - **Dark/Light Mode** — Fully themed UI with smooth transitions
 - **Authentication** — Secure auth via Supabase (Email/Password + Google OAuth)
@@ -31,7 +51,8 @@
 
 ## 🏗️ System Architecture
 
-Roameo follows a modern client-side architecture with a Supabase backend and AI orchestration layer:
+Roameo follows a modern client-side architecture with a Supabase backend and AI
+orchestration layer:
 
 ```mermaid
 graph TD
@@ -72,35 +93,53 @@ graph TD
 
 ### Core Modules
 
-1. **AI Engine** (`services/ai/`)
+1. **Planning Engine** (`engine/`)
+   - **Trip Orchestrator** — Coordinates all planning phases: timeline, budget,
+     transport, and AI generation
+   - **Trip Duration Planner** — Feasibility check using OSRM real driving times
+     with overnight travel detection
+   - **Travel Timeline Builder** — Creates structural TRAVEL/EXPLORE day
+     segments with overnight arrival metadata
+   - **Budget Allocator** — Envelope-based allocation with per-person derived
+     values for UI and LLM
+   - **Route Time API** (`api/routeTime.js`) — OSRM wrapper with Nominatim
+     geocoding fallback and 30-day localStorage cache
+
+2. **AI Engine** (`services/ai/`)
    - Multi-provider LLM orchestration (Gemini + Groq)
-   - Prompt engineering for itinerary generation
+   - Prompt engineering with solo/group traveler rules and per-person budget
+     constraints
    - Structured JSON parsing of AI responses
    - Fallback logic between providers
 
-2. **Itinerary Generator** (`store/itineraryStore.js`)
+3. **Itinerary Generator** (`store/itineraryStore.js`)
    - Creates optimized daily schedules with time slots
    - Handles multi-day trip planning
    - Activity management (add, edit, delete, reorder)
 
-3. **Budget Manager** (`store/budgetStore.js`)
-   - Real-time expense tracking per trip
+4. **Budget Manager** (`store/budgetStore.js`)
+   - Real-time expense tracking per trip (per-person view)
    - Category-wise breakdown (food, transport, accommodation, activities)
    - Multi-currency support with conversion
    - AI-powered budget analysis and recommendations
 
-4. **Booking System** (`store/bookingStore.js`)
+5. **Booking System** (`store/bookingStore.js`)
    - Hotel and flight search integration
    - Booking management and status tracking
    - Scoring algorithm for optimal recommendations
 
-5. **Map & Route Engine** (`components/map/`)
+6. **Transport Engine** (`utils/transportEngine.js`)
+   - Distance-tier estimation with smart transport mode selection
+   - Overnight bus/train detection for budget-tier long routes
+   - Envelope-aware cost calculation with downgrade ladder
+
+7. **Map & Route Engine** (`components/map/`)
    - Interactive Leaflet maps with custom markers
    - Route visualization via OpenRouteService
    - Walking/driving/cycling directions
    - Activity highlight and focus controls
 
-6. **AI Companion** (`components/companion/`)
+8. **AI Companion** (`components/companion/`)
    - Context-aware travel chat assistant
    - Cultural tips, safety alerts, local recommendations
    - Conversation history management
@@ -110,24 +149,31 @@ graph TD
 ## 🚀 Features
 
 ### Core Capabilities
-- **Multi-Agent AI System** — Specialized prompts for planning, budgeting, and recommendations
-- **Natural Language Understanding** — Parse complex travel requests and preferences  
+
+- **Multi-Agent AI System** — Specialized prompts for planning, budgeting, and
+  recommendations
+- **Natural Language Understanding** — Parse complex travel requests and
+  preferences
 - **Destination Research** — Discover hidden gems and popular attractions
 - **Smart Itinerary Generation** — Create realistic, well-paced daily schedules
-- **Budget-Aware Planning** — Plans optimized for Low, Mid, High, or Luxury budgets
+- **Budget-Aware Planning** — Plans optimized for Low, Mid, High, or Luxury
+  budgets
 - **Real-time Map Integration** — Visualize routes with turn-by-turn directions
 - **Drag & Drop** — Reorder activities within your itinerary
-- **Safety Alerts** — AI-driven warnings for potentially dangerous activities or locations
+- **Safety Alerts** — AI-driven warnings for potentially dangerous activities or
+  locations
 - **Web Share** — Share generated itineraries with friends and family
 - **PDF Export** — Download itineraries as beautifully formatted PDF documents
 
 ### Supported LLM Providers
-| Provider | Models | Use Case |
-|----------|--------|----------|
-| **Google Gemini** | Gemini 1.5 Flash, Gemini Pro | Primary itinerary generation |
-| **Groq** | Llama 3 70B, Mixtral 8x7B | Fast inference, fallback provider |
+
+| Provider          | Models                       | Use Case                          |
+| ----------------- | ---------------------------- | --------------------------------- |
+| **Google Gemini** | Gemini 1.5 Flash, Gemini Pro | Primary itinerary generation      |
+| **Groq**          | Llama 3 70B, Mixtral 8x7B    | Fast inference, fallback provider |
 
 ### Data Flow
+
 ```
 User Input → AI Engine → Structured Itinerary → Map Rendering
                 ↓                    ↓
@@ -141,10 +187,12 @@ User Input → AI Engine → Structured Itinerary → Map Rendering
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js 18+
 - npm (Node Package Manager)
 - A [Supabase](https://supabase.com) project (free tier works)
-- API keys for [Google Gemini](https://aistudio.google.com/) and/or [Groq](https://console.groq.com/)
+- API keys for [Google Gemini](https://aistudio.google.com/) and/or
+  [Groq](https://console.groq.com/)
 
 ### Installation
 
@@ -160,8 +208,8 @@ User Input → AI Engine → Structured Itinerary → Map Rendering
    npm install
    ```
 
-3. **Set up environment variables:**
-   Create a `.env` file in the `frontend/` directory:
+3. **Set up environment variables:** Create a `.env` file in the `frontend/`
+   directory:
    ```env
    # Supabase
    VITE_SUPABASE_URL=your_supabase_project_url
@@ -197,18 +245,21 @@ User Input → AI Engine → Structured Itinerary → Map Rendering
 
 ### Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `VITE_SUPABASE_URL` | ✅ | Supabase project URL |
-| `VITE_SUPABASE_ANON_KEY` | ✅ | Supabase anonymous key |
-| `VITE_GEMINI_API_KEY` | ✅ | Google Gemini API key |
-| `VITE_GROQ_API_KEY` | ⚡ | Groq API key (fallback AI provider) |
-| `VITE_ORS_API_KEY` | ⚡ | OpenRouteService key (for map routes) |
-| `VITE_TRANSLATION_API_URL` | ❌ | LibreTranslate endpoint |
-| `VITE_APP_NAME` | ❌ | App display name (default: Roameo) |
+| Variable                   | Required | Description                           |
+| -------------------------- | -------- | ------------------------------------- |
+| `VITE_SUPABASE_URL`        | ✅       | Supabase project URL                  |
+| `VITE_SUPABASE_ANON_KEY`   | ✅       | Supabase anonymous key                |
+| `VITE_GEMINI_API_KEY`      | ✅       | Google Gemini API key                 |
+| `VITE_GROQ_API_KEY`        | ⚡       | Groq API key (fallback AI provider)   |
+| `VITE_ORS_API_KEY`         | ⚡       | OpenRouteService key (for map routes) |
+| `VITE_TRANSLATION_API_URL` | ❌       | LibreTranslate endpoint               |
+| `VITE_APP_NAME`            | ❌       | App display name (default: Roameo)    |
 
 ### Supabase Tables
-The following tables are required (migrations in `backend/supabase/migrations/`):
+
+The following tables are required (migrations in
+`backend/supabase/migrations/`):
+
 - `profiles` — User profiles and preferences
 - `trips` — Trip data with itineraries
 - `bookings` — Hotel/flight booking records
@@ -230,17 +281,18 @@ The following tables are required (migrations in `backend/supabase/migrations/`)
 </p>
 
 ### Core Dependencies
-| Category | Technology |
-|----------|------------|
-| **Frontend** | React 18, Vite 5, Tailwind CSS 3 |
-| **State Management** | Zustand |
-| **Backend / Auth** | Supabase (PostgreSQL, Auth, RLS) |
-| **AI / LLM** | Google Gemini API, Groq SDK |
-| **Maps** | Leaflet, React-Leaflet, OpenRouteService |
-| **Animations** | Framer Motion |
-| **Icons** | Lucide React |
-| **PDF Export** | jsPDF |
-| **Deployment** | Docker, Nginx, Render |
+
+| Category             | Technology                               |
+| -------------------- | ---------------------------------------- |
+| **Frontend**         | React 18, Vite 5, Tailwind CSS 3         |
+| **State Management** | Zustand                                  |
+| **Backend / Auth**   | Supabase (PostgreSQL, Auth, RLS)         |
+| **AI / LLM**         | Google Gemini API, Groq SDK              |
+| **Maps**             | Leaflet, React-Leaflet, OpenRouteService |
+| **Animations**       | Framer Motion                            |
+| **Icons**            | Lucide React                             |
+| **PDF Export**       | jsPDF                                    |
+| **Deployment**       | Docker, Nginx, Render                    |
 
 ---
 
@@ -251,8 +303,16 @@ AI-Travel-Assistant/
 ├── frontend/                    # React client application
 │   ├── src/
 │   │   ├── api/                 # External API wrappers
+│   │   │   ├── routeTime.js     # OSRM driving times + geocoding + cache
+│   │   │   ├── geocode.js       # Geocoding API
 │   │   │   ├── places.js        # Places/destinations API
 │   │   │   └── weather.js       # Weather data API
+│   │   ├── engine/              # Core planning engine
+│   │   │   ├── tripOrchestrator.js     # Main orchestration pipeline
+│   │   │   ├── tripDurationPlanner.js  # Feasibility + overnight detection
+│   │   │   ├── travelTimelineBuilder.js # TRAVEL/EXPLORE day segmentation
+│   │   │   ├── budgetAllocator.js      # Envelope-based budget allocation
+│   │   │   └── feasibilityGuard.js     # Input validation
 │   │   ├── components/
 │   │   │   ├── ai/              # AI chat components
 │   │   │   ├── companion/       # AI travel companion
@@ -264,30 +324,21 @@ AI-Travel-Assistant/
 │   │   ├── hooks/               # Custom React hooks
 │   │   ├── lib/                 # Supabase client setup
 │   │   ├── pages/               # Route-level page components
-│   │   │   ├── Home.jsx         # Landing / Dashboard
-│   │   │   ├── Discover.jsx     # Destination explorer
-│   │   │   ├── Itinerary.jsx    # Trip itinerary manager
-│   │   │   ├── Budget.jsx       # Budget planner
-│   │   │   ├── Bookings.jsx     # Booking search
-│   │   │   ├── AIControlCenter  # AI orchestration dashboard
-│   │   │   ├── Chat.jsx         # AI companion chat
-│   │   │   └── Settings.jsx     # User preferences
 │   │   ├── services/
 │   │   │   └── ai/              # AI service layer (Gemini, Groq)
 │   │   ├── store/               # Zustand state stores
-│   │   │   ├── authStore.js     # Authentication state
-│   │   │   ├── itineraryStore.js# Trip & itinerary CRUD
-│   │   │   ├── budgetStore.js   # Budget management
-│   │   │   ├── bookingStore.js  # Booking state
-│   │   │   └── themeStore.js    # Dark/light mode
 │   │   ├── utils/               # Utility functions
+│   │   │   └── transportEngine.js # Distance + transport mode + overnight
 │   │   └── App.jsx              # Root component & routing
+│   ├── tests/                   # Vitest unit tests (160+ tests)
 │   ├── public/                  # Static assets
 │   ├── Dockerfile               # Multi-stage Docker build
 │   ├── nginx.conf.template      # Nginx SPA configuration
 │   └── package.json             # Dependencies & scripts
 ├── backend/
 │   └── supabase/
+│       ├── functions/           # Edge functions
+│       │   └── itinerary-generator/  # LLM prompt engineering
 │       └── migrations/          # SQL migration files
 ├── render.yaml                  # Render deployment config
 ├── docker-compose.yml           # Local container orchestration
@@ -299,6 +350,7 @@ AI-Travel-Assistant/
 ## 🚀 Deployment
 
 ### Local Development
+
 ```bash
 cd frontend
 npm install
@@ -306,38 +358,55 @@ npm run dev
 ```
 
 ### Docker (Local)
+
 ```bash
 docker-compose up --build
 ```
+
 Access the app at `http://localhost:3000`
 
 ### Production (Render)
+
 The app is deployed on [Render](https://render.com) using Docker:
 
 1. Connect your GitHub repository to Render
 2. Set the environment variables in the Render dashboard
 3. Deploy — Render will build the Docker image and serve via Nginx
 
-**Live URL**: [https://roameo-rz80.onrender.com](https://roameo-rz80.onrender.com)
+**Live URL**:
+[https://roameo-rz80.onrender.com](https://roameo-rz80.onrender.com)
 
 ---
 
 ## 🧪 Testing
 
+### Automated Tests
+
+```bash
+cd frontend && npx vitest run    # 160+ tests across 10 files
+```
+
 ### Demo Credentials
+
 To explore the app without signing up:
+
 ```
 Email: demo@roameo.com
 Password: demo1234
 ```
 
 ### Test Scenarios
-1. **Create a Trip** — Go to My Trips → Create a new trip to Vizag for 3 days
-2. **Generate Itinerary** — Use the AI to auto-generate a day-by-day plan
-3. **Budget Planning** — Set a budget and track expenses by category
-4. **Discover** — Browse curated destinations on the Discover page
-5. **AI Chat** — Ask the AI companion for travel recommendations
-6. **Bookings** — Search and compare hotels for your destination
+
+1. **Create a Trip** — Go to My Trips → Create Vizag → Tirupati, 1 day, budget,
+   2 people
+2. **Duration Check** — Observe overnight travel detection (0 travel days for
+   9.4h route)
+3. **Generate Itinerary** — AI generates group activities with per-person costs
+4. **Budget Planning** — Set per-person budget, see group total in financial
+   summary
+5. **Discover** — Browse curated destinations on the Discover page
+6. **AI Chat** — Ask the AI companion for travel recommendations
+7. **Bookings** — Search and compare hotels for your destination
 
 ---
 
@@ -352,6 +421,7 @@ We welcome contributions! Here's how you can help:
 5. ✨ Open a Pull Request
 
 ### Development Setup
+
 ```bash
 git clone https://github.com/K007-K/AI-Travel-Assistant.git
 cd AI-Travel-Assistant/frontend
@@ -363,7 +433,8 @@ npm run dev
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
+for details.
 
 ## 🙏 Acknowledgments
 
