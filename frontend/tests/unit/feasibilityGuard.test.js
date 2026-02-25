@@ -236,7 +236,7 @@ describe('applyFeasibilityGuard (full)', () => {
             makeActivity({ title: `Act${i + 1}`, order_index: i })
         );
 
-        const result = applyFeasibilityGuard({
+        applyFeasibilityGuard({
             trip,
             activitySegments: segments,
             travelStyle: 'city_explorer',
