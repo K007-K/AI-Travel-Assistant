@@ -487,6 +487,25 @@ export async function orchestrateTrip(trip, callbacks = {}) {
             trip.start_location.toLowerCase() !== trip.destination.toLowerCase());
         const hasReturn = !!(trip.return_location || trip.start_location) && hasOutbound;
 
+        // ── Extract arrival/departure context from transport segments ──
+        // This bridges the gap: the orchestrator KNOWS overnight details,
+        // now we TELL the LLM so it can plan realistically.
+        const outboundSeg = allSegments.find(s => s.type === 'outbound_travel');
+        const returnSeg = allSegments.find(s => s.type === 'return_travel');
+
+        const arrivalContext = {
+            isOvernightArrival: outboundSeg?.metadata?.isOvernight || false,
+            arrivalTime: outboundSeg?.metadata?.isOvernight
+                ? (outboundSeg.metadata.arrival || '07:00') : null,
+            arrivalMode: outboundSeg?.metadata?.transport_mode || null,
+            departureTime: returnSeg?.metadata?.isOvernight
+                ? (returnSeg.metadata.departure || '21:00') : null,
+            isOvernightDeparture: returnSeg?.metadata?.isOvernight || false,
+            departureMode: returnSeg?.metadata?.transport_mode || null,
+            hasAccommodation: (allocation.accommodation || 0) > 0,
+            travelHours: trip._osrm_outbound_hours || null,
+        };
+
         aiPlan = await generateTripPlan(
             trip.destination,
             explorationDays,  // Only generate for EXPLORE days
@@ -508,6 +527,8 @@ export async function orchestrateTrip(trip, callbacks = {}) {
                 startLocation: trip.start_location || '',
                 hasOutboundTransport: hasOutbound,
                 hasReturnTransport: hasReturn,
+                // Arrival/departure realism context
+                ...arrivalContext,
             }
         );
     } catch (err) {

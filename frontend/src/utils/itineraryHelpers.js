@@ -104,7 +104,20 @@ export function buildDaysFromSegments(segments, trip) {
 
     const dayNumbers = Object.keys(byDay).map(Number).sort((a, b) => a - b);
     return dayNumbers.map(dn => {
-        const segs = byDay[dn].sort((a, b) => a.order_index - b.order_index);
+        const segs = byDay[dn].sort((a, b) => {
+            // Logistics segments (outbound, return, intercity, local transport) use order_index
+            const aIsLogistics = ['outbound_travel', 'return_travel', 'intercity_travel', 'local_transport', 'accommodation'].includes(a.type);
+            const bIsLogistics = ['outbound_travel', 'return_travel', 'intercity_travel', 'local_transport', 'accommodation'].includes(b.type);
+
+            // If both are normal activities, sort by time
+            if (!aIsLogistics && !bIsLogistics) {
+                const timeA = a.metadata?.time || '09:00';
+                const timeB = b.metadata?.time || '09:00';
+                return timeA.localeCompare(timeB);
+            }
+            // Logistics keep order_index priority
+            return (a.order_index ?? 0) - (b.order_index ?? 0);
+        });
         const dayLocation = segs.find(s => s.location)?.location
             || getDayLocationFromTripSegments(tripSegments, dn)
             || trip.destination;

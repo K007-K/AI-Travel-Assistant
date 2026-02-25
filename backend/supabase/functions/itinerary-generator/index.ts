@@ -118,6 +118,16 @@ serve(async (req: Request) => {
         const hasOutboundTransport = rawBody.hasOutboundTransport === true
         const hasReturnTransport = rawBody.hasReturnTransport === true
 
+        // Arrival/departure realism context (from orchestrator transport segments)
+        const isOvernightArrival = rawBody.isOvernightArrival === true
+        const arrivalTime = sanitizeString(rawBody.arrivalTime) || null
+        const arrivalMode = sanitizeString(rawBody.arrivalMode) || null
+        const isOvernightDeparture = rawBody.isOvernightDeparture === true
+        const departureTime = sanitizeString(rawBody.departureTime) || null
+        const departureMode = sanitizeString(rawBody.departureMode) || null
+        const hasAccommodation = rawBody.hasAccommodation === true
+        const _travelHours = toPositiveNumber(rawBody.travelHours, 0) || null
+
         const budgetGuidance = BUDGET_TIER_DESCRIPTIONS[budgetTier] || BUDGET_TIER_DESCRIPTIONS['mid-range']
 
         // ── Schedule context (multi-city support) ───────────
@@ -205,13 +215,17 @@ serve(async (req: Request) => {
                 ? 'Premium → high-end experiences allowed.'
                 : 'Comfort → moderate priced attractions.'
 
-        // Constraint block
+        // Constraint block — DON'T block local transport mentions, only intercity
         const transportConstraint = excludeTransport
-            ? '\n- DO NOT include any transport segments (flights, trains, buses, taxis).'
+            ? '\n- DO NOT include intercity transport segments (flights, trains, buses between cities) — those are handled separately.\n- You SHOULD include local transport context (auto-rickshaws, city buses, metro, walking) in activity notes with realistic costs.'
             : ''
         const accommodationConstraint = excludeAccommodation
-            ? '\n- DO NOT include accommodation or hotel suggestions.'
+            ? '\n- DO NOT include hotel/accommodation as separate activities — those are handled separately.'
             : ''
+
+        // Dynamic time window based on arrival/departure
+        const dayStartTime = isOvernightArrival ? (arrivalTime || '06:00') : '08:00'
+        const dayEndTime = isOvernightDeparture ? (departureTime || '21:00') : '21:00'
 
         const prompt = `
 You are a professional travel operations planner, not a creative writer.
@@ -231,23 +245,32 @@ Activity Budget: ${dailyPerPerson} ${currency}/person/day (${effectiveBudget} ${
 Schedule: ${scheduleInfo}
 
 Arrival Info:
-- Arrival transport exists: ${hasOutboundTransport}
-- Arrival time: unknown
+- Arrives from: ${startLocation}
+- Arrival mode: ${arrivalMode || 'own transport'}
+- Arrival time: ${arrivalTime || '08:00'}
+${isOvernightArrival ? `- OVERNIGHT ARRIVAL: Traveler arrives early morning (~${arrivalTime || '06:00'}) by overnight ${arrivalMode || 'transport'}.
+  Plan the FIRST activity as freshening up at the station/bus stand (washrooms, cloak room for luggage).
+  Then start sightseeing from ${arrivalTime || '06:00'} onwards — do NOT wait until 08:00.` : ''}
 
 Departure Info:
-- Return transport exists: ${hasReturnTransport}
-- Departure time: unknown
+- Return mode: ${departureMode || 'own transport'}
+- Departure time: ${isOvernightDeparture ? (departureTime || '21:00') : 'evening'}
+${isOvernightDeparture ? `- OVERNIGHT DEPARTURE: Traveler boards overnight ${departureMode || 'transport'} at ~${departureTime || '21:00'}.
+  Plan dinner 1-2 hours before departure. Ensure last activity ends by ${parseInt(departureTime || '21') - 2}:00.` : ''}
 
-Daily time window: 08:00–21:00
+${!hasAccommodation ? 'NO HOTEL: This is a day trip — traveler sleeps on overnight transport, no hotel check-in/check-out.' : ''}
+
+Daily time window: ${dayStartTime}–${dayEndTime}
 Max total activity time per day: 10 hours
-Mandatory lunch buffer: 1 hour (12:00-13:00)
-Mandatory 30-minute buffer between activities
+Mandatory meal breaks: breakfast (if arriving early), lunch (12:00-13:00), dinner (before departure)
+Mandatory 30-minute buffer between activities for local travel
 
 ---------------------------------------------------
 STYLE RULES (HARD LIMITS):
 
 ${styleName} style → max ${styleLimit} activities per day.
 You MUST NOT exceed this limit.
+You MUST have at least 4 activities per day (including meals).
 
 ---------------------------------------------------
 DISTANCE RULE:
@@ -260,10 +283,11 @@ Group activities by proximity. Do NOT zigzag across the city.
 ---------------------------------------------------
 ARRIVAL & DEPARTURE RULES:
 
-${hasOutboundTransport ? `Traveler is arriving from ${startLocation}.
-If intercity distance > 300km and trip is only 1 day, keep itinerary very light (max 2 activities).` : 'Traveler is local — full day available.'}
+${isOvernightArrival ? `Traveler arrives from ${startLocation} by overnight ${arrivalMode} at ~${arrivalTime || '06:00'}.
+This is a realistic day trip — plan a FULL day of activities starting from arrival.
+DO NOT say "keep it light" — the traveler specifically chose to travel overnight to MAXIMIZE exploration time.` : hasOutboundTransport ? `Traveler is arriving from ${startLocation} during the morning.` : 'Traveler is local — full day available.'}
 
-${hasReturnTransport ? 'Ensure last-day activities end early enough for return travel.' : ''}
+${isOvernightDeparture ? `Traveler departs at ~${departureTime || '21:00'} by overnight ${departureMode}. Include dinner before departure. End last activity by ${parseInt(departureTime || '21') - 2}:00.` : hasReturnTransport ? 'Ensure last-day activities end early enough for return travel.' : ''}
 
 ---------------------------------------------------
 BUDGET RULES:
@@ -296,9 +320,21 @@ All activity costs must be PER PERSON, not group total.
 QUALITY RULES:
 
 1. SPECIFIC REAL PLACES ONLY — no generic fillers like "Evening Walk" or "Local Market"
-2. NAMED restaurants/stalls with actual dish recommendations
-3. PRACTICAL TIPS in "notes": booking requirements, dress codes, timings, local transport
+2. NAMED restaurants/stalls with actual dish recommendations and per-person cost
+3. PRACTICAL TIPS in "notes": booking requirements, dress codes, timings, HOW to get there (which bus, auto cost)
 4. CULTURAL CONTEXT: temple etiquette, local customs, safety warnings where relevant
+
+---------------------------------------------------
+LOGISTICS RULES (CRITICAL FOR REALISM):
+
+1. Include ACTUAL local transport between activities in the notes field (auto-rickshaw ₹XX, city bus ₹XX, shared taxi ₹XX — use REAL local prices for ${destination}).
+2. For temples/religious sites: include entry/darshan ticket costs as estimated_cost. Mention free prasadam/langar meals if the temple offers them. Note advance booking requirements.
+3. For day trips with no hotel: mention station/bus stand facilities (washrooms, cloak rooms, luggage storage) with costs.
+4. Schedule meals at ACTUAL named local restaurants/street food stalls — not generic "lunch break."
+5. Account for QUEUE TIMES at popular attractions (temples: 1-3 hours, monuments: 30 min).
+6. Use local public transport (city bus ₹10-50, shared auto ₹20-80, auto ₹100-300) NOT undersized costs like ₹25 for 10km.
+7. For hill stations/mountain temples: include uphill transport (cable car, APSRTC bus, shared jeep) with real costs.
+8. If a city has free government/temple meals, INCLUDE them as a meal activity with estimated_cost: 0.
 
 ${contextData ? `\nVERIFIED LOCAL DATA:\n${contextData}` : ''}
 
