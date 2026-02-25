@@ -138,7 +138,7 @@ const BudgetTab = ({
                                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Trip Budget</span>
                                 </div>
                                 <div className="text-2xl font-bold text-foreground">{cur} {totalBudget.toLocaleString()}</div>
-                                <p className="text-xs text-muted-foreground mt-1">per person · {trip.days?.length || 0} days</p>
+                                <p className="text-xs text-muted-foreground mt-1">per person · {trip.days?.length || 0} days · 👥 {trip.travelers || 1} traveler{(trip.travelers || 1) > 1 ? 's' : ''}</p>
                             </motion.div>
 
                             {/* Actual Spent */}
@@ -190,6 +190,7 @@ const BudgetTab = ({
                                     { label: 'Forecast Total', value: `${cur} ${forecastTotal.toLocaleString()}`, accent: forecastPercent >= 100 },
                                     { label: 'Remaining (Forecast)', value: `${cur} ${remainingForecast.toLocaleString()}`, accent: remainingForecast < 0 },
                                     { label: 'Forecast Utilization', value: `${forecastPercent}%`, accent: forecastPercent >= 80 },
+                                    ...(trip.travelers > 1 ? [{ label: `Group Total (${trip.travelers} travelers)`, value: `${cur} ${(totalBudget * trip.travelers).toLocaleString()}`, accent: false }] : []),
                                 ].map((row, i) => (
                                     <div key={i} className="flex justify-between items-center py-3">
                                         <span className="text-sm text-muted-foreground">{row.label}</span>

@@ -196,6 +196,7 @@ serve(async (req: Request) => {
         // ── Build prompt ────────────────────────────────────
         const effectiveBudget = activityBudget || budget || 2000
         const dailyBudget = Math.round(effectiveBudget / Math.max(days, 1))
+        const dailyPerPerson = travelers > 1 ? Math.round(dailyBudget / travelers) : dailyBudget
 
         // Budget tier guidance for pricing
         const budgetPriceGuide = budgetTier === 'budget'
@@ -225,8 +226,8 @@ Destination: ${destination}
 Travel Style: ${styleName}
 Budget Tier: ${budgetTier}
 Total Days: ${days}
-Travelers: ${travelers}
-Activity Budget: ${effectiveBudget} ${currency} total (${dailyBudget} ${currency}/day)
+Travelers: ${travelers} ${travelers === 1 ? '(solo)' : '(group)'}
+Activity Budget: ${dailyPerPerson} ${currency}/person/day (${effectiveBudget} ${currency} total for ${travelers} travelers)
 Schedule: ${scheduleInfo}
 
 Arrival Info:
@@ -277,6 +278,21 @@ ${transportConstraint}
 ${accommodationConstraint}
 
 ---------------------------------------------------
+TRAVELER RULES:
+
+${travelers === 1
+  ? `Solo traveler — suggest individual-friendly experiences:
+- Walking tours, café visits, solo-friendly temples, photography spots
+- Avoid group-only tours or family packages
+- Include safety tips for solo travelers`
+  : `Group of ${travelers} travelers — suggest group-friendly activities:
+- Guided tours, shared experiences, group-friendly restaurants
+- Include group booking tips where applicable
+- Consider group discounts`}
+
+All activity costs must be PER PERSON, not group total.
+
+---------------------------------------------------
 QUALITY RULES:
 
 1. SPECIFIC REAL PLACES ONLY — no generic fillers like "Evening Walk" or "Local Market"
@@ -299,7 +315,7 @@ OUTPUT FORMAT (STRICT JSON ONLY):
           "time": "09:00",
           "location": "Exact area/landmark in ${destination}",
           "type": "sightseeing|food|culture|nature|shopping|nightlife",
-          "estimated_cost": 100,
+          "estimated_cost": 100,  // <-- PER PERSON cost in ${currency}
           "safety_warning": "Warning text or null",
           "notes": "Practical logistical notes: booking tips, dress code, best timing"
         }
@@ -316,7 +332,7 @@ CRITICAL SELF-VALIDATION (do this internally before returning):
 3. Total daily active time ≤ 10 hours.
 4. Activities are geographically logical (no 40km+ jumps).
 5. ALL activities are in ${destination}, NOT in ${startLocation}.
-6. Budget total ≤ ${effectiveBudget} ${currency}.
+6. Per-person daily activity cost ≤ ${dailyPerPerson} ${currency}.
 
 If any rule is violated, FIX it before returning.
 DO NOT explain anything. RETURN JSON ONLY.

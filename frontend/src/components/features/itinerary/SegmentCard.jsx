@@ -47,7 +47,7 @@ const SegmentCard = ({
                             <div className="flex items-center gap-3">
                                 {activity.estimated_cost > 0 && (
                                     <span className="text-sm font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-lg">
-                                        {activeCurrencySymbol}{activity.estimated_cost.toLocaleString()}
+                                        {activeCurrencySymbol}{activity.estimated_cost.toLocaleString()}/pp
                                     </span>
                                 )}
                                 {!isLogistics && (

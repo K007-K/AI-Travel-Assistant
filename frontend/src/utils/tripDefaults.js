@@ -206,29 +206,33 @@ export function deriveTripConstraints(trip) {
     const travelers = trip.travelers || 1;
     const totalDays = (trip.segments || []).reduce((s, seg) => s + (seg.days || 0), 0) || 1;
 
-    // Base daily rate for this tier + currency
+    // Base daily rate for this tier + currency (THIS IS PER-PERSON)
     const baseDailyRate = BASE_DAILY_BUDGET[tier]?.[currency]
         || BASE_DAILY_BUDGET.mid.USD;
 
-    // Scale by style, travelers, and international factor
+    // Scale by style and international factor (per-person)
     const intlFactor = isInternationalTrip(trip) ? INTERNATIONAL_MULTIPLIER : 1;
 
-    const dailyBudget = Math.round(
+    const dailyPerPerson = Math.round(
         baseDailyRate
         * (STYLE_MULTIPLIER[style] || 1)
-        * travelerMultiplier(travelers)
         * intlFactor
     );
 
+    // Group total: scale by travelers (diminishing per-head)
+    const dailyGroupTotal = Math.round(dailyPerPerson * travelerMultiplier(travelers));
+
     // Total budget with 12% buffer
-    const totalBudget = Math.round(dailyBudget * totalDays * BUDGET_BUFFER);
+    const totalBudget = Math.round(dailyGroupTotal * totalDays * BUDGET_BUFFER);
 
     return {
         budget: totalBudget,
-        budget_per_day: dailyBudget,
+        budget_per_day: dailyGroupTotal,
+        budget_per_person_per_day: dailyPerPerson,
+        budget_per_person: Math.round(dailyPerPerson * totalDays * BUDGET_BUFFER),
         accommodation_preference: TIER_TO_ACCOMMODATION[tier] || 'mid-range',
-        travel_preference: 'auto',       // engine decides based on distance/context
-        own_vehicle_type: 'auto',        // engine decides
+        travel_preference: 'auto',
+        own_vehicle_type: 'auto',
     };
 }
 

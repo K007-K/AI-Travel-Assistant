@@ -438,10 +438,18 @@ export function buildOutboundSegment(trip, allocation, _currencyRate) {
         allocation.intercity_remaining = Math.max(0, (allocation.intercity_remaining || 0) - cost);
     }
 
+    // Overnight detection: 6-16h bus/train for budget/mid tier
+    const distanceKm = KM_ESTIMATES[distTier] || 500;
+    const travelHours = estimateDrivingTime(distanceKm);
+    const budgetTierNorm = (trip.budget_tier || trip.accommodation_preference || 'mid');
+    const isOvernightEligible = travelHours >= 6 && travelHours <= 16
+        && ['bus', 'train'].includes(mode)
+        && budgetTierNorm !== 'luxury' && budgetTierNorm !== 'high';
+
     return {
         trip_id: trip.id,
         type: 'outbound_travel',
-        title: `${MODE_LABELS[mode] || mode} — ${startLoc} → ${firstDest}`,
+        title: `${isOvernightEligible ? '🌙 Overnight ' : ''}${MODE_LABELS[mode] || mode} — ${startLoc} → ${firstDest}`,
         day_number: 1,
         location: startLoc,
         estimated_cost: cost,
@@ -453,6 +461,10 @@ export function buildOutboundSegment(trip, allocation, _currencyRate) {
             distance_tier: distTier,
             per_person: Math.round(cost / travelers),
             adjusted_for_budget: adjusted || undefined,
+            isOvernight: isOvernightEligible,
+            estimatedHours: travelHours,
+            departure: isOvernightEligible ? '21:00' : undefined,
+            arrival: isOvernightEligible ? '07:00' : undefined,
         },
     };
 }
@@ -557,10 +569,18 @@ export function buildReturnSegment(trip, allocation, currencyRate, totalDays) {
         allocation.intercity_remaining = Math.max(0, (allocation.intercity_remaining || 0) - cost);
     }
 
+    // Overnight detection (same as outbound)
+    const distanceKm = KM_ESTIMATES[distTier] || 500;
+    const travelHours = estimateDrivingTime(distanceKm);
+    const budgetTierNorm = (trip.budget_tier || trip.accommodation_preference || 'mid');
+    const isOvernightEligible = travelHours >= 6 && travelHours <= 16
+        && ['bus', 'train'].includes(preferredMode)
+        && budgetTierNorm !== 'luxury' && budgetTierNorm !== 'high';
+
     return {
         trip_id: trip.id,
         type: 'return_travel',
-        title: `${MODE_LABELS[preferredMode] || preferredMode} — ${lastDest} → ${returnLoc}`,
+        title: `${isOvernightEligible ? '🌙 Overnight ' : ''}${MODE_LABELS[preferredMode] || preferredMode} — ${lastDest} → ${returnLoc}`,
         day_number: totalDays,
         location: lastDest,
         estimated_cost: cost,
@@ -571,6 +591,10 @@ export function buildReturnSegment(trip, allocation, currencyRate, totalDays) {
             to: returnLoc,
             distance_tier: distTier,
             per_person: Math.round(cost / travelers),
+            isOvernight: isOvernightEligible,
+            estimatedHours: travelHours,
+            departure: isOvernightEligible ? '21:00' : undefined,
+            arrival: isOvernightEligible ? '07:00' : undefined,
         },
     };
 }

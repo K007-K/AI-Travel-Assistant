@@ -3,9 +3,10 @@
  *
  * Shows when the requested trip duration is infeasible.
  * Displays: explorationDays + travelDaysRequired breakdown.
+ * Shows overnight travel tips when applicable.
  */
 import { motion } from 'framer-motion';
-import { AlertTriangle, Clock, MapPin, ArrowRight, Bus, Compass } from 'lucide-react';
+import { AlertTriangle, Clock, MapPin, ArrowRight, Bus, Compass, Moon } from 'lucide-react';
 import { Button } from './Button';
 
 const DurationModal = ({ result, onConfirm, onEdit, onCancel }) => {
@@ -17,7 +18,10 @@ const DurationModal = ({ result, onConfirm, onEdit, onCancel }) => {
         explorationDays,
         segments,
         reason,
+        overnightCount,
     } = result;
+
+    const hasOvernightOptions = overnightCount > 0;
 
     return (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
@@ -53,6 +57,16 @@ const DurationModal = ({ result, onConfirm, onEdit, onCancel }) => {
                         <p className="text-sm text-muted-foreground leading-relaxed">{reason}</p>
                     )}
 
+                    {/* Overnight tip */}
+                    {hasOvernightOptions && (
+                        <div className="flex items-start gap-2 text-sm bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl px-4 py-3">
+                            <Moon className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" />
+                            <span className="text-indigo-700 dark:text-indigo-300">
+                                <strong>Tip:</strong> {overnightCount} of your routes offer overnight bus/train — travel while you sleep and save days!
+                            </span>
+                        </div>
+                    )}
+
                     {/* Breakdown */}
                     <div className="grid grid-cols-2 gap-3">
                         <div className="bg-primary/5 border border-primary/10 rounded-xl p-3 text-center">
@@ -74,13 +88,22 @@ const DurationModal = ({ result, onConfirm, onEdit, onCancel }) => {
                             <div className="space-y-1.5">
                                 {segments.map((seg, i) => (
                                     <div key={i} className="flex items-center gap-2 text-sm bg-muted/50 rounded-lg px-3 py-2">
-                                        <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                        {seg.canOvernight
+                                            ? <Moon className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                                            : <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                        }
                                         <span className="text-foreground font-medium">{seg.from}</span>
                                         <ArrowRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                                         <span className="text-foreground font-medium">{seg.to}</span>
                                         <span className="ml-auto text-xs text-muted-foreground flex items-center gap-1">
                                             <Clock className="w-3 h-3" />
-                                            {seg.hours.toFixed(1)}h ({seg.tier})
+                                            {seg.hours.toFixed(1)}h
+                                            {seg.canOvernight && (
+                                                <span className="text-indigo-500 font-medium ml-1">🌙 overnight</span>
+                                            )}
+                                            {!seg.canOvernight && seg.travelDays > 0 && (
+                                                <span className="text-amber-500 font-medium ml-1">+{seg.travelDays}d</span>
+                                            )}
                                         </span>
                                     </div>
                                 ))}

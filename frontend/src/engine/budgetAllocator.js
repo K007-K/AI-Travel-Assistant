@@ -164,6 +164,15 @@ export function allocateBudget(totalBudget, options = {}) {
         ? Math.round(allocation.accommodation / totalNights)
         : 0;
 
+    // Per-person derived values (for UI display + LLM prompt)
+    allocation.activity_per_day_per_person = travelers > 0
+        ? Math.round(allocation.activity_per_day / travelers)
+        : allocation.activity_per_day;
+
+    allocation.accommodation_per_night_per_person = travelers > 0
+        ? Math.round(allocation.accommodation_per_night / travelers)
+        : allocation.accommodation_per_night;
+
     allocation.intercity_remaining = allocation.intercity;
     allocation.accommodation_remaining = allocation.accommodation;
     allocation.local_transport_remaining = allocation.local_transport;

@@ -166,6 +166,7 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
                 returnLocation: (returnLoc || '').trim(),
                 destinations: form.segments.map(s => ({ location: s.location, days: s.days })),
                 requestedDays: form.segments.reduce((s, seg) => s + seg.days, 0),
+                budgetTier: form.budget_tier === 'high' ? 'high' : form.budget_tier === 'low' ? 'low' : 'mid',
             });
 
             if (!result.feasible) {
