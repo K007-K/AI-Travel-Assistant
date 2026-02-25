@@ -1,107 +1,69 @@
 /**
- * Trip Orchestrator — Full Lifecycle Travel Generation Engine
+ * Trip Orchestrator — LLM-First Architecture
  *
  * Single entry point: `orchestrateTrip(trip)`
  *
- * Executes phases in strict order:
- *   1.   Budget Allocation (algorithmic)
- *   2.   Outbound Travel
- *   3.   Accommodation
- *   4.   Activity Generation (AI)
- *   4a.  AI Sanitizer (strip rogue transport/accommodation)
- *   4b.  Activity Budget Enforcement (proportional scaling)
- *   4c.  Geocoding (enrich activities with coordinates)
- *   4d.  Feasibility Guard (deterministic constraint enforcement)
- *   5.   Local Transport (pairwise, uses geocoded coordinates)
- *   6.   Return Travel
- *   7.   (moved to post-insert in store — booking suggestions need DB IDs)
- *   8.   Daily Cost Summary
- *   9.   Hidden Gems (AI)
- *  10.   Budget Reconciliation
+ * Simplified 3-phase pipeline:
+ *   1. Context Building (budget + OSRM overnight detection)
+ *   2. LLM Generation (complete itinerary: transport + activities + meals)
+ *   3. Parse & Enrich (convert LLM JSON → UI segments + geocode)
  *
- * Returns the structured contract output:
- * {
- *   allocation, segments, daily_summary,
- *   hidden_gems, reconciliation
- * }
- *
- * Note: booking_options are generated post-DB-insert in itineraryStore
- * to ensure they reference real segment UUIDs (Fix Group 4).
+ * The LLM generates EVERYTHING: intercity transport, activities, meals, tips.
+ * No more deterministic cost tables, distance tiers, or budget envelopes.
  *
  * @module engine/tripOrchestrator
  */
 
-import { allocateBudget, deductFromEnvelope, reconcileBudget } from './budgetAllocator.js';
-import { applyFeasibilityGuard } from './feasibilityGuard.js';
 import { buildTravelTimeline } from './travelTimelineBuilder.js';
-import {
-    buildOutboundSegment,
-    buildReturnSegment,
-    buildIntercitySegments,
-    buildAccommodationSegments,
-    insertPairwiseLocalTransport,
-    CURRENCY_MULTIPLIERS,
-} from '../utils/transportEngine.js';
 import { generateTripPlan, getHiddenGems } from '../api/groq.js';
-import { getCityCoordsLong, CITY_COORDINATES } from '../data/cityCoordinates.js';
-import { normalizeTrip } from '../utils/tripDefaults.js';
-
-// ── Geocoder (Phase 4c) — Nominatim API + local cache ────────────────
+import {
+    normalizeBudgetTier,
+    normalizeTravelStyle,
+    deriveTripConstraints,
+} from '../utils/tripDefaults.js';
+import { getCityCoords } from '../data/cityCoordinates.js';
 
 // In-memory cache for the current session
 const _geocodeMemCache = {};
 
 // localStorage cache helpers (30-day TTL)
-// v2: invalidates stale city-center coords from pre-Nominatim-first fix
 const GEO_CACHE_KEY = 'geocode_cache_v2';
+
 function _getGeoCache() {
     try {
         const raw = localStorage.getItem(GEO_CACHE_KEY);
         if (!raw) return {};
-        const parsed = JSON.parse(raw);
-        // Purge entries older than 30 days
+        const cache = JSON.parse(raw);
         const now = Date.now();
-        const TTL = 30 * 24 * 60 * 60 * 1000;
-        for (const key of Object.keys(parsed)) {
-            if (now - (parsed[key]?.ts || 0) > TTL) delete parsed[key];
+        const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+        for (const key of Object.keys(cache)) {
+            if (now - (cache[key]._ts || 0) > thirtyDays) delete cache[key];
         }
-        return parsed;
-    } catch { return {}; }
+        return cache;
+    } catch {
+        return {};
+    }
 }
+
 function _setGeoCache(key, coords) {
     try {
         const cache = _getGeoCache();
-        cache[key] = { ...coords, ts: Date.now() };
+        cache[key] = { ...coords, _ts: Date.now() };
         localStorage.setItem(GEO_CACHE_KEY, JSON.stringify(cache));
-    } catch { /* quota exceeded — ignore */ }
+    } catch { /* quota exceeded, etc */ }
 }
 
-// KNOWN_CITIES consolidated into data/cityCoordinates.js
-
-/**
- * Fetch coordinates from OpenStreetMap Nominatim API.
- * Free, no API key, works for any place worldwide.
- * Rate-limited to ~1 req/sec by Nominatim policy.
- */
+// Fetch coordinates from OpenStreetMap Nominatim API.
 async function _fetchFromNominatim(query) {
     try {
-        const params = new URLSearchParams({
-            q: query,
-            format: 'json',
-            limit: '1',
-            addressdetails: '0',
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
+        const res = await fetch(url, {
+            headers: { 'User-Agent': 'AITravelAssistant/1.0' }
         });
-        const res = await fetch(
-            `https://nominatim.openstreetmap.org/search?${params}`,
-            { headers: { 'User-Agent': 'AITravelAssistant/1.0' } }
-        );
         if (!res.ok) return null;
-        const data = await res.json();
-        if (data.length > 0) {
-            return {
-                latitude: parseFloat(data[0].lat),
-                longitude: parseFloat(data[0].lon),
-            };
+        const results = await res.json();
+        if (results.length > 0) {
+            return { latitude: parseFloat(results[0].lat), longitude: parseFloat(results[0].lon) };
         }
         return null;
     } catch {
@@ -110,463 +72,308 @@ async function _fetchFromNominatim(query) {
 }
 
 /**
- * Geocode a location string. Strategy:
- *   1. In-memory cache (instant)
- *   2. localStorage cache (instant, persists across sessions)
- *   3. KNOWN_CITIES **exact** match only (instant, no network)
- *   4. Nominatim API (any place worldwide, cached after first call)
- *   5. Nominatim with cityContext appended (e.g., "Rishikonda Beach, Vizag")
- *   6. City-level partial match fallback (last resort — city-center coords)
- *
- * IMPORTANT: Partial city matching is deliberately LAST because locations
- * like "Borra Caves, Visakhapatnam" contain the city name but are 100km
- * from city center. We must try Nominatim first for accurate coords.
- *
- * @param {string} location — Place name (e.g., "Rishikonda Beach")
- * @param {string} activityHint — Used for deterministic ±1km offset
- * @param {string} cityContext — Parent city for the day (e.g., "Visakhapatnam")
- * @returns {Promise<{ latitude: number, longitude: number } | null>}
+ * Geocode a location string.
+ * Strategy: memcache → localStorage → KNOWN_CITIES → Nominatim
  */
 async function geocodeLocation(location, activityHint = '', cityContext = '') {
-    if (!location || typeof location !== 'string') return null;
+    if (!location) return null;
 
-    const normalized = location.toLowerCase().trim();
-    const cacheKey = normalized;
+    const cacheKey = location.toLowerCase().trim();
 
     // 1. In-memory cache
-    if (_geocodeMemCache[cacheKey]) {
-        return _applyOffset(_geocodeMemCache[cacheKey], activityHint || normalized);
-    }
+    if (_geocodeMemCache[cacheKey]) return _geocodeMemCache[cacheKey];
 
     // 2. localStorage cache
     const diskCache = _getGeoCache();
-    if (diskCache[cacheKey]?.latitude) {
-        const coords = { latitude: diskCache[cacheKey].latitude, longitude: diskCache[cacheKey].longitude };
+    if (diskCache[cacheKey]) {
+        const { _ts, ...coords } = diskCache[cacheKey];
         _geocodeMemCache[cacheKey] = coords;
-        return _applyOffset(coords, activityHint || normalized);
+        return coords;
     }
 
-    // 3. EXACT city match only — don't use partial matches here
-    //    (partial matching would give "Borra Caves, Visakhapatnam" the same
-    //    coords as "Visakhapatnam" city center, which is 100km wrong)
-    const exactMatch = getCityCoordsLong(normalized);
-    if (exactMatch) {
-        _geocodeMemCache[cacheKey] = exactMatch;
-        _setGeoCache(cacheKey, exactMatch);
-        return _applyOffset(exactMatch, activityHint || normalized);
+    // 3. KNOWN_CITIES exact match
+    const knownCoords = getCityCoords(location);
+    if (knownCoords) {
+        const result = _applyOffset(knownCoords, activityHint || location);
+        _geocodeMemCache[cacheKey] = result;
+        _setGeoCache(cacheKey, result);
+        return result;
     }
 
-    // 4. Nominatim API — works for any specific place in the world
-    const nominatimResult = await _fetchFromNominatim(location);
-    if (nominatimResult) {
-        _geocodeMemCache[cacheKey] = nominatimResult;
-        _setGeoCache(cacheKey, nominatimResult);
-        return _applyOffset(nominatimResult, activityHint || normalized);
-    }
+    // 4. Nominatim API
+    const queries = [
+        cityContext ? `${location}, ${cityContext}` : location,
+        location,
+    ];
 
-    // 5. Try with city context (e.g., "Rishikonda Beach, Visakhapatnam")
-    if (cityContext) {
-        const withCity = await _fetchFromNominatim(`${location}, ${cityContext}`);
-        if (withCity) {
-            _geocodeMemCache[cacheKey] = withCity;
-            _setGeoCache(cacheKey, withCity);
-            return _applyOffset(withCity, activityHint || normalized);
-        }
-    }
-
-    // 6. LAST RESORT: partial city match from CITY_COORDINATES
-    //    Only reaches here if Nominatim failed entirely
-    for (const [city] of Object.entries(CITY_COORDINATES)) {
-        if (normalized.includes(city) || city.includes(normalized)) {
-            const partialCoords = getCityCoordsLong(city);
-            if (partialCoords) {
-                console.warn(`[Geocoder] Using city-level fallback for "${location}" → matched "${city}" (Nominatim failed)`);
-                _geocodeMemCache[cacheKey] = partialCoords;
-                _setGeoCache(cacheKey, partialCoords);
-                return _applyOffset(partialCoords, activityHint || normalized);
-            }
-        }
-    }
-
-    // 7. Final fallback: use cityContext city coords
-    if (cityContext) {
-        const cityKey = cityContext.toLowerCase().trim();
-        if (!_geocodeMemCache[cityKey]) {
-            const cityCoords = getCityCoordsLong(cityKey)
-                || await _fetchFromNominatim(cityContext);
-            if (cityCoords) {
-                _geocodeMemCache[cityKey] = cityCoords;
-                _setGeoCache(cityKey, cityCoords);
-            }
-        }
-        if (_geocodeMemCache[cityKey]) {
-            console.warn(`[Geocoder] Using parent city fallback for "${location}" → "${cityContext}"`);
-            _geocodeMemCache[cacheKey] = _geocodeMemCache[cityKey];
-            return _applyOffset(_geocodeMemCache[cityKey], activityHint || normalized);
+    for (const q of queries) {
+        const result = await _fetchFromNominatim(q);
+        if (result) {
+            _geocodeMemCache[cacheKey] = result;
+            _setGeoCache(cacheKey, result);
+            return result;
         }
     }
 
     return null;
 }
 
-/**
- * Apply deterministic ±0.01° (~1km) offset to base coords.
- * Ensures activities at the same city don't stack at identical points.
- */
+// Apply deterministic ±0.01° (~1km) offset to base coords.
 function _applyOffset(baseCoords, hintStr) {
-    let hintHash = 0;
-    for (let i = 0; i < hintStr.length; i++) {
-        hintHash = ((hintHash << 5) - hintHash + hintStr.charCodeAt(i)) | 0;
+    let hash = 0;
+    const str = String(hintStr || '');
+    for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
     }
-    const latOffset = ((hintHash % 20) - 10) / 1000; // ±0.010°
-    const lngOffset = (((hintHash >> 8) % 20) - 10) / 1000;
+    const latOffset = ((hash % 100) / 10000);
+    const lngOffset = (((hash >> 8) % 100) / 10000);
     return {
-        latitude: Math.round((baseCoords.latitude + latOffset) * 10000) / 10000,
-        longitude: Math.round((baseCoords.longitude + lngOffset) * 10000) / 10000,
+        latitude: baseCoords.latitude + latOffset,
+        longitude: baseCoords.longitude + lngOffset,
     };
 }
 
 /**
- * Phase 4c: Enrich AI activities with geocoded coordinates.
- * Now async to support Nominatim API lookups for unknown locations.
- *
- * @param {object[]} activitySegments — Activity segments from AI conversion
- * @param {object[]} dayLocations — Array of { dayNumber, location }
- * @returns {Promise<object[]>} — Same array, mutated with latitude/longitude
+ * Enrich segments with geocoded coordinates.
  */
-async function enrichActivitiesWithCoordinates(activitySegments, dayLocations = []) {
-    for (const seg of activitySegments) {
-        const hint = (seg.title || '') + '|' + (seg.metadata?.time_of_day || '') + '|' + (seg.order_index || 0);
-        const dayLoc = dayLocations.find(dl => dl.dayNumber === seg.day_number);
-        const cityContext = dayLoc?.location || '';
-        const coords = await geocodeLocation(seg.location, hint, cityContext);
+async function enrichActivitiesWithCoordinates(segments, dayLocations = []) {
+    const locationMap = {};
+    dayLocations.forEach(dl => { locationMap[dl.dayNumber] = dl.location; });
+
+    for (const seg of segments) {
+        if (seg.latitude && seg.longitude) continue;
+        if (['outbound_travel', 'return_travel'].includes(seg.type)) continue;
+
+        const cityContext = locationMap[seg.day_number] || '';
+        const coords = await geocodeLocation(
+            seg.location || seg.title,
+            seg.title,
+            cityContext
+        );
+
         if (coords) {
             seg.latitude = coords.latitude;
             seg.longitude = coords.longitude;
-            seg.metadata = { ...seg.metadata, latitude: coords.latitude, longitude: coords.longitude };
         } else {
-            seg.metadata = { ...seg.metadata, geocode_failed: true };
+            seg.metadata = seg.metadata || {};
+            seg.metadata.geocode_failed = true;
         }
     }
-    return activitySegments;
 }
 
-// ── AI Sanitizer (Fix Group 3) ───────────────────────────────────────
-
-const TRANSPORT_KEYWORDS = /\b(flight|train|bus|taxi|uber|cab|metro|subway|shuttle|transfer|airport|station)\b/i;
-const ACCOMMODATION_KEYWORDS = /\b(hotel|hostel|resort|stay|check.?in|check.?out|airbnb|lodge|motel|guesthouse)\b/i;
-
-/**
- * Phase 4a: Strip rogue transport/accommodation items from AI response.
- *
- * @param {object[]} days — AI response days array
- * @returns {object[]} — Sanitized days array (mutates in place)
- */
-function sanitizeAIActivities(days) {
-    const removed = [];
-
-    for (const day of days) {
-        if (!day.activities) continue;
-
-        const original = day.activities.length;
-        day.activities = day.activities.filter(act => {
-            const title = (act.title || '').toLowerCase();
-            const type = (act.type || '').toLowerCase();
-
-            const isTransport = TRANSPORT_KEYWORDS.test(title) || ['transport', 'travel', 'flight', 'train'].includes(type);
-            const isAccommodation = ACCOMMODATION_KEYWORDS.test(title) || ['accommodation', 'hotel', 'stay'].includes(type);
-
-            if (isTransport || isAccommodation) {
-                removed.push({ title: act.title, type: act.type, reason: isTransport ? 'transport' : 'accommodation' });
-                return false;
-            }
-            return true;
-        });
-
-        if (day.activities.length < original) {
-            if (import.meta.env.DEV) console.log(`[Sanitizer] Removed ${original - day.activities.length} rogue items from day`);
-        }
-    }
-
-    if (removed.length > 0) {
-        console.warn('[Sanitizer] Removed rogue AI items:', removed);
-    }
-
-    return days;
-}
-
-// ── Phase 8: Daily Cost Summary ──────────────────────────────────────
+// ── Daily Cost Summary ──────────────────────────────────────────────
 
 function computeDailySummary(segments, totalDays) {
     const summary = [];
-
-    for (let day = 1; day <= totalDays; day++) {
-        const daySegs = segments.filter(s => s.day_number === day);
-
+    for (let d = 1; d <= totalDays; d++) {
+        const daySegs = segments.filter(s => s.day_number === d);
         const activityCost = daySegs
             .filter(s => s.type === 'activity')
-            .reduce((sum, s) => sum + (parseFloat(s.estimated_cost) || 0), 0);
-
+            .reduce((s, a) => s + (a.estimated_cost || 0), 0);
         const transportCost = daySegs
             .filter(s => ['outbound_travel', 'return_travel', 'intercity_travel', 'local_transport'].includes(s.type))
-            .reduce((sum, s) => sum + (parseFloat(s.estimated_cost) || 0), 0);
-
-        const stayCost = daySegs
+            .reduce((s, a) => s + (a.estimated_cost || 0), 0);
+        const accommodationCost = daySegs
             .filter(s => s.type === 'accommodation')
-            .reduce((sum, s) => sum + (parseFloat(s.estimated_cost) || 0), 0);
-
-        const totalDayCost = activityCost + transportCost + stayCost;
+            .reduce((s, a) => s + (a.estimated_cost || 0), 0);
 
         summary.push({
-            day_number: day,
+            day_number: d,
             activity_cost: Math.round(activityCost),
-            local_transport_cost: Math.round(
-                daySegs.filter(s => s.type === 'local_transport')
-                    .reduce((sum, s) => sum + (parseFloat(s.estimated_cost) || 0), 0)
-            ),
-            travel_cost: Math.round(
-                daySegs.filter(s => ['outbound_travel', 'return_travel', 'intercity_travel'].includes(s.type))
-                    .reduce((sum, s) => sum + (parseFloat(s.estimated_cost) || 0), 0)
-            ),
-            stay_cost: Math.round(stayCost),
-            total_day_cost: Math.round(totalDayCost),
-            segment_count: daySegs.length,
+            transport_cost: Math.round(transportCost),
+            accommodation_cost: Math.round(accommodationCost),
+            total: Math.round(activityCost + transportCost + accommodationCost),
         });
     }
-
     return summary;
 }
 
 // ── Main Orchestrator ────────────────────────────────────────────────
 
 /**
- * Orchestrate full trip generation.
+ * Orchestrate full trip generation — LLM-first architecture.
  *
- * @param {object} trip — Trip object from store (with segments, days, constraints)
+ * @param {object} trip — Trip object from store
  * @param {object} callbacks — Optional progress callbacks
- * @param {function} callbacks.onPhase — Called with (phaseNumber, phaseName) at each phase start
  * @returns {Promise<OrchestrationResult>}
  */
 export async function orchestrateTrip(trip, callbacks = {}) {
     const { onPhase } = callbacks;
-    const allSegments = [];
 
-    const tripSegments = trip.segments || [{ location: trip.destination, days: trip.days?.length || 1 }];
-    const totalDays = tripSegments.reduce((sum, s) => sum + (s.days || 0), 0);
-    const currency = trip.currency || 'USD';
-    const currencyRate = CURRENCY_MULTIPLIERS[currency] || 1;
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // PHASE 1: Context Building
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    onPhase?.(1, 'Building Context');
 
-    // Single normalization point — all phases use these values
-    const { normalizedStyle, normalizedTier, userStyle, hasOwnVehicle, pace } = normalizeTrip(trip);
-    const budgetTier = normalizedTier;    // 'budget' | 'mid-range' | 'luxury'
-    const travelStyle = normalizedStyle;  // 'relaxation' | 'city_explorer' | 'road_trip' | 'business'
+    const budgetTier = normalizeBudgetTier(trip.budget_tier || trip.accommodation_preference);
+    const travelStyle = normalizeTravelStyle(trip.travel_style);
+    const currency = trip.currency || 'INR';
+    const travelers = trip.travelers || 1;
 
-    if (import.meta.env.DEV) console.log('[Orchestrator] Normalized:', { userStyle, travelStyle, budgetTier, hasOwnVehicle, pace });
+    // Derive budget from trip defaults
+    const constraints = deriveTripConstraints(trip);
+    const totalBudget = trip.budget || constraints.totalBudget || 2000;
+    const _budgetPerPerson = travelers > 1 ? Math.round(totalBudget / travelers) : totalBudget;
 
-    // Build day-to-location mapping
-    const dayLocations = [];
-    let dayCount = 0;
-    tripSegments.forEach(seg => {
-        for (let i = 0; i < (seg.days || 0); i++) {
-            dayCount++;
-            dayLocations.push({ dayNumber: dayCount, location: seg.location });
-        }
-    });
-    // Build travel timeline to determine TRAVEL vs EXPLORE days
-    // Map engine tier names to planner tier names
-    const plannerTier = budgetTier === 'luxury' ? 'high' : budgetTier === 'budget' ? 'low' : 'mid';
+    // Compute timeline from OSRM (real driving hours → overnight detection)
+    const plannerTier = budgetTier === 'budget' ? 'low' : budgetTier === 'luxury' ? 'high' : 'mid';
+    const tripSegments = trip.segments || [];
+    const destinations = tripSegments.length > 0
+        ? tripSegments.map(s => ({ location: s.location, days: s.days || 1 }))
+        : [{ location: trip.destination, days: trip.duration_days || 1 }];
+
     const timeline = await buildTravelTimeline({
-        startLocation: trip.start_location || trip.destination,
+        startLocation: trip.start_location || '',
         returnLocation: trip.return_location || trip.start_location || '',
-        destinations: tripSegments,
+        destinations,
         budgetTier: plannerTier,
     });
 
-    // Inject OSRM hours AND distance into trip for transport engine.
-    // The timeline has real driving data from OSRM; the transport engine runs
-    // synchronously and can't call OSRM itself. This bridges the data gap.
+    // Extract overnight context from timeline
     const firstExplore = timeline.find(t => t.type === 'EXPLORE');
-    if (firstExplore?.overnightArrival) {
-        trip._osrm_outbound_hours = firstExplore.overnightArrival.hours;
-        trip._osrm_outbound_km = firstExplore.overnightArrival.distanceKm;
-    } else {
-        const firstTravel = timeline.find(t => t.type === 'TRAVEL');
-        if (firstTravel) {
-            trip._osrm_outbound_hours = firstTravel.hours;
-            trip._osrm_outbound_km = firstTravel.distanceKm;
-        }
-    }
-    // Return segment: last TRAVEL or symmetric with outbound
-    const returnLoc = trip.return_location || trip.start_location || '';
-    const lastTravel = [...timeline].reverse().find(t =>
-        t.type === 'TRAVEL' && t.to?.toLowerCase().trim() === returnLoc.toLowerCase().trim()
-    );
-    if (lastTravel) {
-        trip._osrm_return_hours = lastTravel.hours;
-        trip._osrm_return_km = lastTravel.distanceKm;
-    } else if (trip._osrm_outbound_hours) {
-        trip._osrm_return_hours = trip._osrm_outbound_hours;
-        trip._osrm_return_km = trip._osrm_outbound_km;
-    }
+    const overnightArrival = firstExplore?.overnightArrival || null;
 
-    // Compute exploration-only days (budget scales on these, not travel days)
+    // Count exploration days (budget and activities scale on these)
     const exploreDays = timeline.filter(t => t.type === 'EXPLORE');
-    const explorationDays = exploreDays.length || totalDays;
-    const travelDayCount = timeline.filter(t => t.type === 'TRAVEL').length;
+    const totalDays = timeline.length || 1;
+    const explorationDays = exploreDays.length || 1;
 
-    // Build EXPLORE-only day locations for LLM (no activities on travel days)
-    const exploreDayLocations = exploreDays.map((slot, i) => ({
-        dayNumber: i + 1,  // LLM sees sequential day numbers (1, 2, 3...)
-        location: slot.location,
-        calendarDay: slot.day_number,  // actual calendar position
+    // Build day locations for geocoding and LLM schedule
+    const dayLocations = timeline.map(slot => ({
+        dayNumber: slot.day_number,
+        location: slot.location || trip.destination,
+        type: slot.type,
     }));
 
-    if (import.meta.env.DEV) console.log(`[Orchestrator] Timeline: ${timeline.length} days (${explorationDays} explore, ${travelDayCount} travel)`);
+    const exploreDayLocations = exploreDays.map((slot, i) => ({
+        dayNumber: i + 1,  // Sequential for LLM (Day 1, 2, 3...)
+        calendarDay: slot.day_number,  // Actual calendar position
+        location: slot.location || trip.destination,
+    }));
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // PHASE 1: Budget Allocation
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    onPhase?.(1, 'Budget Allocation');
+    // Determine overnight context for LLM
+    const isOvernightArrival = !!overnightArrival;
+    const arrivalHours = overnightArrival?.hours || null;
 
-    // CRITICAL: Scale activity budget on explorationDays, not totalDays
-    const budgetDays = explorationDays;
-    const budgetNights = Math.max(0, explorationDays - 1);
+    // Estimate arrival time based on travel hours
+    let arrivalTime = null;
+    let arrivalMode = null;
+    if (isOvernightArrival) {
+        // If train/bus takes 10-14h and departs ~21:00, arrives 05:00-07:00
+        const departHour = 21;
+        const arriveHour = (departHour + Math.round(arrivalHours || 10)) % 24;
+        arrivalTime = `${String(arriveHour).padStart(2, '0')}:00`;
+        arrivalMode = plannerTier === 'high' ? 'flight' : (arrivalHours >= 8 ? 'train' : 'bus');
+    }
 
-    const allocation = allocateBudget(trip.budget || 0, {
-        travelStyle,
-        budgetTier,
-        totalDays: budgetDays,
-        totalNights: budgetNights,
-        travelers: trip.travelers || 1,
-        hasOwnVehicle,
-    });
+    // Check if return is also overnight (symmetric with outbound)
+    const isOvernightDeparture = isOvernightArrival; // Same distance = same overnight status
+    const departureTime = isOvernightDeparture ? '21:00' : null;
+    const departureMode = arrivalMode;
 
-    if (import.meta.env.DEV) console.log('[Orchestrator] Phase 1 — Budget allocated:', allocation);
+    // Simple allocation for UI compatibility (no complex envelopes)
+    const allocation = {
+        total: totalBudget,
+        intercity: Math.round(totalBudget * 0.15),
+        accommodation: 0,
+        local_transport: Math.round(totalBudget * 0.05),
+        activity: Math.round(totalBudget * 0.65),
+        buffer: Math.round(totalBudget * 0.15),
+        // Remaining trackers for UI
+        intercity_remaining: Math.round(totalBudget * 0.15),
+        activity_remaining: Math.round(totalBudget * 0.65),
+    };
 
-    // ── Fix Group 4: Zero or insufficient budget guard ──
-    if ((trip.budget || 0) <= 0) {
-        console.warn('[Orchestrator] Budget is 0 or negative — returning minimal structure');
-        return {
-            allocation,
-            segments: [],
-            daily_summary: [],
-            hidden_gems: [],
-            reconciliation: { balanced: true, total: 0, budget: 0, overshoot: 0, buffer_remaining: 0, category_totals: {}, category_violations: [] },
-        };
+    if (import.meta.env.DEV) {
+        console.log(`[Orchestrator] Phase 1 — Budget: ${totalBudget} ${currency}, Days: ${explorationDays}, Overnight: ${isOvernightArrival}`);
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // PHASE 2: Outbound Travel
+    // PHASE 2: LLM Generation (the brain)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    onPhase?.(2, 'Outbound + Intercity Travel');
-
-    const outbound = buildOutboundSegment(trip, allocation, currencyRate);
-    if (outbound) {
-        allSegments.push(outbound);
-        // Store outbound mode + per-person cost so return uses the SAME mode and cost.
-        // Without this, outbound might downgrade to bus (envelope-aware) while return
-        // picks train at full price → 6x cost mismatch.
-        trip._outbound_mode = outbound.metadata?.transport_mode || null;
-        trip._outbound_cost_pp = outbound.metadata?.per_person || null;
-    }
-
-    // Inter-city segments (multi-city trips)
-    const intercity = buildIntercitySegments(trip, allocation, currencyRate);
-    allSegments.push(...intercity);
-
-    if (import.meta.env.DEV) console.log('[Orchestrator] Phase 2 — Travel segments:', 1 + intercity.length);
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // PHASE 3: Accommodation
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    onPhase?.(3, 'Accommodation');
-
-    const accommodation = buildAccommodationSegments(trip, allocation, currencyRate, dayLocations);
-    allSegments.push(...accommodation);
-
-    if (import.meta.env.DEV) console.log('[Orchestrator] Phase 3 — Accommodation:', accommodation.length, 'nights');
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // PHASE 4: Activity Generation (AI)
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    onPhase?.(4, 'Generating Activities');
-
-    const activityBudget = allocation.activity;
-    const activityPerDay = allocation.activity_per_day;
+    onPhase?.(2, 'Generating Itinerary');
 
     let aiPlan;
     try {
-        // Determine if outbound/return transport exists
-        const hasOutbound = !!(trip.start_location && trip.destination &&
-            trip.start_location.toLowerCase() !== trip.destination.toLowerCase());
-        const hasReturn = !!(trip.return_location || trip.start_location) && hasOutbound;
-
-        // ── Extract arrival/departure context from transport segments ──
-        // This bridges the gap: the orchestrator KNOWS overnight details,
-        // now we TELL the LLM so it can plan realistically.
-        const outboundSeg = allSegments.find(s => s.type === 'outbound_travel');
-        const returnSeg = allSegments.find(s => s.type === 'return_travel');
-
-        const arrivalContext = {
-            isOvernightArrival: outboundSeg?.metadata?.isOvernight || false,
-            arrivalTime: outboundSeg?.metadata?.isOvernight
-                ? (outboundSeg.metadata.arrival || '07:00') : null,
-            arrivalMode: outboundSeg?.metadata?.transport_mode || null,
-            departureTime: returnSeg?.metadata?.isOvernight
-                ? (returnSeg.metadata.departure || '21:00') : null,
-            isOvernightDeparture: returnSeg?.metadata?.isOvernight || false,
-            departureMode: returnSeg?.metadata?.transport_mode || null,
-            hasAccommodation: (allocation.accommodation || 0) > 0,
-            travelHours: trip._osrm_outbound_hours || null,
-        };
-
-        aiPlan = await generateTripPlan(
-            trip.destination,
-            explorationDays,  // Only generate for EXPLORE days
-            trip.budget || 2000,
-            trip.travelers || 1,
+        aiPlan = await generateTripPlan({
+            destination: trip.destination,
+            days: explorationDays,
+            budget: totalBudget,
+            travelers,
             currency,
-            // Send EXPLORE-only day locations (sequential numbering for LLM)
-            exploreDayLocations.map(dl => ({ dayNumber: dl.dayNumber, location: dl.location })),
             budgetTier,
-            // Lifecycle + context fields for constrained generation
-            {
-                activityBudget,
-                activityPerDay,
-                travelStyle,
-                pace,
-                excludeTransport: true,
-                excludeAccommodation: true,
-                // Trip logistics context
-                startLocation: trip.start_location || '',
-                hasOutboundTransport: hasOutbound,
-                hasReturnTransport: hasReturn,
-                // Arrival/departure realism context
-                ...arrivalContext,
-            }
-        );
+            travelStyle,
+            startLocation: trip.start_location || '',
+            // Overnight context
+            isOvernightArrival,
+            arrivalTime,
+            arrivalMode,
+            isOvernightDeparture,
+            departureTime,
+            departureMode,
+            hasAccommodation: false, // day trips for now
+            travelHours: arrivalHours,
+            // Multi-city schedule
+            tripDays: exploreDayLocations.map(dl => ({
+                dayNumber: dl.dayNumber,
+                location: dl.location,
+            })),
+        });
     } catch (err) {
-        console.error('[Orchestrator] Phase 4 — AI generation failed:', err);
+        console.error('[Orchestrator] Phase 2 — AI generation failed:', err);
         aiPlan = { days: [] };
     }
 
-    // ── Phase 4a: Sanitize AI response (Fix Group 3) ──
-    if (aiPlan?.days) {
-        sanitizeAIActivities(aiPlan.days);
+    if (import.meta.env.DEV) {
+        console.log('[Orchestrator] Phase 2 — AI plan:', {
+            outbound: aiPlan?.outbound_transport?.mode,
+            days: aiPlan?.days?.length,
+            activities: aiPlan?.days?.reduce((s, d) => s + (d.activities?.length || 0), 0),
+            return: aiPlan?.return_transport?.mode,
+            total: aiPlan?.total_per_person,
+        });
     }
 
-    // Convert AI activities to segment rows
-    // Remap: LLM day 1,2,3 → actual calendar day positions (skip TRAVEL days)
-    const activitySegments = [];
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // PHASE 3: Parse & Enrich
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    onPhase?.(3, 'Building Itinerary');
+
+    const allSegments = [];
+
+    // 3a: Outbound transport from LLM
+    if (aiPlan?.outbound_transport && aiPlan.outbound_transport.mode !== 'none') {
+        const ob = aiPlan.outbound_transport;
+        allSegments.push({
+            trip_id: trip.id,
+            type: 'outbound_travel',
+            title: ob.title || `${ob.is_overnight ? '🌙 Overnight ' : ''}${ob.mode} — ${trip.start_location} → ${trip.destination}`,
+            day_number: 1,
+            location: trip.start_location || trip.destination,
+            estimated_cost: (ob.cost_per_person || 0) * travelers,
+            order_index: -1,  // Always first
+            metadata: {
+                transport_mode: ob.mode,
+                from: trip.start_location,
+                to: trip.destination,
+                isOvernight: ob.is_overnight || false,
+                departure: ob.departure,
+                arrival: ob.arrival,
+                per_person: ob.cost_per_person || 0,
+                notes: ob.notes || '',
+            },
+        });
+    }
+
+    // 3b: Activities from LLM (day by day)
     if (aiPlan?.days) {
         aiPlan.days.forEach((genDay, dayIndex) => {
-            // Map LLM sequential index to calendar day via exploreDayLocations
             const exploreSlot = exploreDayLocations[dayIndex];
             const calendarDay = exploreSlot?.calendarDay || (dayIndex + 1);
-            const dayLocation = exploreSlot?.location || dayLocations[dayIndex]?.location || trip.destination;
+            const dayLocation = exploreSlot?.location || trip.destination;
 
             (genDay.activities || []).forEach((act, idx) => {
-                activitySegments.push({
+                allSegments.push({
                     trip_id: trip.id,
                     type: 'activity',
                     title: act.title,
@@ -587,188 +394,49 @@ export async function orchestrateTrip(trip, callbacks = {}) {
         });
     }
 
-    // ── Phase 4b: Activity budget enforcement (Fix Group 2) ──
-    const totalActivityCost = activitySegments.reduce((s, a) => s + (a.estimated_cost || 0), 0);
-    if (totalActivityCost > activityBudget && activityBudget > 0) {
-        const scaleFactor = activityBudget / totalActivityCost;
-        console.warn(`[Orchestrator] Phase 4b — Activity overshoot: ${totalActivityCost} > ${activityBudget}. Scaling by ${scaleFactor.toFixed(2)}`);
-        for (const seg of activitySegments) {
-            seg.estimated_cost = Math.round((seg.estimated_cost || 0) * scaleFactor);
-        }
+    // 3c: Return transport from LLM
+    if (aiPlan?.return_transport && aiPlan.return_transport.mode !== 'none') {
+        const rt = aiPlan.return_transport;
+        allSegments.push({
+            trip_id: trip.id,
+            type: 'return_travel',
+            title: rt.title || `${rt.is_overnight ? '🌙 Overnight ' : ''}${rt.mode} — ${trip.destination} → ${trip.start_location}`,
+            day_number: totalDays,
+            location: trip.destination,
+            estimated_cost: (rt.cost_per_person || 0) * travelers,
+            order_index: 1000,  // Always last
+            metadata: {
+                transport_mode: rt.mode,
+                from: trip.destination,
+                to: trip.start_location || trip.return_location,
+                isOvernight: rt.is_overnight || false,
+                departure: rt.departure,
+                arrival: rt.arrival,
+                per_person: rt.cost_per_person || 0,
+                notes: rt.notes || '',
+            },
+        });
     }
-    // Deduct activity costs from envelope
-    const finalActivityCost = activitySegments.reduce((s, a) => s + (a.estimated_cost || 0), 0);
-    deductFromEnvelope(allocation, 'activity', finalActivityCost);
 
-    // ── Phase 4c: Geocoding (Fix Group 1) ──
-    onPhase?.(4.5, 'Geocoding Activities');
-    await enrichActivitiesWithCoordinates(activitySegments, dayLocations);
+    // 3d: Geocode activities for map pins
+    onPhase?.(3.5, 'Geocoding');
+    await enrichActivitiesWithCoordinates(allSegments, dayLocations);
 
-    const geocodedCount = activitySegments.filter(s => s.latitude && s.longitude).length;
-    const failedCount = activitySegments.filter(s => s.metadata?.geocode_failed).length;
-    if (import.meta.env.DEV) console.log(`[Orchestrator] Phase 4c — Geocoded: ${geocodedCount}, Failed: ${failedCount}`);
-
-    // ── Phase 4d: Feasibility Guard ──
-    onPhase?.(4.7, 'Feasibility Check');
-
-    const guardResult = applyFeasibilityGuard({
-        trip,
-        activitySegments,
-        transportSegments: allSegments.filter(s => ['outbound_travel', 'intercity_travel', 'return_travel'].includes(s.type)),
-        travelStyle,
-        budgetTier,
-        currency,
-        totalDays,
+    // 3e: Sort by day → time
+    allSegments.sort((a, b) => {
+        if (a.day_number !== b.day_number) return a.day_number - b.day_number;
+        // outbound_travel always first, return_travel always last
+        if (a.type === 'outbound_travel') return -1;
+        if (b.type === 'outbound_travel') return 1;
+        if (a.type === 'return_travel') return 1;
+        if (b.type === 'return_travel') return -1;
+        // Activities: sort by time
+        const timeA = a.metadata?.time || '09:00';
+        const timeB = b.metadata?.time || '09:00';
+        return timeA.localeCompare(timeB);
     });
 
-    if (guardResult.issues.length > 0) {
-        console.warn(`[Orchestrator] Phase 4d — Feasibility Guard: ${guardResult.issues.length} corrections`);
-        guardResult.issues.forEach(issue => console.warn(`  → ${issue}`));
-    }
-
-    allSegments.push(...activitySegments);
-    if (import.meta.env.DEV) console.log('[Orchestrator] Phase 4 — Activities:', activitySegments.length);
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // PHASE 5: Local Transport (pairwise)
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    onPhase?.(5, 'Local Transport');
-
-    // Group activities by day for pairwise insertion
-    const localTransportSegments = [];
-    for (let day = 1; day <= totalDays; day++) {
-        const dayActivities = activitySegments
-            .filter(s => s.day_number === day)
-            .sort((a, b) => a.order_index - b.order_index);
-
-        if (dayActivities.length >= 2) {
-            const localSegs = insertPairwiseLocalTransport(
-                dayActivities,
-                trip.id,
-                day,
-                budgetTier,
-                currency,
-                allocation  // Fix Group 2: pass allocation for envelope deduction
-            );
-            localTransportSegments.push(...localSegs);
-        }
-    }
-
-    allSegments.push(...localTransportSegments);
-    if (import.meta.env.DEV) console.log('[Orchestrator] Phase 5 — Local transport:', localTransportSegments.length);
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // PHASE 6: Return Travel
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    onPhase?.(6, 'Return Travel');
-
-    const returnSeg = buildReturnSegment(trip, allocation, currencyRate, totalDays);
-    if (returnSeg) {
-        allSegments.push(returnSeg);
-    }
-
-    if (import.meta.env.DEV) console.log('[Orchestrator] Phase 6 — Return segment:', returnSeg ? 'added' : 'skipped');
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // PHASE 7: (Booking Suggestions — moved to post-insert in store)
-    // Fix Group 4: suggestions need real DB UUIDs, so they're generated
-    // in generateFullItinerary() after bulk insert + .select()
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    onPhase?.(7, 'Preparing Booking Data');
-    if (import.meta.env.DEV) console.log('[Orchestrator] Phase 7 — Booking suggestions deferred to post-insert');
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // PHASE 8: Daily Cost Summary
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    onPhase?.(8, 'Daily Cost Summary');
-
-    const dailySummary = computeDailySummary(allSegments, totalDays);
-
-    if (import.meta.env.DEV) console.log('[Orchestrator] Phase 8 — Daily summaries:', dailySummary.length);
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // PHASE 9: Hidden Gems (AI, isolated)
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    onPhase?.(9, 'Hidden Gems');
-
-    let hiddenGems = [];
-    try {
-        hiddenGems = await getHiddenGems(trip.destination, {
-            budgetTier,
-            travelStyle,
-            currency,
-        });
-    } catch (err) {
-        console.warn('[Orchestrator] Phase 9 — Hidden gems fetch failed:', err);
-    }
-
-    // Ensure gems have required fields
-    hiddenGems = (hiddenGems || []).map(gem => ({
-        ...gem,
-        estimated_cost: gem.estimated_cost || 0,
-        safety_note: gem.safety_note || gem.safety_warning || null,
-        _isolated: true, // Flag: not part of budget or itinerary
-    }));
-
-    if (import.meta.env.DEV) console.log('[Orchestrator] Phase 9 — Hidden gems:', hiddenGems.length);
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // PHASE 10: Budget Reconciliation
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    onPhase?.(10, 'Budget Reconciliation');
-
-    let reconciliation = reconcileBudget(allocation, allSegments);
-
-    // Auto-correct: if overshoot detected, progressively trim non-essential segments
-    if (!reconciliation.balanced && reconciliation.overshoot > 0) {
-        console.warn(
-            `[Orchestrator] Phase 10 — Budget overshoot detected: ${reconciliation.overshoot} ${currency}. Auto-correcting...`
-        );
-
-        // Trimmable types in priority order (least essential first)
-        const trimmableTypes = ['local_transport', 'activity'];
-        let remaining = reconciliation.overshoot;
-
-        for (const type of trimmableTypes) {
-            if (remaining <= 0) break;
-
-            // Find segments of this type, sorted cheapest first (trim small ones first)
-            const candidates = allSegments
-                .filter(s => s.type === type)
-                .sort((a, b) => (a.estimated_cost || 0) - (b.estimated_cost || 0));
-
-            for (const seg of candidates) {
-                if (remaining <= 0) break;
-                remaining -= (seg.estimated_cost || 0);
-                const idx = allSegments.indexOf(seg);
-                if (idx !== -1) allSegments.splice(idx, 1);
-            }
-        }
-
-        // Re-reconcile after auto-correction
-        reconciliation = reconcileBudget(allocation, allSegments);
-        if (import.meta.env.DEV) console.log(`[Orchestrator] Phase 10 — After auto-correction: balanced=${reconciliation.balanced}, total=${reconciliation.total}`);
-    }
-
-    if (!reconciliation.balanced) {
-        console.warn(
-            `[Orchestrator] Phase 10 — Budget ISSUE (post-correction): overshoot=${reconciliation.overshoot} ${currency}, violations=`,
-            reconciliation.category_violations
-        );
-    } else {
-        if (import.meta.env.DEV) console.log('[Orchestrator] Phase 10 — Budget reconciled ✓');
-    }
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // FIX GROUP 5: Explicit final sort
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    allSegments.sort((a, b) =>
-        (a.day_number || 0) - (b.day_number || 0) ||
-        (a.order_index || 0) - (b.order_index || 0)
-    );
-
     // Re-index order_index to sequential integers per day
-    // (local transport uses fractional 0.5 offsets for sorting, but DB column is integer)
     let currentDay = -1;
     let idx = 0;
     for (const seg of allSegments) {
@@ -779,8 +447,55 @@ export async function orchestrateTrip(trip, callbacks = {}) {
         seg.order_index = idx++;
     }
 
+    if (import.meta.env.DEV) {
+        console.log(`[Orchestrator] Phase 3 — Total segments: ${allSegments.length}`);
+    }
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // RETURN CONTRACT OUTPUT
+    // PHASE 4: Hidden Gems (isolated AI call)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    onPhase?.(4, 'Hidden Gems');
+
+    let hiddenGems = [];
+    try {
+        hiddenGems = await getHiddenGems(trip.destination, {
+            budgetTier,
+            travelStyle,
+            currency,
+        });
+    } catch (err) {
+        console.warn('[Orchestrator] Phase 4 — Hidden gems fetch failed:', err);
+    }
+
+    hiddenGems = (hiddenGems || []).map(gem => ({
+        ...gem,
+        estimated_cost: gem.estimated_cost || 0,
+        safety_note: gem.safety_note || gem.safety_warning || null,
+        _isolated: true,
+    }));
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // PHASE 5: Daily Cost Summary
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    onPhase?.(5, 'Finalizing');
+
+    const dailySummary = computeDailySummary(allSegments, totalDays);
+
+    // Simple reconciliation (LLM should stay within budget, but check)
+    const totalCost = allSegments.reduce((s, seg) => s + (seg.estimated_cost || 0), 0);
+    const reconciliation = {
+        balanced: totalCost <= totalBudget,
+        total: Math.round(totalCost),
+        overshoot: Math.max(0, Math.round(totalCost - totalBudget)),
+        category_violations: [],
+    };
+
+    if (import.meta.env.DEV) {
+        console.log(`[Orchestrator] Done — ${allSegments.length} segments, cost: ${totalCost}/${totalBudget} ${currency}`);
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // RETURN — same contract as before for store compatibility
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     return {
         allocation,
@@ -788,6 +503,5 @@ export async function orchestrateTrip(trip, callbacks = {}) {
         daily_summary: dailySummary,
         hidden_gems: hiddenGems,
         reconciliation,
-        // booking_options generated post-insert in store (Fix Group 4)
     };
 }

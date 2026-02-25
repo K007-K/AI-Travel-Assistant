@@ -29,35 +29,12 @@ function toPositiveNumber(val: unknown, fallback: number): number {
     return isNaN(n) || n < 0 ? fallback : n
 }
 
-// ── Budget tier descriptions (hardcoded server-side to prevent tamper) ──
+// ── Budget tier descriptions ────────────────────────────────────────
 
 const BUDGET_TIER_DESCRIPTIONS: Record<string, string> = {
-    'luxury': `
-===== LUXURY TIER REQUIREMENTS =====
-YOU MUST RECOMMEND ONLY PREMIUM/LUXURY OPTIONS. DO NOT suggest budget or mid-range alternatives.
-ACCOMMODATION: Only 5-star hotels, luxury resorts, or boutique hotels.
-DINING: Fine dining, Michelin-starred, upscale rooftop bars.
-TRANSPORTATION: Private chauffeur, luxury car service, first-class train.
-ACTIVITIES: VIP experiences, private tours, yacht cruises.
-STYLE: Exclusivity, privacy, personalized service.`,
-
-    'mid-range': `
-===== MID-RANGE TIER REQUIREMENTS =====
-Balance quality and value.
-ACCOMMODATION: 3-4 star hotels, boutique hotels.
-DINING: Popular local restaurants, cafes.
-TRANSPORTATION: Public transport + taxis.
-ACTIVITIES: Paid attractions + free experiences.
-STYLE: Good quality, authentic local experiences.`,
-
-    'budget': `
-===== BUDGET TIER REQUIREMENTS =====
-YOU MUST PRIORITIZE FREE OR LOW-COST OPTIONS.
-ACCOMMODATION: Hostels, budget hotels.
-DINING: Street food, local markets.
-TRANSPORTATION: Public buses, walking.
-ACTIVITIES: Free walking tours, parks, beaches.
-STYLE: Backpacker-friendly, minimize costs.`
+    'luxury': `LUXURY: Only premium options. 5-star hotels, fine dining, private tours, first-class transport.`,
+    'mid-range': `MID-RANGE: Balance quality and value. 3-4 star hotels, popular restaurants, mix of paid and free activities.`,
+    'budget': `BUDGET: Minimize costs. Hostels, street food, free activities, public transport, walking. At least 50% of activities should be FREE.`
 }
 
 // ── Main handler ────────────────────────────────────────────────────
@@ -99,26 +76,17 @@ serve(async (req: Request) => {
         const budget = toPositiveNumber(rawBody.budget, 2000)
         const travelers = Math.max(1, Math.min(20, Math.floor(toPositiveNumber(rawBody.travelers, 1))))
         const currency = sanitizeString(rawBody.currency, 5).toUpperCase() || 'USD'
-        const tripDays: any[] = Array.isArray(rawBody.tripDays) ? rawBody.tripDays : []
 
-        // Validate & normalize budget tier
+        // Budget tier
         const rawTier = sanitizeString(rawBody.budgetTier).toLowerCase()
         const budgetTier = VALID_TIERS.includes(rawTier) ? rawTier : 'mid-range'
+        const budgetGuidance = BUDGET_TIER_DESCRIPTIONS[budgetTier] || BUDGET_TIER_DESCRIPTIONS['mid-range']
 
-        // Lifecycle fields from orchestrator
-        const activityBudget = toPositiveNumber(rawBody.activityBudget, 0) || null
-        const travelStyle = sanitizeString(rawBody.travelStyle)
-        const _pace = sanitizeString(rawBody.pace)
-        const activityCountTarget = Math.max(2, Math.min(8, Math.floor(toPositiveNumber(rawBody.activityCountTarget, 5))))
-        const excludeTransport = rawBody.excludeTransport === true
-        const excludeAccommodation = rawBody.excludeAccommodation === true
-
-        // Trip logistics context
+        // Trip context
         const startLocation = sanitizeString(rawBody.startLocation) || 'unknown'
-        const hasOutboundTransport = rawBody.hasOutboundTransport === true
-        const hasReturnTransport = rawBody.hasReturnTransport === true
+        const travelStyle = sanitizeString(rawBody.travelStyle) || 'explore'
 
-        // Arrival/departure realism context (from orchestrator transport segments)
+        // Overnight context (from orchestrator's OSRM data)
         const isOvernightArrival = rawBody.isOvernightArrival === true
         const arrivalTime = sanitizeString(rawBody.arrivalTime) || null
         const arrivalMode = sanitizeString(rawBody.arrivalMode) || null
@@ -126,33 +94,17 @@ serve(async (req: Request) => {
         const departureTime = sanitizeString(rawBody.departureTime) || null
         const departureMode = sanitizeString(rawBody.departureMode) || null
         const hasAccommodation = rawBody.hasAccommodation === true
-        const _travelHours = toPositiveNumber(rawBody.travelHours, 0) || null
+        const travelHours = toPositiveNumber(rawBody.travelHours, 0) || null
 
-        const budgetGuidance = BUDGET_TIER_DESCRIPTIONS[budgetTier] || BUDGET_TIER_DESCRIPTIONS['mid-range']
-
-        // ── Schedule context (multi-city support) ───────────
-        const formatItineraryStructure = (daysArray: any[]): string => {
-            if (!daysArray || daysArray.length === 0) return ''
-            return daysArray
-                .filter((d: any) => d && d.dayNumber && d.location)
-                .map((d: any) => `Day ${d.dayNumber}: ${d.location}`)
-                .join(', ')
-        }
-
-        const scheduleInfo = tripDays && tripDays.length > 0
-            ? formatItineraryStructure(tripDays)
+        // Multi-city schedule
+        const tripDays: any[] = Array.isArray(rawBody.tripDays) ? rawBody.tripDays : []
+        const scheduleInfo = tripDays.length > 0
+            ? tripDays.filter((d: any) => d?.dayNumber && d?.location).map((d: any) => `Day ${d.dayNumber}: ${d.location}`).join(', ')
             : `Day 1: ${destination}`
 
-        // ── Style-based activity limits ─────────────────────
-        const STYLE_LIMITS: Record<string, number> = {
-            'relaxation': 3,
-            'city_explorer': 4,
-            'adventure': 5,
-            'business': 2,
-            'road_trip': 4,
-        }
-        const styleLimit = STYLE_LIMITS[travelStyle] || activityCountTarget || 4
-        const styleName = travelStyle || 'explore'
+        // Budget calculation
+        const budgetPerPerson = travelers > 1 ? Math.round(budget / travelers) : budget
+        const dailyPerPerson = Math.round(budgetPerPerson / Math.max(days, 1))
 
         // ── RAG retrieval (optional, gracefully degrades) ───
         let contextData = ""
@@ -203,182 +155,136 @@ serve(async (req: Request) => {
             console.warn("RAG: Retrieval failed, proceeding without context.", ragErr)
         }
 
-        // ── Build prompt ────────────────────────────────────
-        const effectiveBudget = activityBudget || budget || 2000
-        const dailyBudget = Math.round(effectiveBudget / Math.max(days, 1))
-        const dailyPerPerson = travelers > 1 ? Math.round(dailyBudget / travelers) : dailyBudget
-
-        // Budget tier guidance for pricing
-        const budgetPriceGuide = budgetTier === 'budget'
-            ? 'Budget → low-cost or free attractions only. At least 50% of activities should be FREE.'
-            : budgetTier === 'luxury'
-                ? 'Premium → high-end experiences allowed.'
-                : 'Comfort → moderate priced attractions.'
-
-        // Constraint block — DON'T block local transport mentions, only intercity
-        const transportConstraint = excludeTransport
-            ? '\n- DO NOT include intercity transport segments (flights, trains, buses between cities) — those are handled separately.\n- You SHOULD include local transport context (auto-rickshaws, city buses, metro, walking) in activity notes with realistic costs.'
-            : ''
-        const accommodationConstraint = excludeAccommodation
-            ? '\n- DO NOT include hotel/accommodation as separate activities — those are handled separately.'
-            : ''
-
-        // Dynamic time window based on arrival/departure
+        // ── Dynamic time window ─────────────────────────────
         const dayStartTime = isOvernightArrival ? (arrivalTime || '06:00') : '08:00'
         const dayEndTime = isOvernightDeparture ? (departureTime || '21:00') : '21:00'
 
+        // ── Build the prompt ────────────────────────────────
         const prompt = `
-You are a professional travel operations planner, not a creative writer.
-You must generate a LOGISTICALLY REALISTIC itinerary.
-You must obey ALL constraints strictly.
+You are a professional travel operations planner. Generate a COMPLETE, LOGISTICALLY REALISTIC itinerary.
+You must include EVERYTHING: intercity transport, local transport, activities, meals, and practical tips.
 
 ---------------------------------------------------
-TRIP CONTEXT:
+TRIP DETAILS:
 
 Origin: ${startLocation}
 Destination: ${destination}
-Travel Style: ${styleName}
-Budget Tier: ${budgetTier}
-Total Days: ${days}
+Total Days at destination: ${days}
 Travelers: ${travelers} ${travelers === 1 ? '(solo)' : '(group)'}
-Activity Budget: ${dailyPerPerson} ${currency}/person/day (${effectiveBudget} ${currency} total for ${travelers} travelers)
+Total Budget: ${budgetPerPerson} ${currency} per person (${budget} ${currency} total for all travelers)
+Daily budget: ~${dailyPerPerson} ${currency}/person/day
+Budget Tier: ${budgetTier}
+Travel Style: ${travelStyle}
 Schedule: ${scheduleInfo}
 
-Arrival Info:
-- Arrives from: ${startLocation}
-- Arrival mode: ${arrivalMode || 'own transport'}
-- Arrival time: ${arrivalTime || '08:00'}
-${isOvernightArrival ? `- OVERNIGHT ARRIVAL: Traveler arrives early morning (~${arrivalTime || '06:00'}) by overnight ${arrivalMode || 'transport'}.
-  Plan the FIRST activity as freshening up at the station/bus stand (washrooms, cloak room for luggage).
-  Then start sightseeing from ${arrivalTime || '06:00'} onwards — do NOT wait until 08:00.` : ''}
+---------------------------------------------------
+TRANSPORT CONTEXT:
 
-Departure Info:
-- Return mode: ${departureMode || 'own transport'}
-- Departure time: ${isOvernightDeparture ? (departureTime || '21:00') : 'evening'}
-${isOvernightDeparture ? `- OVERNIGHT DEPARTURE: Traveler boards overnight ${departureMode || 'transport'} at ~${departureTime || '21:00'}.
-  Plan dinner 1-2 hours before departure. Ensure last activity ends by ${parseInt(departureTime || '21') - 2}:00.` : ''}
+${isOvernightArrival
+    ? `OVERNIGHT ARRIVAL: Traveler boards overnight ${arrivalMode || 'bus/train'} from ${startLocation} the previous night.
+Arrives at ${destination} at approximately ${arrivalTime || '06:00'}.
+The traveler needs to freshen up at the station/bus stand first.
+Start planning activities from ${dayStartTime}, NOT 08:00.`
+    : startLocation !== 'unknown' && startLocation.toLowerCase() !== destination.toLowerCase()
+        ? `Traveler arrives from ${startLocation}. Include outbound transport as the first item.`
+        : `Traveler is local to ${destination}. No intercity transport needed.`}
 
-${!hasAccommodation ? 'NO HOTEL: This is a day trip — traveler sleeps on overnight transport, no hotel check-in/check-out.' : ''}
+${isOvernightDeparture
+    ? `OVERNIGHT DEPARTURE: Traveler boards overnight ${departureMode || 'bus/train'} back to ${startLocation} at ~${departureTime || '21:00'}.
+Plan dinner 1-2 hours before departure. End last activity by ${parseInt(departureTime || '21') - 2}:00.`
+    : startLocation !== 'unknown' && startLocation.toLowerCase() !== destination.toLowerCase()
+        ? `Include return transport to ${startLocation} as the last item.`
+        : ''}
 
-Daily time window: ${dayStartTime}–${dayEndTime}
-Max total activity time per day: 10 hours
-Mandatory meal breaks: breakfast (if arriving early), lunch (12:00-13:00), dinner (before departure)
-Mandatory 30-minute buffer between activities for local travel
+${!hasAccommodation && isOvernightArrival ? `NO HOTEL: This is a day trip — traveler sleeps on overnight transport, no hotel needed.` : ''}
+${travelHours ? `Estimated travel time: ${travelHours} hours one way.` : ''}
 
 ---------------------------------------------------
-STYLE RULES (HARD LIMITS):
-
-${styleName} style → max ${styleLimit} activities per day.
-You MUST NOT exceed this limit.
-You MUST have at least 4 activities per day (including meals).
-
----------------------------------------------------
-DISTANCE RULE:
-
-All activities in the same day must be geographically close.
-If distance between two activities exceeds 40 km,
-DO NOT place them on the same day.
-Group activities by proximity. Do NOT zigzag across the city.
-
----------------------------------------------------
-ARRIVAL & DEPARTURE RULES:
-
-${isOvernightArrival ? `Traveler arrives from ${startLocation} by overnight ${arrivalMode} at ~${arrivalTime || '06:00'}.
-This is a realistic day trip — plan a FULL day of activities starting from arrival.
-DO NOT say "keep it light" — the traveler specifically chose to travel overnight to MAXIMIZE exploration time.` : hasOutboundTransport ? `Traveler is arriving from ${startLocation} during the morning.` : 'Traveler is local — full day available.'}
-
-${isOvernightDeparture ? `Traveler departs at ~${departureTime || '21:00'} by overnight ${departureMode}. Include dinner before departure. End last activity by ${parseInt(departureTime || '21') - 2}:00.` : hasReturnTransport ? 'Ensure last-day activities end early enough for return travel.' : ''}
-
----------------------------------------------------
-BUDGET RULES:
-
-${budgetPriceGuide}
 ${budgetGuidance}
 
-Each activity must include realistic estimated_cost in ${currency}.
-Use ACTUAL local prices, not inflated tourist prices.
-Stay consistent with ${destination} pricing.
-${transportConstraint}
-${accommodationConstraint}
-
 ---------------------------------------------------
-TRAVELER RULES:
+PLANNING RULES:
+
+1. REAL PLACES ONLY — specific named temples, restaurants, landmarks. No generic "Local Market" or "Evening Stroll".
+2. NAMED RESTAURANTS with actual dish recommendations and per-person meal cost.
+3. Include entry/darshan/ticket costs as estimated_cost for each activity.
+4. For temples: mention free prasadam/langar if available (estimated_cost: 0). Note advance booking, dress codes, queue times.
+5. Include local transport between activities in the "notes" field with real costs (auto ₹XX, city bus ₹XX).
+6. Account for queue times at popular spots (temples: 1-3 hours, monuments: 30 min).
+7. Time activities realistically — include travel time between spots.
+8. Activities MUST be in chronological time order.
+9. Minimum 6 activities per full day (mix of sightseeing, food, culture, logistics).
+10. Include at least 2 full meals (breakfast/lunch/dinner) as separate activities with real restaurant names.
 
 ${travelers === 1
-  ? `Solo traveler — suggest individual-friendly experiences:
-- Walking tours, café visits, solo-friendly temples, photography spots
-- Avoid group-only tours or family packages
-- Include safety tips for solo travelers`
-  : `Group of ${travelers} travelers — suggest group-friendly activities:
-- Guided tours, shared experiences, group-friendly restaurants
-- Include group booking tips where applicable
-- Consider group discounts`}
+    ? `SOLO TRAVELER: Suggest solo-friendly experiences. Include safety tips.`
+    : `GROUP OF ${travelers}: Suggest group-friendly activities. Note group discounts where applicable.`}
+All costs must be PER PERSON in ${currency}.
 
-All activity costs must be PER PERSON, not group total.
-
----------------------------------------------------
-QUALITY RULES:
-
-1. SPECIFIC REAL PLACES ONLY — no generic fillers like "Evening Walk" or "Local Market"
-2. NAMED restaurants/stalls with actual dish recommendations and per-person cost
-3. PRACTICAL TIPS in "notes": booking requirements, dress codes, timings, HOW to get there (which bus, auto cost)
-4. CULTURAL CONTEXT: temple etiquette, local customs, safety warnings where relevant
-
----------------------------------------------------
-LOGISTICS RULES (CRITICAL FOR REALISM):
-
-1. Include ACTUAL local transport between activities in the notes field (auto-rickshaw ₹XX, city bus ₹XX, shared taxi ₹XX — use REAL local prices for ${destination}).
-2. For temples/religious sites: include entry/darshan ticket costs as estimated_cost. Mention free prasadam/langar meals if the temple offers them. Note advance booking requirements.
-3. For day trips with no hotel: mention station/bus stand facilities (washrooms, cloak rooms, luggage storage) with costs.
-4. Schedule meals at ACTUAL named local restaurants/street food stalls — not generic "lunch break."
-5. Account for QUEUE TIMES at popular attractions (temples: 1-3 hours, monuments: 30 min).
-6. Use local public transport (city bus ₹10-50, shared auto ₹20-80, auto ₹100-300) NOT undersized costs like ₹25 for 10km.
-7. For hill stations/mountain temples: include uphill transport (cable car, APSRTC bus, shared jeep) with real costs.
-8. If a city has free government/temple meals, INCLUDE them as a meal activity with estimated_cost: 0.
+Daily time window: ${dayStartTime}–${dayEndTime}
 
 ${contextData ? `\nVERIFIED LOCAL DATA:\n${contextData}` : ''}
 
 ---------------------------------------------------
-OUTPUT FORMAT (STRICT JSON ONLY):
+OUTPUT FORMAT (STRICT JSON — NO MARKDOWN, NO EXPLANATION):
 
 {
+  "outbound_transport": {
+    "mode": "bus|train|flight|none",
+    "title": "Descriptive title like '🌙 Overnight 🚌 Bus — ${startLocation} → ${destination}'",
+    "cost_per_person": 500,
+    "departure": "21:00",
+    "arrival": "${dayStartTime}",
+    "is_overnight": true,
+    "notes": "Booking tips, what to carry, platform info"
+  },
   "days": [
     {
       "dayNumber": 1,
       "activities": [
         {
-          "title": "Specific Place Name",
-          "time": "09:00",
-          "location": "Exact area/landmark in ${destination}",
-          "type": "sightseeing|food|culture|nature|shopping|nightlife",
-          "estimated_cost": 100,  // <-- PER PERSON cost in ${currency}
-          "safety_warning": "Warning text or null",
-          "notes": "Practical logistical notes: booking tips, dress code, best timing"
+          "title": "Specific Real Place Name",
+          "time": "06:30",
+          "location": "Exact area/landmark, ${destination}",
+          "type": "sightseeing|food|culture|nature|shopping|nightlife|logistics",
+          "estimated_cost": 0,
+          "notes": "Practical tips: how to reach, what to expect, booking info, local transport cost"
         }
       ]
     }
-  ]
+  ],
+  "return_transport": {
+    "mode": "bus|train|flight|none",
+    "title": "Descriptive title",
+    "cost_per_person": 500,
+    "departure": "${dayEndTime}",
+    "arrival": "07:00",
+    "is_overnight": true,
+    "notes": "Booking tips"
+  },
+  "total_per_person": 2200,
+  "important_notes": ["Book tickets in advance", "Carry ID proof"]
 }
 
 ---------------------------------------------------
-CRITICAL SELF-VALIDATION (do this internally before returning):
+SELF-VALIDATION BEFORE RETURNING:
 
-1. Activity count does NOT exceed ${styleLimit} per day.
-2. No time overlaps between activities.
-3. Total daily active time ≤ 10 hours.
-4. Activities are geographically logical (no 40km+ jumps).
-5. ALL activities are in ${destination}, NOT in ${startLocation}.
-6. Per-person daily activity cost ≤ ${dailyPerPerson} ${currency}.
-7. Each day MUST have at least 4 activities (mix of sightseeing, food, culture).
-8. Include at least 2 food/meal activities per day (breakfast, lunch, dinner, or street food).
+1. Activities are in chronological time order.
+2. No time overlaps.
+3. Total per-person cost (transport + activities + food) ≤ ${budgetPerPerson} ${currency}.
+4. At least 6 activities per day (including meals and logistics).
+5. At least 2 named meal activities per day.
+6. ALL activities are in ${destination}, NOT in ${startLocation}.
+7. outbound_transport and return_transport both have realistic costs.
+8. All costs are per person in ${currency}.
+9. If overnight arrival: first activity should be freshening up, day starts from arrival time.
+10. If overnight departure: last activity is dinner, followed by travel to station.
 
-If any rule is violated, FIX it before returning.
-DO NOT explain anything. RETURN JSON ONLY.
+RETURN ONLY THE JSON OBJECT. NO TEXT BEFORE OR AFTER.
 `
 
         // ── Call Groq API ───────────────────────────────────
-        // Dynamic max_tokens: ~1500 tokens per day for detailed schedules, capped at 8192
-        const maxTokens = Math.min(8192, Math.max(3500, days * 1500))
+        const maxTokens = Math.min(8192, Math.max(4000, days * 2000))
 
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
@@ -389,7 +295,10 @@ DO NOT explain anything. RETURN JSON ONLY.
             body: JSON.stringify({
                 model: 'llama-3.3-70b-versatile',
                 messages: [
-                    { role: "system", content: `You are a professional travel operations planner for ${destination}. You output logistically realistic itineraries with real place names, accurate local prices in ${currency}, and practical tips. You strictly follow all time, distance, and budget constraints. Output strict JSON only, never markdown or explanations.` },
+                    {
+                        role: "system",
+                        content: `You are an expert travel planner for ${destination} with deep knowledge of local attractions, restaurants, transport costs, temple practices, and cultural customs. You generate logistically realistic, time-sorted itineraries with real place names and accurate local prices in ${currency}. You always include practical details: how to reach each spot, queue times, dress codes, and booking tips. Output strict JSON only, never markdown or explanations.`
+                    },
                     { role: "user", content: prompt }
                 ],
                 temperature: 0.6,

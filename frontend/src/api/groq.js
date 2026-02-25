@@ -47,42 +47,17 @@ Format: Use Markdown.
     }
 };
 
-export const generateTripPlan = async (destination, days, budget, travelers, currency = 'USD', tripDays = [], budgetTier = 'mid-range', lifecycleOpts = {}) => {
+export const generateTripPlan = async (context) => {
     try {
-        // lifecycleOpts may contain: activityBudget, activityPerDay, travelStyle, excludeTransport, excludeAccommodation, pace
         const { data, error } = await supabase.functions.invoke('itinerary-generator', {
-            body: {
-                destination,
-                days,
-                budget,
-                travelers,
-                currency,
-                tripDays,
-                budgetTier,
-                // Lifecycle orchestration fields (Phase 4 constraints)
-                activityBudget: lifecycleOpts.activityBudget || null,
-                travelStyle: lifecycleOpts.travelStyle || null,
-                pace: lifecycleOpts.pace || null,
-                activityCountTarget: lifecycleOpts.pace || null,
-                excludeTransport: lifecycleOpts.excludeTransport || false,
-                excludeAccommodation: lifecycleOpts.excludeAccommodation || false,
-                // Trip logistics context
-                startLocation: lifecycleOpts.startLocation || null,
-                hasOutboundTransport: lifecycleOpts.hasOutboundTransport || false,
-                hasReturnTransport: lifecycleOpts.hasReturnTransport || false,
-            }
+            body: context,
         });
-
 
         if (error) {
             console.error("Itinerary Edge Function Error:", error);
             throw new Error(error.message || "Failed to generate itinerary");
         }
 
-        // The function returns the parsed JSON directly from Groq's json_object response
-        // data.choices[0].message.content is a STRING containing JSON.
-        // We need to parse it if the Edge function returns the raw OpenAI response structure.
-        // My Edge function returns JSON.stringify(data), which is the full response object.
         const content = data.choices[0].message.content;
         return JSON.parse(content);
 
