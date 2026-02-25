@@ -427,7 +427,19 @@ export function buildOutboundSegment(trip, allocation, _currencyRate) {
     const remaining = allocation?.intercity_remaining ?? Infinity;
     if (remaining <= 0) return null;
 
-    const distTier = estimateDistanceTier(startLoc, firstDest);
+    let distTier = estimateDistanceTier(startLoc, firstDest);
+
+    // Override distance tier with real OSRM distance if available.
+    // The synchronous estimateDistanceTier can't geocode unknown cities,
+    // so it defaults to 'short' (300km). Real OSRM data fixes this.
+    if (trip._osrm_outbound_km && trip._osrm_outbound_km > 0) {
+        const realKm = trip._osrm_outbound_km;
+        if (realKm < 100) distTier = 'local';
+        else if (realKm < 500) distTier = 'short';
+        else if (realKm <= 1200) distTier = 'medium';
+        else distTier = 'long';
+    }
+
     const preferredMode = decideTransportMode(trip, distTier);
 
     // Fix Group 1: Envelope-aware cost with downgrade ladder
@@ -562,7 +574,17 @@ export function buildReturnSegment(trip, allocation, currencyRate, totalDays) {
         return null;
     }
 
-    const distTier = estimateDistanceTier(lastDest, returnLoc);
+    let distTier = estimateDistanceTier(lastDest, returnLoc);
+
+    // Override distance tier with real OSRM distance if available
+    if (trip._osrm_return_km && trip._osrm_return_km > 0) {
+        const realKm = trip._osrm_return_km;
+        if (realKm < 100) distTier = 'local';
+        else if (realKm < 500) distTier = 'short';
+        else if (realKm <= 1200) distTier = 'medium';
+        else distTier = 'long';
+    }
+
     const preferredMode = decideTransportMode(trip, distTier);
 
     // Return trip uses the ACTUAL cost (same as outbound direction)

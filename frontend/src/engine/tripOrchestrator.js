@@ -382,23 +382,32 @@ export async function orchestrateTrip(trip, callbacks = {}) {
         budgetTier: plannerTier,
     });
 
-    // Inject OSRM hours into trip for transport engine's overnight detection.
-    // The timeline has real driving hours from OSRM; the transport engine runs
-    // synchronously and can't call OSRM itself. This bridges the data.
+    // Inject OSRM hours AND distance into trip for transport engine.
+    // The timeline has real driving data from OSRM; the transport engine runs
+    // synchronously and can't call OSRM itself. This bridges the data gap.
     const firstExplore = timeline.find(t => t.type === 'EXPLORE');
     if (firstExplore?.overnightArrival) {
         trip._osrm_outbound_hours = firstExplore.overnightArrival.hours;
+        trip._osrm_outbound_km = firstExplore.overnightArrival.distanceKm;
     } else {
         const firstTravel = timeline.find(t => t.type === 'TRAVEL');
-        if (firstTravel) trip._osrm_outbound_hours = firstTravel.hours;
+        if (firstTravel) {
+            trip._osrm_outbound_hours = firstTravel.hours;
+            trip._osrm_outbound_km = firstTravel.distanceKm;
+        }
     }
-    // Return segment: last TRAVEL or last explore with overnightArrival
+    // Return segment: last TRAVEL or symmetric with outbound
     const returnLoc = trip.return_location || trip.start_location || '';
     const lastTravel = [...timeline].reverse().find(t =>
         t.type === 'TRAVEL' && t.to?.toLowerCase().trim() === returnLoc.toLowerCase().trim()
     );
-    if (lastTravel) trip._osrm_return_hours = lastTravel.hours;
-    else if (trip._osrm_outbound_hours) trip._osrm_return_hours = trip._osrm_outbound_hours; // symmetric
+    if (lastTravel) {
+        trip._osrm_return_hours = lastTravel.hours;
+        trip._osrm_return_km = lastTravel.distanceKm;
+    } else if (trip._osrm_outbound_hours) {
+        trip._osrm_return_hours = trip._osrm_outbound_hours;
+        trip._osrm_return_km = trip._osrm_outbound_km;
+    }
 
     // Compute exploration-only days (budget scales on these, not travel days)
     const exploreDays = timeline.filter(t => t.type === 'EXPLORE');
