@@ -11,6 +11,7 @@
  *   4a.  AI Sanitizer (strip rogue transport/accommodation)
  *   4b.  Activity Budget Enforcement (proportional scaling)
  *   4c.  Geocoding (enrich activities with coordinates)
+ *   4d.  Feasibility Guard (deterministic constraint enforcement)
  *   5.   Local Transport (pairwise, uses geocoded coordinates)
  *   6.   Return Travel
  *   7.   (moved to post-insert in store — booking suggestions need DB IDs)
@@ -31,6 +32,7 @@
  */
 
 import { allocateBudget, deductFromEnvelope, reconcileBudget } from './budgetAllocator.js';
+import { applyFeasibilityGuard } from './feasibilityGuard.js';
 import {
     buildOutboundSegment,
     buildReturnSegment,
@@ -523,6 +525,24 @@ export async function orchestrateTrip(trip, callbacks = {}) {
     const geocodedCount = activitySegments.filter(s => s.latitude && s.longitude).length;
     const failedCount = activitySegments.filter(s => s.metadata?.geocode_failed).length;
     if (import.meta.env.DEV) console.log(`[Orchestrator] Phase 4c — Geocoded: ${geocodedCount}, Failed: ${failedCount}`);
+
+    // ── Phase 4d: Feasibility Guard ──
+    onPhase?.(4.7, 'Feasibility Check');
+
+    const guardResult = applyFeasibilityGuard({
+        trip,
+        activitySegments,
+        transportSegments: allSegments.filter(s => ['outbound_travel', 'intercity_travel', 'return_travel'].includes(s.type)),
+        travelStyle,
+        budgetTier,
+        currency,
+        totalDays,
+    });
+
+    if (guardResult.issues.length > 0) {
+        console.warn(`[Orchestrator] Phase 4d — Feasibility Guard: ${guardResult.issues.length} corrections`);
+        guardResult.issues.forEach(issue => console.warn(`  → ${issue}`));
+    }
 
     allSegments.push(...activitySegments);
     if (import.meta.env.DEV) console.log('[Orchestrator] Phase 4 — Activities:', activitySegments.length);
