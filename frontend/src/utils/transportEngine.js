@@ -253,18 +253,21 @@ function decideTransportMode(trip, distanceTier) {
     }
 
     // Auto-decide based on distance + time
+    // Budget tier: prefer bus over train for cost savings
+    const isBudget = ['budget', 'low'].includes((trip.budget_tier || '').toLowerCase());
+
     // ── Rule 3: Flight only when driving time ≥ 8 hours (~480km+) ──
-    // 5-7 hour routes are standard train territory worldwide (India, Europe, Japan)
+    // Budget travelers get train instead of flight for 8-12h routes
     if (drivingHours >= 8) {
-        return 'flight';
+        return isBudget ? 'train' : 'flight';
     }
 
-    // Sub-8h routes: prefer train for short/medium, bus only for local
+    // Sub-8h routes: budget → bus, mid/luxury → train
     switch (distanceTier) {
         case 'local': return 'bus';
-        case 'short': return 'train';  // 200-500km — train is faster & cheaper
-        case 'medium': return 'train';
-        default: return 'train';
+        case 'short': return isBudget ? 'bus' : 'train';
+        case 'medium': return isBudget ? 'bus' : 'train';
+        default: return isBudget ? 'bus' : 'train';
     }
 }
 
@@ -439,8 +442,9 @@ export function buildOutboundSegment(trip, allocation, _currencyRate) {
     }
 
     // Overnight detection: 6-16h bus/train for budget/mid tier
+    // Use real OSRM hours if available (injected by orchestrator), otherwise fallback
     const distanceKm = KM_ESTIMATES[distTier] || 500;
-    const travelHours = estimateDrivingTime(distanceKm);
+    const travelHours = trip._osrm_outbound_hours || estimateDrivingTime(distanceKm);
     const budgetTierNorm = (trip.budget_tier || trip.accommodation_preference || 'mid');
     const isOvernightEligible = travelHours >= 6 && travelHours <= 16
         && ['bus', 'train'].includes(mode)
@@ -570,8 +574,9 @@ export function buildReturnSegment(trip, allocation, currencyRate, totalDays) {
     }
 
     // Overnight detection (same as outbound)
+    // Use real OSRM hours if available, otherwise fallback
     const distanceKm = KM_ESTIMATES[distTier] || 500;
-    const travelHours = estimateDrivingTime(distanceKm);
+    const travelHours = trip._osrm_return_hours || estimateDrivingTime(distanceKm);
     const budgetTierNorm = (trip.budget_tier || trip.accommodation_preference || 'mid');
     const isOvernightEligible = travelHours >= 6 && travelHours <= 16
         && ['bus', 'train'].includes(preferredMode)

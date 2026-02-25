@@ -62,6 +62,24 @@ async function geocodeCity(cityName) {
     const cached = getCached(cacheKey);
     if (cached) return cached;
 
+    // Strategy 1: Photon (CORS-friendly, works in production)
+    try {
+        const photonRes = await fetch(
+            `https://photon.komoot.io/api/?q=${encodeURIComponent(cityName)}&limit=1`,
+        );
+        if (photonRes.ok) {
+            const photonData = await photonRes.json();
+            const feature = photonData.features?.[0];
+            if (feature?.geometry?.coordinates) {
+                const [lng, lat] = feature.geometry.coordinates;
+                const result = { lat, lng };
+                setCache(cacheKey, result);
+                return result;
+            }
+        }
+    } catch { /* Photon failed — try Nominatim */ }
+
+    // Strategy 2: Nominatim fallback (works locally, may CORS in prod)
     try {
         const params = new URLSearchParams({
             format: 'json',

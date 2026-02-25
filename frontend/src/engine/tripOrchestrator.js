@@ -382,6 +382,24 @@ export async function orchestrateTrip(trip, callbacks = {}) {
         budgetTier: plannerTier,
     });
 
+    // Inject OSRM hours into trip for transport engine's overnight detection.
+    // The timeline has real driving hours from OSRM; the transport engine runs
+    // synchronously and can't call OSRM itself. This bridges the data.
+    const firstExplore = timeline.find(t => t.type === 'EXPLORE');
+    if (firstExplore?.overnightArrival) {
+        trip._osrm_outbound_hours = firstExplore.overnightArrival.hours;
+    } else {
+        const firstTravel = timeline.find(t => t.type === 'TRAVEL');
+        if (firstTravel) trip._osrm_outbound_hours = firstTravel.hours;
+    }
+    // Return segment: last TRAVEL or last explore with overnightArrival
+    const returnLoc = trip.return_location || trip.start_location || '';
+    const lastTravel = [...timeline].reverse().find(t =>
+        t.type === 'TRAVEL' && t.to?.toLowerCase().trim() === returnLoc.toLowerCase().trim()
+    );
+    if (lastTravel) trip._osrm_return_hours = lastTravel.hours;
+    else if (trip._osrm_outbound_hours) trip._osrm_return_hours = trip._osrm_outbound_hours; // symmetric
+
     // Compute exploration-only days (budget scales on these, not travel days)
     const exploreDays = timeline.filter(t => t.type === 'EXPLORE');
     const explorationDays = exploreDays.length || totalDays;

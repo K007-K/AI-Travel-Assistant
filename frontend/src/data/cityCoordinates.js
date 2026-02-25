@@ -47,6 +47,14 @@ const CITY_COORDINATES = {
     'nagpur': { lat: 21.1458, lng: 79.0882 },
     'visakhapatnam': { lat: 17.6868, lng: 83.2185 },
     'vizag': { lat: 17.6868, lng: 83.2185 },
+    'tirupati': { lat: 13.6288, lng: 79.4192 },
+    'vijayawada': { lat: 16.5062, lng: 80.6480 },
+    'araku valley': { lat: 18.3274, lng: 82.8754 },
+    'araku': { lat: 18.3274, lng: 82.8754 },
+    'nellore': { lat: 14.4426, lng: 79.9865 },
+    'guntur': { lat: 16.3067, lng: 80.4365 },
+    'rajahmundry': { lat: 17.0005, lng: 81.8040 },
+    'kakinada': { lat: 16.9891, lng: 82.2475 },
 
     // Asia
     'tokyo': { lat: 35.6762, lng: 139.6503 },

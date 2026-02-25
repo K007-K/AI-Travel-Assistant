@@ -333,6 +333,8 @@ CRITICAL SELF-VALIDATION (do this internally before returning):
 4. Activities are geographically logical (no 40km+ jumps).
 5. ALL activities are in ${destination}, NOT in ${startLocation}.
 6. Per-person daily activity cost ≤ ${dailyPerPerson} ${currency}.
+7. Each day MUST have at least 4 activities (mix of sightseeing, food, culture).
+8. Include at least 2 food/meal activities per day (breakfast, lunch, dinner, or street food).
 
 If any rule is violated, FIX it before returning.
 DO NOT explain anything. RETURN JSON ONLY.
