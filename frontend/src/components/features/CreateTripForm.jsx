@@ -10,6 +10,8 @@ import LocationInput from '../ui/LocationInput';
 import { getCurrencyForDestination } from '../../utils/currencyMap';
 import { Button } from '../ui/Button';
 import { deriveTripConstraints } from '../../utils/tripDefaults';
+import { planTripDuration } from '../../engine/tripDurationPlanner';
+import DurationModal from '../ui/DurationModal';
 
 // ─── 4 Travel Styles ───
 const TRAVEL_STYLES = [
@@ -40,6 +42,7 @@ const CURRENCIES = [
 const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
     const [step, setStep] = useState(0); // 0: Basics, 1: Budget & Review
     const [errors, setErrors] = useState({});
+    const [durationResult, setDurationResult] = useState(null);
 
     const [form, setForm] = useState({
         title: initialDestination ? `Trip to ${initialDestination}` : '',
@@ -101,11 +104,8 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
         if (validateStep(step)) setStep(step + 1);
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (!validateStep(1)) return;
-
-        const totalDuration = form.segments.reduce((s, seg) => s + seg.days, 0);
+    const buildTripData = (overrideDays = null) => {
+        const totalDuration = overrideDays || form.segments.reduce((s, seg) => s + seg.days, 0);
 
         let startDate = form.startDate || null;
         let endDate = null;
@@ -116,7 +116,6 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
             endDate = end.toISOString();
         }
 
-        // Derive internal fields from travel_style + budget_tier
         const tripForDerivation = {
             budget_tier: form.budget_tier,
             travel_style: form.travel_style,
@@ -128,7 +127,7 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
         };
         const derived = deriveTripConstraints(tripForDerivation);
 
-        onSubmit({
+        return {
             title: form.title.trim(),
             travel_style: form.travel_style,
             budget_tier: form.budget_tier,
@@ -141,12 +140,51 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
             destination: form.segments[0].location,
             travelers: form.travelers,
             currency: form.currency,
-            // Derived fields (engine reads these)
             budget: derived.budget,
             travel_preference: derived.travel_preference,
             accommodation_preference: derived.accommodation_preference,
             own_vehicle_type: derived.own_vehicle_type,
+            autoExpanded: overrideDays ? true : false,
+        };
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!validateStep(1)) return;
+
+        const returnLoc = form.return_same ? form.start_location : form.return_location;
+
+        // ── Duration feasibility check ──
+        const result = planTripDuration({
+            startLocation: form.start_location.trim(),
+            returnLocation: (returnLoc || '').trim(),
+            destinations: form.segments.map(s => ({ location: s.location, days: s.days })),
+            requestedDays: form.segments.reduce((s, seg) => s + seg.days, 0),
+            travelStyle: form.travel_style,
         });
+
+        if (!result.feasible) {
+            // Show duration modal — don't submit yet
+            setDurationResult(result);
+            return;
+        }
+
+        // Feasible — submit directly
+        onSubmit(buildTripData());
+    };
+
+    const handleDurationConfirm = (suggestedDays) => {
+        setDurationResult(null);
+        onSubmit(buildTripData(suggestedDays));
+    };
+
+    const handleDurationEdit = () => {
+        setDurationResult(null);
+        setStep(0);
+    };
+
+    const handleDurationCancel = () => {
+        setDurationResult(null);
     };
 
     const totalDays = form.segments.reduce((s, seg) => s + seg.days, 0);
@@ -486,6 +524,18 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
                     </div>
                 </div>
             </form>
+
+            {/* Duration Feasibility Modal */}
+            <AnimatePresence>
+                {durationResult && !durationResult.feasible && (
+                    <DurationModal
+                        result={durationResult}
+                        onConfirm={handleDurationConfirm}
+                        onEdit={handleDurationEdit}
+                        onCancel={handleDurationCancel}
+                    />
+                )}
+            </AnimatePresence>
         </motion.div>
     );
 };
