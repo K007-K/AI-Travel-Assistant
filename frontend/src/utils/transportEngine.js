@@ -585,11 +585,16 @@ export function buildReturnSegment(trip, allocation, currencyRate, totalDays) {
         else distTier = 'long';
     }
 
-    const preferredMode = decideTransportMode(trip, distTier);
+    // Use SAME mode as outbound when available — round trips should match.
+    // Without this, outbound might be bus (envelope-downgraded) while return
+    // picks train at full price → massive cost mismatch.
+    const preferredMode = trip._outbound_mode || decideTransportMode(trip, distTier);
 
-    // Return trip uses the ACTUAL cost (same as outbound direction)
-    // NOT clamped to remaining envelope — round trips should cost the same both ways
-    const cost = calculateTransportCost(preferredMode, distTier, travelers, currency);
+    // Use symmetric cost: same per-person rate as outbound × travelers.
+    // This prevents outbound=₹571 but return=₹3,735 absurdity.
+    const cost = trip._outbound_cost_pp
+        ? trip._outbound_cost_pp * travelers
+        : calculateTransportCost(preferredMode, distTier, travelers, currency);
 
     if (allocation) {
         allocation.intercity_remaining = Math.max(0, (allocation.intercity_remaining || 0) - cost);

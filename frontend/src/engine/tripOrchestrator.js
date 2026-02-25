@@ -463,6 +463,11 @@ export async function orchestrateTrip(trip, callbacks = {}) {
     const outbound = buildOutboundSegment(trip, allocation, currencyRate);
     if (outbound) {
         allSegments.push(outbound);
+        // Store outbound mode + per-person cost so return uses the SAME mode and cost.
+        // Without this, outbound might downgrade to bus (envelope-aware) while return
+        // picks train at full price → 6x cost mismatch.
+        trip._outbound_mode = outbound.metadata?.transport_mode || null;
+        trip._outbound_cost_pp = outbound.metadata?.per_person || null;
     }
 
     // Inter-city segments (multi-city trips)
