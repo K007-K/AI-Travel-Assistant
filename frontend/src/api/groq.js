@@ -66,6 +66,10 @@ export const generateTripPlan = async (destination, days, budget, travelers, cur
                 activityCountTarget: lifecycleOpts.pace || null,
                 excludeTransport: lifecycleOpts.excludeTransport || false,
                 excludeAccommodation: lifecycleOpts.excludeAccommodation || false,
+                // Trip logistics context
+                startLocation: lifecycleOpts.startLocation || null,
+                hasOutboundTransport: lifecycleOpts.hasOutboundTransport || false,
+                hasReturnTransport: lifecycleOpts.hasReturnTransport || false,
             }
         });
 

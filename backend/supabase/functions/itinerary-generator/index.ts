@@ -108,10 +108,15 @@ serve(async (req: Request) => {
         // Lifecycle fields from orchestrator
         const activityBudget = toPositiveNumber(rawBody.activityBudget, 0) || null
         const travelStyle = sanitizeString(rawBody.travelStyle)
-        const pace = sanitizeString(rawBody.pace)
+        const _pace = sanitizeString(rawBody.pace)
         const activityCountTarget = Math.max(2, Math.min(8, Math.floor(toPositiveNumber(rawBody.activityCountTarget, 5))))
         const excludeTransport = rawBody.excludeTransport === true
         const excludeAccommodation = rawBody.excludeAccommodation === true
+
+        // Trip logistics context
+        const startLocation = sanitizeString(rawBody.startLocation) || 'unknown'
+        const hasOutboundTransport = rawBody.hasOutboundTransport === true
+        const hasReturnTransport = rawBody.hasReturnTransport === true
 
         const budgetGuidance = BUDGET_TIER_DESCRIPTIONS[budgetTier] || BUDGET_TIER_DESCRIPTIONS['mid-range']
 
@@ -124,19 +129,26 @@ serve(async (req: Request) => {
                 .join(', ')
         }
 
-        const scheduleContext = tripDays && tripDays.length > 0
-            ? `\n    DESTINATION: ${destination}
-    ITINERARY SCHEDULE:\n    ${formatItineraryStructure(tripDays)}
-    ⚠️ Generate activities ONLY for ${destination}. Do NOT generate activities for the traveler's home city or departure city.`
-            : `\n    DESTINATION: ${destination}
-    ⚠️ ALL activities must be in ${destination}. Do NOT generate activities for any other city.`
+        const scheduleInfo = tripDays && tripDays.length > 0
+            ? formatItineraryStructure(tripDays)
+            : `Day 1: ${destination}`
+
+        // ── Style-based activity limits ─────────────────────
+        const STYLE_LIMITS: Record<string, number> = {
+            'relaxation': 3,
+            'city_explorer': 4,
+            'adventure': 5,
+            'business': 2,
+            'road_trip': 4,
+        }
+        const styleLimit = STYLE_LIMITS[travelStyle] || activityCountTarget || 4
+        const styleName = travelStyle || 'explore'
 
         // ── RAG retrieval (optional, gracefully degrades) ───
         let contextData = ""
         try {
             const geminiKey = Deno.env.get('GEMINI_API_KEY')
             if (destination && geminiKey) {
-                // 1. Generate embedding via Gemini API
                 const embedRes = await fetch(
                     `https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${geminiKey}`,
                     {
@@ -154,7 +166,6 @@ serve(async (req: Request) => {
                     const embedding = embedData?.embedding?.values
 
                     if (embedding && Array.isArray(embedding)) {
-                        // 2. Query vector DB for relevant destination docs
                         const supabaseUrl = Deno.env.get('SUPABASE_URL')
                         const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
@@ -175,11 +186,7 @@ serve(async (req: Request) => {
                                 console.log(`RAG: Found ${documents.length} relevant docs.`)
                             }
                         }
-                    } else {
-                        console.warn("RAG: Gemini returned unexpected embedding format.")
                     }
-                } else {
-                    console.warn(`RAG: Gemini Embedding failed with status ${embedRes.status}.`)
                 }
             }
         } catch (ragErr) {
@@ -189,123 +196,131 @@ serve(async (req: Request) => {
         // ── Build prompt ────────────────────────────────────
         const effectiveBudget = activityBudget || budget || 2000
         const dailyBudget = Math.round(effectiveBudget / Math.max(days, 1))
-        const effectivePace = pace || 'moderate'
 
-        // Per-activity cost caps by tier
-        const tierCostCaps: Record<string, { max: number; typical: number }> = {
-            'budget': { max: Math.round(dailyBudget * 0.25), typical: Math.round(dailyBudget * 0.10) },
-            'mid-range': { max: Math.round(dailyBudget * 0.35), typical: Math.round(dailyBudget * 0.15) },
-            'luxury': { max: Math.round(dailyBudget * 0.50), typical: Math.round(dailyBudget * 0.25) },
-        }
-        const caps = tierCostCaps[budgetTier] || tierCostCaps['mid-range']
+        // Budget tier guidance for pricing
+        const budgetPriceGuide = budgetTier === 'budget'
+            ? 'Budget → low-cost or free attractions only. At least 50% of activities should be FREE.'
+            : budgetTier === 'luxury'
+                ? 'Premium → high-end experiences allowed.'
+                : 'Comfort → moderate priced attractions.'
 
-        // Constraint block: tell AI what NOT to generate
-        const constraintBlock = (excludeTransport || excludeAccommodation) ? `
-    GENERATION CONSTRAINTS:
-    ${excludeTransport ? '- DO NOT include any transport segments (flights, trains, buses, taxis, local transport).' : ''}
-    ${excludeAccommodation ? '- DO NOT include any accommodation or hotel suggestions.' : ''}
-    - Return ONLY activities (sightseeing, dining, experiences, tours).
-    - Transport and accommodation are handled separately by the orchestration engine.
-    ` : ''
-
-        // Travel style hints
-        const styleHint = travelStyle === 'road_trip'
-            ? '\n    ROAD TRIP MODE: Include scenic stops, roadside attractions, and driving-friendly activities.'
-            : travelStyle
-                ? `\n    TRAVEL STYLE: "${travelStyle}" — tailor activities accordingly.`
-                : ''
-
-        // Pace constraints
-        const paceHint = effectivePace === 'relaxed'
-            ? '\n    PACE: Relaxed — max 4 activities per day with generous breaks.'
-            : effectivePace === 'packed'
-                ? '\n    PACE: Packed — include 6-8 activities per day for maximum coverage.'
-                : '\n    PACE: Moderate — 5-6 activities per day with reasonable breaks.'
+        // Constraint block
+        const transportConstraint = excludeTransport
+            ? '\n- DO NOT include any transport segments (flights, trains, buses, taxis).'
+            : ''
+        const accommodationConstraint = excludeAccommodation
+            ? '\n- DO NOT include accommodation or hotel suggestions.'
+            : ''
 
         const prompt = `
-    You are a LOCAL TRAVEL EXPERT for ${destination}. Generate a ${days}-day itinerary for ${travelers} traveler(s).
+You are a professional travel operations planner, not a creative writer.
+You must generate a LOGISTICALLY REALISTIC itinerary.
+You must obey ALL constraints strictly.
 
-    ACTIVITY BUDGET: ${effectiveBudget} ${currency} total (${dailyBudget} ${currency}/day).
-    ${scheduleContext}
+---------------------------------------------------
+TRIP CONTEXT:
 
-    ${budgetGuidance}
+Origin: ${startLocation}
+Destination: ${destination}
+Travel Style: ${styleName}
+Budget Tier: ${budgetTier}
+Total Days: ${days}
+Travelers: ${travelers}
+Activity Budget: ${effectiveBudget} ${currency} total (${dailyBudget} ${currency}/day)
+Schedule: ${scheduleInfo}
 
-    ═══════════════════════════════════════════════════════════════
-    🚨 QUALITY RULES — YOUR ITINERARY MUST FEEL LIKE A LOCAL'S GUIDE 🚨
+Arrival Info:
+- Arrival transport exists: ${hasOutboundTransport}
+- Arrival time: unknown
 
-    1. SPECIFIC FAMOUS PLACES: Recommend THE most popular and well-known attractions.
-       ❌ BAD: "Visit a local temple", "Evening Walk", "National Park"
-       ✅ GOOD: "Tirumala Venkateswara Temple", "RK Beach Sunset Walk", "Borra Caves"
+Departure Info:
+- Return transport exists: ${hasReturnTransport}
+- Departure time: unknown
 
-    2. NAMED RESTAURANTS & FOOD STALLS: Give actual restaurant/stall names.
-       ❌ BAD: "Lunch at a Local Market", "Breakfast at a Local Eatery"
-       ✅ GOOD: "Dosa at Sri Sai Ram Tiffins", "Idli at MVR Grand"
+Daily time window: 08:00–21:00
+Max total activity time per day: 10 hours
+Mandatory lunch buffer: 1 hour (12:00-13:00)
+Mandatory 30-minute buffer between activities
 
-    3. PRACTICAL TIPS in "notes" field — act like a LOCAL friend advising:
-       - Booking requirements (e.g., "Book TTD ₹300 special darshan online 2 days in advance")
-       - What to carry/wear (e.g., "Wear traditional clothes, no leather items allowed")
-       - Phone/bag rules (e.g., "Deposit phones at cloakroom before entering")
-       - Best timing (e.g., "Arrive before 7 AM to avoid 3-hour queue")
-       - Transport tips (e.g., "Take APSRTC bus from Tirupati to Tirumala, ₹50")
+---------------------------------------------------
+STYLE RULES (HARD LIMITS):
 
-    4. REALISTIC LOCAL PRICES in ${currency}:
-       - Use ACTUAL prices a local would pay, not inflated tourist prices
-       - Street food: ₹30-80 | Restaurant meal: ₹100-300 | Auto ride: ₹50-150
-       - Temple entry: usually FREE or ₹50-300 for special darshan
-       - Museum: ₹20-100 | Beach/park: FREE | Boat ride: ₹100-300
+${styleName} style → max ${styleLimit} activities per day.
+You MUST NOT exceed this limit.
 
-    5. CULTURAL CONTEXT: Include temple etiquette, local customs, dress codes,
-       religious significance, best photo spots, and safety warnings where relevant.
+---------------------------------------------------
+DISTANCE RULE:
 
-    6. NO GENERIC FILLERS: Every activity must be a REAL, specific place that
-       exists and is worth visiting. If you don't know specific places, recommend
-       the MOST FAMOUS attractions that destination is known for.
-    ═══════════════════════════════════════════════════════════════
+All activities in the same day must be geographically close.
+If distance between two activities exceeds 40 km,
+DO NOT place them on the same day.
+Group activities by proximity. Do NOT zigzag across the city.
 
-    BUDGET TIER: "${budgetTier.toUpperCase()}" — stick to ${budgetTier}-appropriate options only.
-    PER-ACTIVITY COST: Max ${caps.max} ${currency}, typical ${caps.typical} ${currency}.
-    ${budgetTier === 'budget' ? `At least 50% of activities should be FREE (estimated_cost: 0).` : ''}
+---------------------------------------------------
+ARRIVAL & DEPARTURE RULES:
 
-    ACTIVITY COUNT: Exactly ${activityCountTarget} activities per day.
-    ${constraintBlock}
-    ${styleHint}
-    ${paceHint}
+${hasOutboundTransport ? `Traveler is arriving from ${startLocation}.
+If intercity distance > 300km and trip is only 1 day, keep itinerary very light (max 2 activities).` : 'Traveler is local — full day available.'}
 
-    ${contextData ? `VERIFIED LOCAL DATA:\n    ${contextData}` : ''}
+${hasReturnTransport ? 'Ensure last-day activities end early enough for return travel.' : ''}
 
-    ═══════════════════════════════════════════════════════════════
-    🚨 FULL DAY SCHEDULE MANDATORY (8 AM to 9 PM) 🚨
+---------------------------------------------------
+BUDGET RULES:
 
-    EACH day MUST cover:
-    - MORNING (08:00-12:00): 2+ activities (breakfast + main attraction)
-    - AFTERNOON (12:00-17:00): 2+ activities (lunch + cultural/nature experience)  
-    - EVENING (17:00-21:00): 2+ activities (sunset spot + dinner/night experience)
+${budgetPriceGuide}
+${budgetGuidance}
 
-    IF ANY DAY STOPS BEFORE 18:00, THE RESPONSE IS INVALID.
-    ═══════════════════════════════════════════════════════════════
+Each activity must include realistic estimated_cost in ${currency}.
+Use ACTUAL local prices, not inflated tourist prices.
+Stay consistent with ${destination} pricing.
+${transportConstraint}
+${accommodationConstraint}
 
-    Budget total for ALL days: ${effectiveBudget} ${currency}. Each day ≈ ${dailyBudget} ${currency}.
+---------------------------------------------------
+QUALITY RULES:
 
-    Return ONLY valid JSON:
+1. SPECIFIC REAL PLACES ONLY — no generic fillers like "Evening Walk" or "Local Market"
+2. NAMED restaurants/stalls with actual dish recommendations
+3. PRACTICAL TIPS in "notes": booking requirements, dress codes, timings, local transport
+4. CULTURAL CONTEXT: temple etiquette, local customs, safety warnings where relevant
+
+${contextData ? `\nVERIFIED LOCAL DATA:\n${contextData}` : ''}
+
+---------------------------------------------------
+OUTPUT FORMAT (STRICT JSON ONLY):
+
+{
+  "days": [
     {
-      "days": [
+      "dayNumber": 1,
+      "activities": [
         {
-          "dayNumber": 1,
-          "activities": [
-            {
-              "title": "Specific Place Name (not generic)",
-              "time": "09:00",
-              "location": "Exact location with area/landmark",
-              "type": "sightseeing|food|culture|nature|shopping|nightlife",
-              "estimated_cost": 100,
-              "safety_warning": "Warning or null",
-              "notes": "Practical details: booking tips, what to carry, best timing, local advice"
-            }
-          ]
+          "title": "Specific Place Name",
+          "time": "09:00",
+          "location": "Exact area/landmark in ${destination}",
+          "type": "sightseeing|food|culture|nature|shopping|nightlife",
+          "estimated_cost": 100,
+          "safety_warning": "Warning text or null",
+          "notes": "Practical logistical notes: booking tips, dress code, best timing"
         }
       ]
     }
-    `
+  ]
+}
+
+---------------------------------------------------
+CRITICAL SELF-VALIDATION (do this internally before returning):
+
+1. Activity count does NOT exceed ${styleLimit} per day.
+2. No time overlaps between activities.
+3. Total daily active time ≤ 10 hours.
+4. Activities are geographically logical (no 40km+ jumps).
+5. ALL activities are in ${destination}, NOT in ${startLocation}.
+6. Budget total ≤ ${effectiveBudget} ${currency}.
+
+If any rule is violated, FIX it before returning.
+DO NOT explain anything. RETURN JSON ONLY.
+`
 
         // ── Call Groq API ───────────────────────────────────
         // Dynamic max_tokens: ~1500 tokens per day for detailed schedules, capped at 8192
@@ -320,10 +335,10 @@ serve(async (req: Request) => {
             body: JSON.stringify({
                 model: 'llama-3.3-70b-versatile',
                 messages: [
-                    { role: "system", content: `You are a local travel expert and trip planner for ${destination}. You know every famous attraction, restaurant, street food stall, temple, and hidden gem. You give practical, specific advice like a local friend would — with real place names, realistic local prices in ${currency}, and insider tips. Output strict JSON only, never markdown or explanations.` },
+                    { role: "system", content: `You are a professional travel operations planner for ${destination}. You output logistically realistic itineraries with real place names, accurate local prices in ${currency}, and practical tips. You strictly follow all time, distance, and budget constraints. Output strict JSON only, never markdown or explanations.` },
                     { role: "user", content: prompt }
                 ],
-                temperature: 0.7,
+                temperature: 0.6,
                 max_tokens: maxTokens,
                 response_format: { type: "json_object" }
             }),

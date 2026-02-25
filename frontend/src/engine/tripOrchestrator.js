@@ -435,6 +435,11 @@ export async function orchestrateTrip(trip, callbacks = {}) {
 
     let aiPlan;
     try {
+        // Determine if outbound/return transport exists
+        const hasOutbound = !!(trip.start_location && trip.destination &&
+            trip.start_location.toLowerCase() !== trip.destination.toLowerCase());
+        const hasReturn = !!(trip.return_location || trip.start_location) && hasOutbound;
+
         aiPlan = await generateTripPlan(
             trip.destination,
             totalDays,
@@ -445,14 +450,18 @@ export async function orchestrateTrip(trip, callbacks = {}) {
             // trip.days may contain wrong locations (e.g., start_location instead of destination)
             dayLocations.map(dl => ({ dayNumber: dl.dayNumber, location: dl.location })),
             budgetTier,
-            // New fields for constrained generation
+            // Lifecycle + context fields for constrained generation
             {
                 activityBudget,
                 activityPerDay,
                 travelStyle,
-                pace,                          // activity count target per style
+                pace,
                 excludeTransport: true,
                 excludeAccommodation: true,
+                // Trip logistics context
+                startLocation: trip.start_location || '',
+                hasOutboundTransport: hasOutbound,
+                hasReturnTransport: hasReturn,
             }
         );
     } catch (err) {
