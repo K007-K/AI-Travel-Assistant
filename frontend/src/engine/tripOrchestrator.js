@@ -33,6 +33,7 @@
 
 import { allocateBudget, deductFromEnvelope, reconcileBudget } from './budgetAllocator.js';
 import { applyFeasibilityGuard } from './feasibilityGuard.js';
+import { buildTravelTimeline } from './travelTimelineBuilder.js';
 import {
     buildOutboundSegment,
     buildReturnSegment,
@@ -352,7 +353,6 @@ export async function orchestrateTrip(trip, callbacks = {}) {
 
     const tripSegments = trip.segments || [{ location: trip.destination, days: trip.days?.length || 1 }];
     const totalDays = tripSegments.reduce((sum, s) => sum + (s.days || 0), 0);
-    const totalNights = Math.max(0, totalDays - 1);
     const currency = trip.currency || 'USD';
     const currencyRate = CURRENCY_MULTIPLIERS[currency] || 1;
 
@@ -372,17 +372,41 @@ export async function orchestrateTrip(trip, callbacks = {}) {
             dayLocations.push({ dayNumber: dayCount, location: seg.location });
         }
     });
+    // Build travel timeline to determine TRAVEL vs EXPLORE days
+    const timeline = buildTravelTimeline({
+        startLocation: trip.start_location || trip.destination,
+        returnLocation: trip.return_location || trip.start_location || '',
+        destinations: tripSegments,
+    });
+
+    // Compute exploration-only days (budget scales on these, not travel days)
+    const exploreDays = timeline.filter(t => t.type === 'EXPLORE');
+    const explorationDays = exploreDays.length || totalDays;
+    const travelDayCount = timeline.filter(t => t.type === 'TRAVEL').length;
+
+    // Build EXPLORE-only day locations for LLM (no activities on travel days)
+    const exploreDayLocations = exploreDays.map((slot, i) => ({
+        dayNumber: i + 1,  // LLM sees sequential day numbers (1, 2, 3...)
+        location: slot.location,
+        calendarDay: slot.day_number,  // actual calendar position
+    }));
+
+    if (import.meta.env.DEV) console.log(`[Orchestrator] Timeline: ${timeline.length} days (${explorationDays} explore, ${travelDayCount} travel)`);
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // PHASE 1: Budget Allocation
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     onPhase?.(1, 'Budget Allocation');
 
+    // CRITICAL: Scale activity budget on explorationDays, not totalDays
+    const budgetDays = explorationDays;
+    const budgetNights = Math.max(0, explorationDays - 1);
+
     const allocation = allocateBudget(trip.budget || 0, {
         travelStyle,
         budgetTier,
-        totalDays,
-        totalNights,
+        totalDays: budgetDays,
+        totalNights: budgetNights,
         travelers: trip.travelers || 1,
         hasOwnVehicle,
     });
@@ -444,13 +468,12 @@ export async function orchestrateTrip(trip, callbacks = {}) {
 
         aiPlan = await generateTripPlan(
             trip.destination,
-            totalDays,
+            explorationDays,  // Only generate for EXPLORE days
             trip.budget || 2000,
             trip.travelers || 1,
             currency,
-            // ALWAYS use dayLocations (derived from trip.segments → trip.destination)
-            // trip.days may contain wrong locations (e.g., start_location instead of destination)
-            dayLocations.map(dl => ({ dayNumber: dl.dayNumber, location: dl.location })),
+            // Send EXPLORE-only day locations (sequential numbering for LLM)
+            exploreDayLocations.map(dl => ({ dayNumber: dl.dayNumber, location: dl.location })),
             budgetTier,
             // Lifecycle + context fields for constrained generation
             {
@@ -477,18 +500,21 @@ export async function orchestrateTrip(trip, callbacks = {}) {
     }
 
     // Convert AI activities to segment rows
+    // Remap: LLM day 1,2,3 → actual calendar day positions (skip TRAVEL days)
     const activitySegments = [];
     if (aiPlan?.days) {
         aiPlan.days.forEach((genDay, dayIndex) => {
-            const dayNumber = dayIndex + 1;
-            const dayLocation = dayLocations[dayIndex]?.location || trip.destination;
+            // Map LLM sequential index to calendar day via exploreDayLocations
+            const exploreSlot = exploreDayLocations[dayIndex];
+            const calendarDay = exploreSlot?.calendarDay || (dayIndex + 1);
+            const dayLocation = exploreSlot?.location || dayLocations[dayIndex]?.location || trip.destination;
 
             (genDay.activities || []).forEach((act, idx) => {
                 activitySegments.push({
                     trip_id: trip.id,
                     type: 'activity',
                     title: act.title,
-                    day_number: dayNumber,
+                    day_number: calendarDay,
                     location: act.location || dayLocation,
                     estimated_cost: parseFloat(act.estimated_cost) || 0,
                     order_index: idx,

@@ -105,36 +105,10 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
     };
 
     const buildTripData = (overrideDays = null) => {
-        // When duration is expanded, update segments to include travel days
-        // The orchestrator reads segments to determine totalDays
-        let segments = form.segments;
-        let totalDuration = segments.reduce((s, seg) => s + seg.days, 0);
-
-        if (overrideDays && overrideDays > totalDuration) {
-            const extraDays = overrideDays - totalDuration;
-            // Distribute extra travel days across segments
-            // For single destination: add all extra to that segment
-            // For multi: add proportionally (first/last get travel buffer)
-            segments = segments.map((seg, i) => {
-                if (segments.length === 1) {
-                    return { ...seg, days: seg.days + extraDays };
-                }
-                // First segment gets outbound travel day, last gets return
-                const bonus = (i === 0 || i === segments.length - 1) ? 1 : 0;
-                return { ...seg, days: seg.days + bonus };
-            });
-
-            // If there are still remaining days unallocated (intercity travel)
-            const allocated = segments.reduce((s, seg) => s + seg.days, 0);
-            if (allocated < overrideDays) {
-                // Add remaining to the first segment
-                segments = segments.map((seg, i) =>
-                    i === 0 ? { ...seg, days: seg.days + (overrideDays - allocated) } : seg
-                );
-            }
-
-            totalDuration = overrideDays;
-        }
+        // Segments stay EXACTLY as user requested (exploration days only)
+        // The orchestrator's timeline builder handles TRAVEL day insertion
+        const segments = form.segments;
+        const totalDuration = overrideDays || segments.reduce((s, seg) => s + seg.days, 0);
 
         let startDate = form.startDate || null;
         let endDate = null;
