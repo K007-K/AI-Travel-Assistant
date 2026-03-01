@@ -19,10 +19,10 @@ const DayExpenseSummary = ({
     let dayTotal, activityCost, transportCost, accomCost;
 
     if (orchSummary) {
-        dayTotal = orchSummary.total_day_cost || 0;
+        dayTotal = orchSummary.total || orchSummary.total_day_cost || 0;
         activityCost = orchSummary.activity_cost || 0;
-        transportCost = (orchSummary.travel_cost || 0) + (orchSummary.local_transport_cost || 0);
-        accomCost = orchSummary.stay_cost || 0;
+        transportCost = (orchSummary.transport_cost || orchSummary.travel_cost || 0) + (orchSummary.local_transport_cost || 0);
+        accomCost = orchSummary.accommodation_cost || orchSummary.stay_cost || 0;
     } else {
         const acts = activeDay?.activities || [];
         const costSegments = acts.filter(a => !a.isGem);
@@ -47,7 +47,7 @@ const DayExpenseSummary = ({
                         </div>
                         <div>
                             <h4 className="font-semibold text-foreground">Day {activeDay?.dayNumber} Expenses</h4>
-                            <p className="text-xs text-muted-foreground">{orchSummary ? 'From lifecycle engine' : 'Estimated total (per person)'}</p>
+                            <p className="text-xs text-muted-foreground">{orchSummary ? 'AI estimated (per person)' : 'Estimated total (per person)'}</p>
                         </div>
                     </div>
                     <div className="text-right">

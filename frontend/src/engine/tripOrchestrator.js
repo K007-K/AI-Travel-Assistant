@@ -351,7 +351,7 @@ export async function orchestrateTrip(trip, callbacks = {}) {
             title: ob.title || `${ob.is_overnight ? '🌙 Overnight ' : ''}${ob.mode} — ${trip.start_location} → ${trip.destination}`,
             day_number: 1,
             location: trip.start_location || trip.destination,
-            estimated_cost: (ob.cost_per_person || 0) * travelers,
+            estimated_cost: ob.cost_per_person || 0,
             order_index: -1,  // Always first
             metadata: {
                 transport_mode: ob.mode,
@@ -404,7 +404,7 @@ export async function orchestrateTrip(trip, callbacks = {}) {
             title: rt.title || `${rt.is_overnight ? '🌙 Overnight ' : ''}${rt.mode} — ${trip.destination} → ${trip.start_location}`,
             day_number: totalDays,
             location: trip.destination,
-            estimated_cost: (rt.cost_per_person || 0) * travelers,
+            estimated_cost: rt.cost_per_person || 0,
             order_index: 1000,  // Always last
             metadata: {
                 transport_mode: rt.mode,

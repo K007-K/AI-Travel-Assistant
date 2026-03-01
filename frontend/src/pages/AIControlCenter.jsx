@@ -39,7 +39,7 @@ function computeRisks(allocation, reconciliation) {
     if (!allocation || !reconciliation) return [];
     const risks = [];
 
-    const total = allocation.total_budget || 0;
+    const total = allocation.total || allocation.total_budget || 0;
     const used = reconciliation.total || 0;
     const pct = total > 0 ? (used / total) * 100 : 0;
 
@@ -219,7 +219,7 @@ const AIControlCenter = () => {
     const risks = useMemo(() => computeRisks(allocation, reconciliation), [allocation, reconciliation]);
 
     // Budget overview numbers
-    const totalBudget = allocation?.total_budget || trip?.budget || 0;
+    const totalBudget = allocation?.total || allocation?.total_budget || trip?.budget || 0;
     const totalUsed = reconciliation?.total || 0;
     const remaining = totalBudget - totalUsed;
     const balanced = reconciliation?.balanced !== false;
