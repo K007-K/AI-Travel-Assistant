@@ -32,13 +32,13 @@ const AllocationBreakdown = ({ storeAllocation, activeCurrencySymbol }) => {
                             <span className="font-medium text-foreground">{activeCurrencySymbol}{(item.value || 0).toLocaleString()}</span>
                         </div>
                         <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full ${item.color}`} style={{ width: `${storeAllocation.total_budget > 0 ? Math.round(((item.value || 0) / storeAllocation.total_budget) * 100) : 0}%` }} />
+                            <div className={`h-full rounded-full ${item.color}`} style={{ width: `${(storeAllocation.total || storeAllocation.total_budget) > 0 ? Math.round(((item.value || 0) / (storeAllocation.total || storeAllocation.total_budget)) * 100) : 0}%` }} />
                         </div>
                     </div>
                 ))}
                 <div className="pt-2 border-t border-border flex justify-between text-xs font-semibold">
                     <span>Total Budget</span>
-                    <span>{activeCurrencySymbol}{(storeAllocation.total_budget || 0).toLocaleString()}</span>
+                    <span>{activeCurrencySymbol}{(storeAllocation.total || storeAllocation.total_budget || 0).toLocaleString()}</span>
                 </div>
             </CardContent>
         </Card>

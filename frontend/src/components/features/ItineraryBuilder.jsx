@@ -32,12 +32,19 @@ const ACTIVITY_TYPES = [
     { value: 'culture', label: 'Culture', icon: Landmark, color: 'text-purple-500 bg-purple-50 dark:bg-purple-900/20' },
     { value: 'activity', label: 'Activity', icon: Sun, color: 'text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' },
     { value: 'accommodation', label: 'Stay', icon: Hotel, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' },
-    // Logistics types (injected by Transport Engine)
+    // Logistics types — icon resolved dynamically via getTransportIcon()
     { value: 'outbound_travel', label: 'Travel', icon: Plane, color: 'text-teal-500 bg-teal-50 dark:bg-teal-900/20' },
     { value: 'intercity_travel', label: 'Intercity', icon: Plane, color: 'text-teal-500 bg-teal-50 dark:bg-teal-900/20' },
     { value: 'return_travel', label: 'Return', icon: Plane, color: 'text-teal-500 bg-teal-50 dark:bg-teal-900/20' },
     { value: 'local_transport', label: 'Local Transport', icon: Bus, color: 'text-cyan-500 bg-cyan-50 dark:bg-cyan-900/20' },
 ];
+
+// Pick correct transport icon based on metadata.transport_mode
+const TRANSPORT_ICONS = { train: Train, bus: Bus, car: Car, bike: Bike, flight: Plane, plane: Plane };
+function getTransportIcon(mode) {
+    if (!mode) return Plane;
+    return TRANSPORT_ICONS[mode.toLowerCase()] || Plane;
+}
 
 const ItineraryBuilder = () => {
     const { id } = useParams();
@@ -736,7 +743,11 @@ const ItineraryBuilder = () => {
                                             )}
                                             <Reorder.Group axis="y" values={activeDay?.activities || []} onReorder={(newOrder) => { reorderActivities(trip.id, activeDay.id, newOrder); setIsDirty(true); }} className="space-y-4">
                                                 {activeDay?.activities.map((activity) => {
-                                                    const typeInfo = ACTIVITY_TYPES.find(t => t.value === activity.type) || ACTIVITY_TYPES[0];
+                                                    let typeInfo = ACTIVITY_TYPES.find(t => t.value === activity.type) || ACTIVITY_TYPES[0];
+                                                    // Override icon for transport segments based on actual mode
+                                                    if (activity.transportMode && ['outbound_travel', 'return_travel', 'intercity_travel'].includes(activity.segmentType)) {
+                                                        typeInfo = { ...typeInfo, icon: getTransportIcon(activity.transportMode) };
+                                                    }
                                                     return (
                                                         <SegmentCard
                                                             key={activity.id}

@@ -205,7 +205,7 @@ ${budgetGuidance}
 ---------------------------------------------------
 PLANNING RULES:
 
-1. REAL PLACES ONLY — specific named temples, restaurants, landmarks. No generic "Local Market" or "Evening Stroll".
+1. REAL PLACES ONLY — specific named temples, restaurants, landmarks. No generic "Local Market" or "Nearby Area".
 2. NAMED RESTAURANTS with actual dish recommendations and per-person meal cost.
 3. Include entry/darshan/ticket costs as estimated_cost for each activity.
 4. For temples: mention free prasadam/langar if available (estimated_cost: 0). Note advance booking, dress codes, queue times.
@@ -213,8 +213,10 @@ PLANNING RULES:
 6. Account for queue times at popular spots (temples: 1-3 hours, monuments: 30 min).
 7. Time activities realistically — include travel time between spots.
 8. Activities MUST be in chronological time order.
-9. Minimum 6 activities per full day (mix of sightseeing, food, culture, logistics).
+9. Minimum 6 activities per full day (mix of sightseeing, food, culture).
 10. Include at least 2 full meals (breakfast/lunch/dinner) as separate activities with real restaurant names.
+11. LOCATION FIELD MUST be the ACTUAL place name with neighborhood — e.g. "Sri Venkateswara Temple, Tirumala Hill" NOT "Near Tirupati Railway Station". EACH activity MUST have its real location, not the same generic location for all.
+12. TYPE FIELD must be exactly one of: sightseeing, food, culture, relax, activity. Do NOT use "logistics", "nature", "shopping", "nightlife".
 
 ${travelers === 1
     ? `SOLO TRAVELER: Suggest solo-friendly experiences. Include safety tips.`
@@ -245,8 +247,8 @@ OUTPUT FORMAT (STRICT JSON — NO MARKDOWN, NO EXPLANATION):
         {
           "title": "Specific Real Place Name",
           "time": "06:30",
-          "location": "Exact area/landmark, ${destination}",
-          "type": "sightseeing|food|culture|nature|shopping|nightlife|logistics",
+          "location": "Place Name, Neighborhood/Area, ${destination}",
+          "type": "sightseeing|food|culture|relax|activity",
           "estimated_cost": 0,
           "notes": "Practical tips: how to reach, what to expect, booking info, local transport cost"
         }
