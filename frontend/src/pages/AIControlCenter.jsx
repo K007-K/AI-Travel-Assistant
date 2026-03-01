@@ -8,7 +8,7 @@ import {
     Train, Sparkles, MessageCircle, Utensils,
 } from 'lucide-react';
 import useTripStore from '../store/tripStore';
-import { allocateBudget, reconcileBudget } from '../engine/budgetAllocator';
+
 
 import BudgetOverviewPanel from './ai-control/components/BudgetOverviewPanel';
 import DailyCostTable from './ai-control/components/DailyCostTable';
@@ -103,15 +103,18 @@ const AIControlCenter = () => {
         setIsLoading(true);
 
         try {
-            // 1. Re-derive allocation from trip params (deterministic)
-            const derivedAllocation = allocateBudget(trip.budget || 0, {
-                travelStyle: trip.travel_style || '',
-                budgetTier: trip.accommodation_preference || 'mid-range',
-                totalDays: trip.days?.length || 1,
-                totalNights: Math.max(0, (trip.days?.length || 1) - 1),
-                travelers: trip.travelers || 1,
-                hasOwnVehicle: trip.own_vehicle_type && trip.own_vehicle_type !== 'none',
-            });
+            // Simple budget allocation (inline — no external dependency)
+            const totalBudget = trip.budget || 0;
+            const derivedAllocation = {
+                total: totalBudget,
+                intercity: Math.round(totalBudget * 0.15),
+                accommodation: Math.round(totalBudget * 0.05),
+                local_transport: Math.round(totalBudget * 0.05),
+                activity: Math.round(totalBudget * 0.60),
+                buffer: Math.round(totalBudget * 0.15),
+                intercity_remaining: Math.round(totalBudget * 0.15),
+                activity_remaining: Math.round(totalBudget * 0.60),
+            };
 
             // 2. Flatten segments from trip.days to compute reconciliation
             const allActivities = trip.days?.flatMap(d => d.activities || []) || [];
@@ -142,8 +145,14 @@ const AIControlCenter = () => {
                 }
             }
 
-            // 3. Reconcile
-            const derivedReconciliation = reconcileBudget(derivedAllocation, flatSegments);
+            // 3. Reconcile (inline — just sum total cost vs budget)
+            const totalCost = flatSegments.reduce((s, seg) => s + (seg.estimated_cost || 0), 0);
+            const derivedReconciliation = {
+                balanced: totalCost <= totalBudget,
+                total: Math.round(totalCost),
+                overshoot: Math.max(0, Math.round(totalCost - totalBudget)),
+                category_violations: [],
+            };
 
             // 4. Build daily summary from days
             const summary = (trip.days || []).map(day => {

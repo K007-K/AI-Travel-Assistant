@@ -7,7 +7,7 @@
  */
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import { CURRENCY_MULTIPLIERS } from '../utils/transportEngine';
+import CURRENCY_MULTIPLIERS from '../data/currencyRates.json';
 import { orchestrateTrip } from '../engine/tripOrchestrator';
 import { generateAllBookingSuggestions } from '../engine/bookingSuggestionEngine';
 import { getHiddenGems, validateTripBudget } from '../api/groq';

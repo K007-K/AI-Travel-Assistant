@@ -17,8 +17,7 @@
 import { buildTravelTimeline } from './travelTimelineBuilder.js';
 import { generateTripPlan, getHiddenGems } from '../api/groq.js';
 import {
-    normalizeBudgetTier,
-    normalizeTravelStyle,
+    normalizeTrip,
     deriveTripConstraints,
 } from '../utils/tripDefaults.js';
 import { getCityCoords } from '../data/cityCoordinates.js';
@@ -205,8 +204,10 @@ export async function orchestrateTrip(trip, callbacks = {}) {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     onPhase?.(1, 'Building Context');
 
-    const budgetTier = normalizeBudgetTier(trip.budget_tier || trip.accommodation_preference);
-    const travelStyle = normalizeTravelStyle(trip.travel_style);
+    const { normalizedTier, normalizedStyle } = normalizeTrip(trip);
+    // Map engine tier → LLM-facing tier name
+    const budgetTier = normalizedTier === 'low' ? 'budget' : normalizedTier === 'high' ? 'luxury' : 'mid-range';
+    const travelStyle = normalizedStyle;
     const currency = trip.currency || 'INR';
     const travelers = trip.travelers || 1;
 

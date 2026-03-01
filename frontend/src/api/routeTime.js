@@ -12,9 +12,33 @@
  */
 
 import { getCityCoords } from '../data/cityCoordinates.js';
-import {
-    _estimateDistanceTier as estimateDistanceTier,
-} from '../utils/transportEngine.js';
+
+// Simple haversine distance between two lat/lng points in km.
+function _haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// Estimate distance tier from city coordinates (fallback only).
+function estimateDistanceTier(from, to) {
+    if (!from || !to) return 'short';
+    if (from.toLowerCase().trim() === to.toLowerCase().trim()) return 'local';
+    const coordsA = getCityCoords(from);
+    const coordsB = getCityCoords(to);
+    if (coordsA && coordsB) {
+        const km = _haversine(coordsA.latitude, coordsA.longitude, coordsB.latitude, coordsB.longitude);
+        if (km < 100) return 'local';
+        if (km < 500) return 'short';
+        if (km <= 1200) return 'medium';
+        return 'long';
+    }
+    return 'short'; // Safe default
+}
 
 // ── Cache ────────────────────────────────────────────────────────────
 
