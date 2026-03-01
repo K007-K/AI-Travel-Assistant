@@ -153,6 +153,10 @@ async function enrichActivitiesWithCoordinates(segments, dayLocations = []) {
         if (coords) {
             seg.latitude = coords.latitude;
             seg.longitude = coords.longitude;
+            // Also store in metadata for Supabase persistence
+            seg.metadata = seg.metadata || {};
+            seg.metadata.latitude = coords.latitude;
+            seg.metadata.longitude = coords.longitude;
         } else {
             seg.metadata = seg.metadata || {};
             seg.metadata.geocode_failed = true;
