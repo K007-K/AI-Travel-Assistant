@@ -91,6 +91,20 @@ const useItineraryStore = create((set, _get) => ({
             await supabase.from('trip_segments').insert(gemSegments);
         }
 
+        // Persist allocation data as a special segment (for AI page to read)
+        if (result.allocation) {
+            await supabase.from('trip_segments').insert({
+                trip_id: tripId,
+                type: 'allocation',
+                title: 'Budget Allocation',
+                day_number: 0,
+                location: trip.destination,
+                estimated_cost: 0,
+                order_index: -999,
+                metadata: result.allocation,
+            });
+        }
+
         // Rebuild virtual days from inserted segments (excludes hidden_gem type)
         const rebuiltDays = buildDaysFromSegments(inserted || [], trip);
 

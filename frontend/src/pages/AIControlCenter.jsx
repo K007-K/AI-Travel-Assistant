@@ -8,6 +8,7 @@ import {
     Train, Sparkles, MessageCircle, Utensils,
 } from 'lucide-react';
 import useTripStore from '../store/tripStore';
+import { supabase } from '../lib/supabase';
 
 
 import BudgetOverviewPanel from './ai-control/components/BudgetOverviewPanel';
@@ -90,7 +91,7 @@ const AIControlCenter = () => {
         }
     }, [trips, selectedTripId]);
 
-    // Re-derive allocation + reconciliation when trip changes
+    // Load allocation + reconciliation when trip changes
     useEffect(() => {
         if (!trip || !trip._hasSegments) {
             setAllocation(null);
@@ -102,114 +103,102 @@ const AIControlCenter = () => {
 
         setIsLoading(true);
 
-        try {
-            // Budget allocation — MUST match tripOrchestrator.js exactly
-            const totalBudget = trip.budget || 0;
-            const derivedAllocation = {
-                total: totalBudget,
-                intercity: Math.round(totalBudget * 0.15),
-                accommodation: 0,  // Day trips — no hotel
-                local_transport: Math.round(totalBudget * 0.05),
-                activity: Math.round(totalBudget * 0.65),
-                buffer: Math.round(totalBudget * 0.15),
-                intercity_remaining: Math.round(totalBudget * 0.15),
-                activity_remaining: Math.round(totalBudget * 0.65),
-            };
+        const loadData = async () => {
+            try {
+                // 1. Try loading persisted allocation from trip_segments
+                const { data: allocSeg } = await supabase
+                    .from('trip_segments')
+                    .select('metadata')
+                    .eq('trip_id', trip.id)
+                    .eq('type', 'allocation')
+                    .single();
 
-            // 2. Flatten segments from trip.days to compute reconciliation
-            const allActivities = trip.days?.flatMap(d => d.activities || []) || [];
-            const flatSegments = allActivities.map(a => ({
-                type: a.segmentType || 'activity',
-                estimated_cost: a.estimated_cost || 0,
-                title: a.title,
-                day_number: 0,
-                notes: a.notes || '',
-                metadata: {
-                    transport_mode: a.transportMode,
-                },
-            }));
+                const totalBudget = trip.budget || 0;
+                let finalAllocation;
 
-            // Deduct used amounts from remaining envelopes
-            const categoryMap = {
-                intercity: ['outbound_travel', 'return_travel', 'intercity_travel'],
-                accommodation: ['accommodation'],
-                activity: ['activity', 'gem'],
-            };
-
-            for (const [category, types] of Object.entries(categoryMap)) {
-                const used = flatSegments
-                    .filter(s => types.includes(s.type))
-                    .reduce((sum, s) => sum + (parseFloat(s.estimated_cost) || 0), 0);
-                if (derivedAllocation[`${category}_remaining`] !== undefined) {
-                    derivedAllocation[`${category}_remaining`] = Math.max(0, derivedAllocation[category] - Math.round(used));
+                if (allocSeg?.metadata && allocSeg.metadata.total) {
+                    // Use the real persisted allocation from orchestrator
+                    finalAllocation = allocSeg.metadata;
+                } else {
+                    // Fallback for old trips: derive allocation inline
+                    finalAllocation = {
+                        total: totalBudget,
+                        intercity: Math.round(totalBudget * 0.15),
+                        accommodation: 0,
+                        local_transport: Math.round(totalBudget * 0.05),
+                        activity: Math.round(totalBudget * 0.65),
+                        buffer: Math.round(totalBudget * 0.15),
+                        intercity_remaining: Math.round(totalBudget * 0.15),
+                        activity_remaining: Math.round(totalBudget * 0.65),
+                    };
                 }
-            }
 
-            // Compute local transport used from activity notes (auto ₹XX, bus ₹XX)
-            let localTransportUsed = 0;
-            for (const seg of flatSegments) {
-                if (seg.notes) {
-                    const fareMatches = seg.notes.match(/(?:auto|bus|metro|rickshaw|cab|taxi|ride)[^₹]*₹\s*(\d+)/gi) || [];
-                    for (const match of fareMatches) {
-                        const num = match.match(/₹\s*(\d+)/);
-                        if (num) localTransportUsed += parseInt(num[1], 10);
+                // 2. Flatten segments from trip.days and compute used amounts
+                const allActivities = trip.days?.flatMap(d => d.activities || []) || [];
+                const flatSegments = allActivities.map(a => ({
+                    type: a.segmentType || 'activity',
+                    estimated_cost: a.estimated_cost || 0,
+                    title: a.title,
+                    notes: a.notes || '',
+                }));
+
+                // If persisted allocation doesn't have _remaining computed, derive it
+                const categoryMap = {
+                    intercity: ['outbound_travel', 'return_travel', 'intercity_travel'],
+                    activity: ['activity', 'gem'],
+                };
+
+                for (const [category, types] of Object.entries(categoryMap)) {
+                    if (finalAllocation[`${category}_remaining`] === undefined && finalAllocation[category]) {
+                        const used = flatSegments
+                            .filter(s => types.includes(s.type))
+                            .reduce((sum, s) => sum + (parseFloat(s.estimated_cost) || 0), 0);
+                        finalAllocation[`${category}_remaining`] = Math.max(0, finalAllocation[category] - Math.round(used));
                     }
                 }
-            }
-            if (localTransportUsed > 0) {
-                if (localTransportUsed > derivedAllocation.local_transport) {
-                    derivedAllocation.local_transport = localTransportUsed;
-                }
-                derivedAllocation.local_transport_remaining = derivedAllocation.local_transport - localTransportUsed;
-            }
 
-            // 3. Reconcile (inline — just sum total cost vs budget)
-            const totalCost = flatSegments.reduce((s, seg) => s + (seg.estimated_cost || 0), 0);
-            const derivedReconciliation = {
-                balanced: totalCost <= totalBudget,
-                total: Math.round(totalCost),
-                overshoot: Math.max(0, Math.round(totalCost - totalBudget)),
-                category_violations: [],
-            };
-
-            // 4. Build daily summary from days
-            const summary = (trip.days || []).map(day => {
-                const acts = day.activities || [];
-                const activityCost = acts
-                    .filter(a => a.segmentType === 'activity' || a.segmentType === 'gem' || (!a.isLogistics && !['outbound_travel', 'return_travel', 'intercity_travel', 'accommodation', 'local_transport'].includes(a.segmentType)))
-                    .reduce((s, a) => s + (a.estimated_cost || 0), 0);
-                const travelCost = acts
-                    .filter(a => ['outbound_travel', 'return_travel', 'intercity_travel'].includes(a.segmentType))
-                    .reduce((s, a) => s + (a.estimated_cost || 0), 0);
-                const stayCost = acts
-                    .filter(a => a.segmentType === 'accommodation')
-                    .reduce((s, a) => s + (a.estimated_cost || 0), 0);
-                const localCost = acts
-                    .filter(a => a.segmentType === 'local_transport')
-                    .reduce((s, a) => s + (a.estimated_cost || 0), 0);
-
-                return {
-                    day_number: day.dayNumber,
-                    location: day.location,
-                    activity_cost: Math.round(activityCost),
-                    travel_cost: Math.round(travelCost),
-                    stay_cost: Math.round(stayCost),
-                    local_transport_cost: Math.round(localCost),
-                    total_day_cost: Math.round(activityCost + travelCost + stayCost + localCost),
+                // 3. Reconcile
+                const totalCost = flatSegments.reduce((s, seg) => s + (seg.estimated_cost || 0), 0);
+                const derivedReconciliation = {
+                    balanced: totalCost <= totalBudget,
+                    total: Math.round(totalCost),
+                    overshoot: Math.max(0, Math.round(totalCost - totalBudget)),
+                    category_violations: [],
                 };
-            });
 
-            setAllocation(derivedAllocation);
-            setReconciliation(derivedReconciliation);
-            setDailySummary(summary);
-        } catch (err) {
-            console.error('[AIControlCenter] Error deriving data:', err);
-            setAllocation(null);
-            setReconciliation(null);
-            setDailySummary([]);
-        }
+                // 4. Build daily summary
+                const summary = (trip.days || []).map(day => {
+                    const acts = day.activities || [];
+                    const activityCost = acts
+                        .filter(a => a.segmentType === 'activity' || a.segmentType === 'gem' || (!a.isLogistics && !['outbound_travel', 'return_travel', 'intercity_travel', 'accommodation', 'local_transport'].includes(a.segmentType)))
+                        .reduce((s, a) => s + (a.estimated_cost || 0), 0);
+                    const travelCost = acts
+                        .filter(a => ['outbound_travel', 'return_travel', 'intercity_travel'].includes(a.segmentType))
+                        .reduce((s, a) => s + (a.estimated_cost || 0), 0);
 
-        setIsLoading(false);
+                    return {
+                        day_number: day.dayNumber,
+                        location: day.location,
+                        activity_cost: Math.round(activityCost),
+                        travel_cost: Math.round(travelCost),
+                        total_day_cost: Math.round(activityCost + travelCost),
+                    };
+                });
+
+                setAllocation(finalAllocation);
+                setReconciliation(derivedReconciliation);
+                setDailySummary(summary);
+            } catch (err) {
+                console.error('[AIControlCenter] Error loading data:', err);
+                setAllocation(null);
+                setReconciliation(null);
+                setDailySummary([]);
+            }
+
+            setIsLoading(false);
+        };
+
+        loadData();
     }, [trip?.id, trip?._hasSegments]);
 
     // ── Memoized derived computations ────────────────────────────────

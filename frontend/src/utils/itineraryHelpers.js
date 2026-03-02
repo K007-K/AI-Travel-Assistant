@@ -93,8 +93,8 @@ export function segmentTypeToActivityType(seg) {
 export function buildDaysFromSegments(segments, trip) {
     if (!segments || segments.length === 0) return [];
 
-    // Exclude hidden_gem segments (persisted separately, loaded by itineraryStore)
-    const daySegments = segments.filter(seg => seg.type !== 'hidden_gem');
+    // Exclude meta-segments (persisted separately, not visible in itinerary)
+    const daySegments = segments.filter(seg => seg.type !== 'hidden_gem' && seg.type !== 'allocation');
 
     const byDay = {};
     daySegments.forEach(seg => {
