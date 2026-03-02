@@ -259,6 +259,11 @@ export async function orchestrateTrip(trip, callbacks = {}) {
     // Determine overnight context for LLM
     const isOvernightArrival = !!overnightArrival;
     const arrivalHours = overnightArrival?.hours || null;
+    const arrivalDistanceKm = overnightArrival?.distanceKm || null;
+
+    // Get return distance from timeline (last TRAVEL segment or overnight return)
+    const returnTravelSlot = [...timeline].reverse().find(t => t.type === 'TRAVEL' || (t.type === 'EXPLORE' && t.overnightArrival));
+    const returnDistanceKm = returnTravelSlot?.distanceKm || returnTravelSlot?.overnightArrival?.distanceKm || arrivalDistanceKm;
 
     // Estimate arrival time based on travel hours
     let arrivalTime = null;
@@ -319,6 +324,8 @@ export async function orchestrateTrip(trip, callbacks = {}) {
             departureMode,
             hasAccommodation: false, // day trips for now
             travelHours: arrivalHours,
+            distanceKm: arrivalDistanceKm,
+            returnDistanceKm,
             // Multi-city schedule
             tripDays: exploreDayLocations.map(dl => ({
                 dayNumber: dl.dayNumber,

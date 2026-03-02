@@ -95,6 +95,8 @@ serve(async (req: Request) => {
         const departureMode = sanitizeString(rawBody.departureMode) || null
         const hasAccommodation = rawBody.hasAccommodation === true
         const travelHours = toPositiveNumber(rawBody.travelHours, 0) || null
+        const distanceKm = toPositiveNumber(rawBody.distanceKm, 0) || null
+        const returnDistanceKm = toPositiveNumber(rawBody.returnDistanceKm, 0) || distanceKm
 
         // Multi-city schedule
         const tripDays: any[] = Array.isArray(rawBody.tripDays) ? rawBody.tripDays : []
@@ -198,12 +200,14 @@ Plan dinner 1-2 hours before departure. End last activity by ${parseInt(departur
 
 ${!hasAccommodation && isOvernightArrival ? `NO HOTEL: This is a day trip — traveler sleeps on overnight transport, no hotel needed.` : ''}
 ${travelHours ? `Estimated travel time: ${travelHours} hours one way.` : ''}
-
-TRAIN COST REFERENCE (India): Use REALISTIC per-person fares based on budget tier:
-- Budget: Sleeper class — ~₹1/km (e.g. 500km ≈ ₹400-600/person)
-- Mid-range: 3AC — ~₹1.5-2/km (e.g. 500km ≈ ₹700-1000/person)
-- Luxury: 2AC/1AC — ~₹2.5-4/km (e.g. 500km ≈ ₹1200-2000/person)
-For BUS: AC Sleeper ~₹1-1.5/km, Non-AC ~₹0.7/km. For FLIGHTS: check typical fares for the route.
+${distanceKm ? `
+VERIFIED DISTANCE (from GPS/routing): ${distanceKm} km one-way${returnDistanceKm && returnDistanceKm !== distanceKm ? `, return: ${returnDistanceKm} km` : ''}.
+You MUST use this real distance to calculate realistic transport fares:
+- Train Sleeper: ~₹0.85/km + ₹150 charges (e.g. ${distanceKm}km ≈ ₹${Math.round(distanceKm * 0.85 + 150)}/person)
+- Train 3AC: ~₹1.65/km + ₹200 charges (e.g. ${distanceKm}km ≈ ₹${Math.round(distanceKm * 1.65 + 200)}/person)
+- Bus Non-AC: ~₹0.70/km, AC Sleeper: ~₹1.30/km
+- Flight: check typical fares for the actual route
+Pick the transport mode matching the budget tier (${budgetTier}).` : ''}
 
 ---------------------------------------------------
 ${budgetGuidance}
