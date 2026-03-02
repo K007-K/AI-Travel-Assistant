@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-    Bot, Languages, Map, Wallet, Mic, Brain, AlertTriangle, Utensils, Shuffle, Cpu, Info, ArrowRight,
-    Activity, Network, Share2, Settings
+    Bot, Languages, Map, Wallet, Brain, AlertTriangle, Utensils, Cpu, ArrowRight,
+    Activity, Network, Settings
 } from 'lucide-react';
 
 // Enhanced Feature Data with Direct Routing Links
@@ -15,59 +15,22 @@ const AI_FEATURES = [
         models: 'Mixtral | Llama 3',
         agents: 3,
         icon: <Bot className="w-6 h-6 text-blue-600 dark:text-blue-400" />,
-        link: '/ai/chat', // Direct Route
+        link: '/ai/chat',
         primary: true,
         category: 'Core Intelligence',
         capabilities: 'Context · Reasoning · Tools',
         agentChain: 'Router → Planner → Generator'
     },
-    // PLANNING & PERSONALIZATION
-    {
-        id: 'smart-planner',
-        title: 'Smart Itinerary',
-        desc: 'Multi-agent planner for detailed day-wise trips.',
-        models: 'Mixtral | Phi-3',
-        agents: 4,
-        icon: <Map className="w-6 h-6 text-emerald-500" />,
-        link: '/ai/itinerary', // Direct Route
-        category: 'Planning & Personalization',
-        capabilities: 'Maps · Logistics · Pricing',
-        agentChain: 'Planner → Optimizer → Validator'
-    },
-    {
-        id: 'travel-memory',
-        title: 'Travel Memory',
-        desc: 'Personalization engine that learns your preferences.',
-        models: 'Mixtral | BGE',
-        agents: 2,
-        icon: <Brain className="w-6 h-6 text-purple-600 dark:text-purple-400" />,
-        link: '/ai/memory', // Direct Route
-        category: 'Planning & Personalization',
-        capabilities: 'Long-term Memory · RAG',
-        agentChain: 'Retriever → Synthesizer'
-    },
-    {
-        id: 'what-if-sim',
-        title: 'What-If Simulation',
-        desc: 'Simulate changes to your plan and see the impact.',
-        models: 'Mixtral',
-        agents: 3,
-        icon: <Shuffle className="w-6 h-6 text-cyan-500" />,
-        link: '/ai/what-if', // Direct Route
-        category: 'Planning & Personalization',
-        capabilities: 'Simulation · Prediction',
-        agentChain: 'Simulator → Analyzer'
-    },
-    // SAFETY & LOCAL TOOLS
+    // TRAVEL TOOLS
     {
         id: 'live-translate',
         title: 'Live Translation',
         desc: 'Real-time translation with cultural nuance explanation.',
-        models: 'NLLB-200 | Whisper',
+        models: 'Mixtral | Groq',
         agents: 2,
         icon: <Languages className="w-6 h-6 text-indigo-500" />,
-        link: '/ai/translate', // Direct Route
-        category: 'Safety & Local Tools',
+        link: '/ai/translate',
+        category: 'Travel Tools',
         capabilities: 'Text · Voice · Context',
         agentChain: 'Transcriber → Translator'
     },
@@ -75,11 +38,11 @@ const AI_FEATURES = [
         id: 'emergency-help',
         title: 'Emergency Help',
         desc: 'Immediate, step-by-step safety and medical guidance.',
-        models: 'Phi-3 (Safety Tuned)',
+        models: 'Mixtral (Safety Tuned)',
         agents: 2,
         icon: <AlertTriangle className="w-6 h-6 text-red-500" />,
-        link: '/ai/emergency', // Direct Route
-        category: 'Safety & Local Tools',
+        link: '/ai/emergency',
+        category: 'Travel Tools',
         capabilities: 'Safety · Protocols · SOS',
         agentChain: 'Monitor → Advisor'
     },
@@ -87,58 +50,19 @@ const AI_FEATURES = [
         id: 'food-discovery',
         title: 'Food Discovery',
         desc: 'Curated dining recommendations based on diet & budget.',
-        models: 'Qwen',
+        models: 'Mixtral | Groq',
         agents: 2,
         icon: <Utensils className="w-6 h-6 text-amber-500" />,
-        link: '/ai/food', // Direct Route
-        category: 'Safety & Local Tools',
+        link: '/ai/food',
+        category: 'Travel Tools',
         capabilities: 'Search · Filtering · Reviews',
         agentChain: 'Finder → Ranker'
-    },
-    {
-        id: 'budget-fixer',
-        title: 'Budget Fixer',
-        desc: 'Detects overspending and suggests actionable fixes.',
-        models: 'Phi-3',
-        agents: 2,
-        icon: <Wallet className="w-6 h-6 text-orange-500" />,
-        link: '/ai/budget', // Direct Route
-        category: 'Safety & Local Tools',
-        capabilities: 'Math · Analysis · Suggestions',
-        agentChain: 'Auditor → Advisor'
-    },
-    // ADVANCED & EXPERIMENTAL
-    {
-        id: 'voice-assistant',
-        title: 'Voice Assistant',
-        desc: 'Hands-free conversational travel planning.',
-        models: 'Whisper | Phi-3',
-        agents: 3,
-        icon: <Mic className="w-6 h-6 text-pink-500" />,
-        link: '/ai/voice', // Direct Route
-        category: 'Advanced & Experimental',
-        capabilities: 'STT · TTS · Conservation',
-        agentChain: 'Listener → Speaker'
-    },
-    {
-        id: 'explainability',
-        title: 'Explainability',
-        desc: 'Transparency panel showing why AI made decisions.',
-        models: 'Gemma',
-        agents: 1,
-        icon: <Info className="w-6 h-6 text-teal-600 dark:text-teal-400" />,
-        link: '/ai/explainability', // Direct Route
-        category: 'Advanced & Experimental',
-        capabilities: 'Analysis · Transparency',
-        agentChain: 'Auditor → Explainer'
     },
 ];
 
 const CATEGORIES = [
     'Core Intelligence',
-    'Planning & Personalization',
-    'Safety & Local Tools',
-    'Advanced & Experimental'
+    'Travel Tools',
 ];
 
 const AICenter = () => {

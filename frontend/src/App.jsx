@@ -31,13 +31,7 @@ const Favourites = lazy(() => import('./pages/Favourites'));
 // AI Pages (named exports → wrapped for React.lazy)
 const TranslationPage = lazy(() => import('./pages/ai/TranslationPage').then(m => ({ default: m.TranslationPage })));
 const EmergencyPage = lazy(() => import('./pages/ai/EmergencyPage').then(m => ({ default: m.EmergencyPage })));
-const VoicePage = lazy(() => import('./pages/ai/VoicePage').then(m => ({ default: m.VoicePage })));
-const ItineraryPage = lazy(() => import('./pages/ai/ItineraryPage').then(m => ({ default: m.ItineraryPage })));
-const BudgetPage = lazy(() => import('./pages/ai/BudgetPage').then(m => ({ default: m.BudgetPage })));
 const FoodPage = lazy(() => import('./pages/ai/FoodPage').then(m => ({ default: m.FoodPage })));
-const WhatIfPage = lazy(() => import('./pages/ai/WhatIfPage').then(m => ({ default: m.WhatIfPage })));
-const ExplainabilityPage = lazy(() => import('./pages/ai/ExplainabilityPage').then(m => ({ default: m.ExplainabilityPage })));
-const MemoryPage = lazy(() => import('./pages/ai/MemoryPage').then(m => ({ default: m.MemoryPage })));
 
 // ─── Lightweight page loader (shown during chunk loading) ───
 const PageLoader = () => (
@@ -83,13 +77,7 @@ function App() {
                   <Route path="/ai/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
                   <Route path="/ai/translate" element={<ProtectedRoute><TranslationPage /></ProtectedRoute>} />
                   <Route path="/ai/emergency" element={<ProtectedRoute><EmergencyPage /></ProtectedRoute>} />
-                  <Route path="/ai/voice" element={<ProtectedRoute><VoicePage /></ProtectedRoute>} />
-                  <Route path="/ai/itinerary" element={<ProtectedRoute><ItineraryPage /></ProtectedRoute>} />
-                  <Route path="/ai/budget" element={<ProtectedRoute><BudgetPage /></ProtectedRoute>} />
                   <Route path="/ai/food" element={<ProtectedRoute><FoodPage /></ProtectedRoute>} />
-                  <Route path="/ai/what-if" element={<ProtectedRoute><WhatIfPage /></ProtectedRoute>} />
-                  <Route path="/ai/explainability" element={<ProtectedRoute><ExplainabilityPage /></ProtectedRoute>} />
-                  <Route path="/ai/memory" element={<ProtectedRoute><MemoryPage /></ProtectedRoute>} />
 
                   <Route path="/discover" element={<Discover />} />
                   <Route path="/destination/:id" element={<DestinationDetail />} />
