@@ -94,7 +94,7 @@ export function normalizeTrip(trip) {
 
 // ── Base daily budgets by tier and currency ──────────────────────────
 const BASE_DAILY_BUDGET = {
-    low:  { INR: 2000,  USD: 40,  EUR: 35,  GBP: 30,  JPY: 5000,  AUD: 55,  CAD: 50 },
+    low:  { INR: 1000,  USD: 40,  EUR: 35,  GBP: 30,  JPY: 5000,  AUD: 55,  CAD: 50 },
     mid:  { INR: 10000, USD: 120, EUR: 110, GBP: 95,  JPY: 15000, AUD: 170, CAD: 155 },
     high: { INR: 35000, USD: 400, EUR: 370, GBP: 320, JPY: 50000, AUD: 550, CAD: 500 },
 };
