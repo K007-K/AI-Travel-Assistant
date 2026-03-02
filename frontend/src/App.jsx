@@ -11,7 +11,7 @@ import ProtectedRoute from './components/layout/ProtectedRoute';
 const Home = lazy(() => import('./pages/Home'));
 const Chat = lazy(() => import('./pages/Chat'));
 const AIControlCenter = lazy(() => import('./pages/AIControlCenter'));
-import AICompanion from './components/companion/AICompanion';
+const AICompanion = lazy(() => import('./components/companion/AICompanion'));
 const Discover = lazy(() => import('./pages/Discover'));
 const About = lazy(() => import('./pages/About'));
 const Login = lazy(() => import('./pages/Login'));
@@ -169,7 +169,7 @@ function App() {
             </ErrorBoundary>
           </main>
           <Footer />
-          <AICompanion />
+          <Suspense fallback={null}><AICompanion /></Suspense>
         </div>
       </Router>
     </ThemeProvider>

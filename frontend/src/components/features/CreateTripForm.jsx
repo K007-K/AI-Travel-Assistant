@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     MapPin, Calendar, Users,
@@ -44,6 +44,8 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
     const [errors, setErrors] = useState({});
     const [durationResult, setDurationResult] = useState(null);
     const [isCheckingDuration, setIsCheckingDuration] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const submitGuard = useRef(false);
 
     const [form, setForm] = useState({
         title: initialDestination ? `Trip to ${initialDestination}` : '',
@@ -155,6 +157,9 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateStep(1)) return;
+        if (submitGuard.current) return; // Prevent double-click
+        submitGuard.current = true;
+        setIsSubmitting(true);
 
         const returnLoc = form.return_same ? form.start_location : form.return_location;
 
@@ -171,6 +176,8 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
 
             if (!result.feasible) {
                 setDurationResult(result);
+                submitGuard.current = false;
+                setIsSubmitting(false);
                 return;
             }
 
@@ -178,7 +185,7 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
             onSubmit(buildTripData());
         } catch (err) {
             console.error('[DurationCheck] Failed:', err);
-            // On error, submit anyway (don't block the user)
+            // On error, submit anyway (don’t block the user)
             onSubmit(buildTripData());
         } finally {
             setIsCheckingDuration(false);
@@ -531,10 +538,10 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
                         ) : (
                             <Button
                                 type="submit"
-                                disabled={isCheckingDuration}
+                                disabled={isCheckingDuration || isSubmitting}
                                 className="gap-2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800"
                             >
-                                {isCheckingDuration ? 'Checking routes…' : 'Create Trip'} <ChevronRight className="w-4 h-4" />
+                                {isSubmitting ? 'Creating Trip…' : isCheckingDuration ? 'Checking routes…' : 'Create Trip'} <ChevronRight className="w-4 h-4" />
                             </Button>
                         )}
                     </div>
