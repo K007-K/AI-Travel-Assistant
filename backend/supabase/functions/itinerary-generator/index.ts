@@ -209,7 +209,7 @@ PLANNING RULES:
 2. NAMED RESTAURANTS with actual dish recommendations and per-person meal cost.
 3. Include entry/darshan/ticket costs as estimated_cost for each activity.
 4. For temples: mention free prasadam/langar if available (estimated_cost: 0). Note advance booking, dress codes, queue times.
-5. Include local transport between activities in the "notes" field with real costs (auto ₹XX, city bus ₹XX).
+5. Include local transport details between activities in the "notes" field with real costs (auto ₹XX, city bus ₹XX). ALSO provide a "local_transport_total" for each day summing ALL local transport costs for that day.
 6. Account for queue times at popular spots (temples: 1-3 hours, monuments: 30 min).
 7. Time activities realistically — include travel time between spots.
 8. Activities MUST be in chronological time order.
@@ -252,7 +252,8 @@ OUTPUT FORMAT (STRICT JSON — NO MARKDOWN, NO EXPLANATION):
           "estimated_cost": 0,
           "notes": "Practical tips: how to reach, what to expect, booking info, local transport cost"
         }
-      ]
+      ],
+      "local_transport_total": 150
     }
   ],
   "return_transport": {

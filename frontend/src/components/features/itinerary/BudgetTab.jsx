@@ -184,16 +184,20 @@ const BudgetTab = ({
                             </h3>
                             <div className="divide-y divide-border">
                                 {[
-                                    { label: 'Total Budget', value: `${cur} ${totalBudget.toLocaleString()}`, accent: false },
-                                    { label: 'Actual Spent (Manual + Bookings)', value: `${cur} ${actualSpent.toLocaleString()}`, accent: false },
-                                    { label: 'AI Estimated Spend', value: `${cur} ${aiEstimated.toLocaleString()}`, accent: false },
-                                    { label: 'Forecast Total', value: `${cur} ${forecastTotal.toLocaleString()}`, accent: forecastPercent >= 100 },
-                                    { label: 'Remaining (Forecast)', value: `${cur} ${remainingForecast.toLocaleString()}`, accent: remainingForecast < 0 },
-                                    { label: 'Forecast Utilization', value: `${forecastPercent}%`, accent: forecastPercent >= 80 },
-                                    ...(trip.travelers > 1 ? [{ label: `Group Total (${trip.travelers} travelers)`, value: `${cur} ${(totalBudget * trip.travelers).toLocaleString()}`, accent: false }] : []),
+                                    { label: 'Total Budget', value: `${cur} ${totalBudget.toLocaleString()}`, accent: false, source: 'user' },
+                                    { label: 'Actual Spent (Manual + Bookings)', value: `${cur} ${actualSpent.toLocaleString()}`, accent: false, source: 'system' },
+                                    { label: 'AI Estimated Spend', value: `${cur} ${aiEstimated.toLocaleString()}`, accent: false, source: 'ai' },
+                                    { label: 'Forecast Total', value: `${cur} ${forecastTotal.toLocaleString()}`, accent: forecastPercent >= 100, source: 'system' },
+                                    { label: 'Remaining (Forecast)', value: `${cur} ${remainingForecast.toLocaleString()}`, accent: remainingForecast < 0, source: 'system' },
+                                    { label: 'Forecast Utilization', value: `${forecastPercent}%`, accent: forecastPercent >= 80, source: 'system' },
+                                    ...(trip.travelers > 1 ? [{ label: `Group Total (${trip.travelers} travelers)`, value: `${cur} ${(totalBudget * trip.travelers).toLocaleString()}`, accent: false, source: 'system' }] : []),
                                 ].map((row, i) => (
                                     <div key={i} className="flex justify-between items-center py-3">
-                                        <span className="text-sm text-muted-foreground">{row.label}</span>
+                                        <span className="text-sm text-muted-foreground flex items-center gap-2">
+                                            {row.label}
+                                            {row.source === 'ai' && <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400 font-bold uppercase">AI est.</span>}
+                                            {row.source === 'system' && <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 font-bold uppercase">System</span>}
+                                        </span>
                                         <span className={`text-sm font-semibold ${row.accent ? 'text-red-500' : 'text-foreground'}`}>{row.value}</span>
                                     </div>
                                 ))}

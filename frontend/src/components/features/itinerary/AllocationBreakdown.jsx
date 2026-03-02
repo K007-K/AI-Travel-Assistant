@@ -16,15 +16,16 @@ const AllocationBreakdown = ({ storeAllocation, activeCurrencySymbol }) => {
                 <CardTitle className="flex items-center gap-2 text-lg">
                     <BarChart3 className="w-5 h-5 text-primary" /> Budget Allocation
                 </CardTitle>
+                <p className="text-xs text-muted-foreground -mt-1">System allocated based on your total budget</p>
             </CardHeader>
             <CardContent className="space-y-2.5">
                 {[
-                    { label: 'Intercity Travel', value: storeAllocation.intercity, color: 'bg-teal-500' },
-                    { label: 'Accommodation', value: storeAllocation.accommodation, color: 'bg-indigo-500' },
-                    { label: 'Activities', value: storeAllocation.activity, color: 'bg-primary' },
-                    { label: 'Local Transport', value: storeAllocation.local_transport, color: 'bg-amber-500' },
-                    { label: 'Buffer', value: storeAllocation.buffer, color: 'bg-muted-foreground' },
-                    ...(storeAllocation.upgrade_pool ? [{ label: 'Upgrade Pool', value: storeAllocation.upgrade_pool, color: 'bg-amber-400' }] : []),
+                    { label: 'Intercity Travel', value: storeAllocation.intercity, color: 'bg-teal-500', source: 'system' },
+                    { label: 'Accommodation', value: storeAllocation.accommodation, color: 'bg-indigo-500', source: 'system' },
+                    { label: 'Activities', value: storeAllocation.activity, color: 'bg-primary', source: 'system' },
+                    { label: 'Local Transport', value: storeAllocation.local_transport, color: 'bg-amber-500', source: 'system' },
+                    { label: 'Buffer', value: storeAllocation.buffer, color: 'bg-muted-foreground', source: 'system' },
+                    ...(storeAllocation.upgrade_pool ? [{ label: 'Upgrade Pool', value: storeAllocation.upgrade_pool, color: 'bg-amber-400', source: 'system' }] : []),
                 ].map((item, i) => (
                     <div key={i}>
                         <div className="flex justify-between text-xs mb-0.5">

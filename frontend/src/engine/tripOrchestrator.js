@@ -396,6 +396,25 @@ export async function orchestrateTrip(trip, callbacks = {}) {
                     },
                 });
             });
+
+            // 3b-ii: Local transport summary segment (from LLM total)
+            const localTransportCost = parseFloat(genDay.local_transport_total) || 0;
+            if (localTransportCost > 0) {
+                allSegments.push({
+                    trip_id: trip.id,
+                    type: 'local_transport',
+                    title: `🚗 Local Transport — Day ${calendarDay}`,
+                    day_number: calendarDay,
+                    location: dayLocation,
+                    estimated_cost: localTransportCost,
+                    order_index: 999, // After all activities
+                    metadata: {
+                        transport_mode: 'auto',
+                        notes: 'AI estimated total for autos, buses, and local rides between activities',
+                        cost_source: 'ai',
+                    },
+                });
+            }
         });
     }
 
