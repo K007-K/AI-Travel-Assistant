@@ -93,8 +93,11 @@ export function segmentTypeToActivityType(seg) {
 export function buildDaysFromSegments(segments, trip) {
     if (!segments || segments.length === 0) return [];
 
+    // Exclude hidden_gem segments (persisted separately, loaded by itineraryStore)
+    const daySegments = segments.filter(seg => seg.type !== 'hidden_gem');
+
     const byDay = {};
-    segments.forEach(seg => {
+    daySegments.forEach(seg => {
         const dn = seg.day_number;
         if (!byDay[dn]) byDay[dn] = [];
         byDay[dn].push(seg);

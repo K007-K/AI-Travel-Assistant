@@ -71,6 +71,7 @@ const ItineraryBuilder = () => {
         bookingOptions: storeBookingOptions,
         hiddenGems: storeHiddenGems,
         fetchHiddenGems,
+        loadHiddenGems,
         validateBudget,
     } = useItineraryStore();
     const { syncAiEstimates, fetchBudgetSummary, budgetSummary, setTripBudget, deleteCostEventForActivity } = useBudgetStore();
@@ -90,7 +91,6 @@ const ItineraryBuilder = () => {
 
     // AI & Features State
     const [isGenerating, setIsGenerating] = useState(false);
-    const [hiddenGems, setHiddenGems] = useState([]);
     const [isLoadingGems, setIsLoadingGems] = useState(false);
     const [toast, setToast] = useState(null);
     const [hasFetched, setHasFetched] = useState(false);
@@ -138,16 +138,11 @@ const ItineraryBuilder = () => {
             ensureSegments(foundTrip.id);
             if (!selectedDay) setSelectedDay(foundTrip.days[0]?.id);
 
-            // Load gems from store if orchestrator populated them, else fetch separately
-            if (storeHiddenGems.length === 0 && hiddenGems.length === 0 && !isLoadingGems) {
+            // Load gems from DB (persisted during orchestration)
+            if (storeHiddenGems.length === 0 && !isLoadingGems) {
                 setIsLoadingGems(true);
-                fetchHiddenGems(foundTrip.destination, {
-                    budgetTier: foundTrip.budget_tier || foundTrip.accommodation_preference || 'mid-range',
-                    travelStyle: foundTrip.travel_style || '',
-                    currency: foundTrip.currency || 'USD',
-                })
-                    .then(gems => setHiddenGems(gems || []))
-                    .catch(err => console.error('[HiddenGems] Fetch failed:', err))
+                loadHiddenGems(foundTrip.id)
+                    .catch(err => console.error('[HiddenGems] Load failed:', err))
                     .finally(() => setIsLoadingGems(false));
             }
 
@@ -789,7 +784,6 @@ const ItineraryBuilder = () => {
 
                                         <HiddenGemsPanel
                                             storeHiddenGems={storeHiddenGems}
-                                            hiddenGems={hiddenGems}
                                             isLoadingGems={isLoadingGems}
                                             addedGemTitles={addedGemTitles}
                                             activeCurrencySymbol={activeCurrencySymbol}

@@ -10,7 +10,6 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../ui/Card';
 
 const HiddenGemsPanel = ({
     storeHiddenGems,
-    hiddenGems,
     isLoadingGems,
     addedGemTitles,
     activeCurrencySymbol,
@@ -29,7 +28,7 @@ const HiddenGemsPanel = ({
                     <div className="text-center py-4 text-muted-foreground text-sm">Loading gems…</div>
                 )}
                 <AnimatePresence>
-                    {(storeHiddenGems.length > 0 ? storeHiddenGems : hiddenGems)
+                    {storeHiddenGems
                         .filter(gem => !addedGemTitles.has(gem.title))
                         .map((gem) => (
                             <motion.div

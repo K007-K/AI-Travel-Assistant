@@ -70,7 +70,28 @@ const useItineraryStore = create((set, _get) => ({
             throw error;
         }
 
-        // Rebuild virtual days from inserted segments
+        // Persist hidden gems as hidden_gem segments
+        const gems = result.hidden_gems || [];
+        if (gems.length > 0) {
+            const gemSegments = gems.map((gem, idx) => ({
+                trip_id: tripId,
+                type: 'hidden_gem',
+                title: gem.title || gem.name || 'Hidden Gem',
+                day_number: 0, // Not day-specific
+                location: gem.location || trip.destination,
+                estimated_cost: gem.estimated_cost || 0,
+                order_index: idx,
+                metadata: {
+                    description: gem.description || '',
+                    why: gem.why || gem.reason || '',
+                    safety_note: gem.safety_note || gem.safety_warning || null,
+                    category: gem.category || 'hidden_gem',
+                },
+            }));
+            await supabase.from('trip_segments').insert(gemSegments);
+        }
+
+        // Rebuild virtual days from inserted segments (excludes hidden_gem type)
         const rebuiltDays = buildDaysFromSegments(inserted || [], trip);
 
         // Generate booking suggestions post-insert using real DB UUIDs
@@ -98,7 +119,7 @@ const useItineraryStore = create((set, _get) => ({
             reconciliation: result.reconciliation,
             dailySummary: result.daily_summary,
             bookingOptions: bookingOptions,
-            hiddenGems: result.hidden_gems,
+            hiddenGems: gems,
             orchestrationPhase: null,
         });
 
@@ -112,6 +133,37 @@ const useItineraryStore = create((set, _get) => ({
 
     fetchHiddenGems: async (destination, options = {}) => {
         return getHiddenGems(destination, options);
+    },
+
+    /**
+     * Load persisted hidden gems from trip_segments (type = 'hidden_gem').
+     * Called by ItineraryBuilder on mount — avoids extra AI call.
+     */
+    loadHiddenGems: async (tripId) => {
+        const { data, error } = await supabase
+            .from('trip_segments')
+            .select('*')
+            .eq('trip_id', tripId)
+            .eq('type', 'hidden_gem')
+            .order('order_index', { ascending: true });
+
+        if (error) {
+            console.error('[HiddenGems] Load from DB failed:', error);
+            return [];
+        }
+
+        const gems = (data || []).map(seg => ({
+            title: seg.title,
+            location: seg.location,
+            estimated_cost: seg.estimated_cost || 0,
+            description: seg.metadata?.description || '',
+            why: seg.metadata?.why || '',
+            safety_note: seg.metadata?.safety_note || null,
+            category: seg.metadata?.category || 'hidden_gem',
+        }));
+
+        set({ hiddenGems: gems });
+        return gems;
     },
 }));
 
