@@ -18,7 +18,13 @@ const useTripStore = create((set, get) => ({
     // ── TRIP CRUD ─────────────────────────────────────────────────────
     // ═══════════════════════════════════════════════════════════════════
 
-    fetchTrips: async () => {
+    fetchTrips: async (force = false) => {
+        // Skip if recently fetched (prevents redundant calls on navigation)
+        const state = get();
+        if (!force && state.trips.length > 0 && state._lastFetched && Date.now() - state._lastFetched < 5000) {
+            return;
+        }
+
         set({ isLoading: true, error: null });
         try {
             const { data: { user } } = await supabase.auth.getUser();
@@ -34,42 +40,21 @@ const useTripStore = create((set, get) => ({
 
             if (error) throw error;
 
-            // Fetch all segments for this user's trips in one query
-            const tripIds = trips.map(t => t.id);
-            let allSegments = [];
-            if (tripIds.length > 0) {
-                const { data: segs, error: segErr } = await supabase
-                    .from('trip_segments')
-                    .select('*')
-                    .in('trip_id', tripIds)
-                    .order('day_number', { ascending: true })
-                    .order('order_index', { ascending: true });
+            // Preserve existing segment data for trips we already have
+            const existingTrips = state.trips;
+            const existingMap = {};
+            existingTrips.forEach(t => { existingMap[t.id] = t; });
 
-                if (!segErr) allSegments = segs || [];
-            }
-
-            // Group segments by trip_id
-            const segsByTrip = {};
-            allSegments.forEach(seg => {
-                if (!segsByTrip[seg.trip_id]) segsByTrip[seg.trip_id] = [];
-                segsByTrip[seg.trip_id].push(seg);
-            });
-
-            // Build virtual days for each trip
             const enrichedTrips = trips.map(trip => {
-                const tripSegs = segsByTrip[trip.id] || [];
-                if (tripSegs.length > 0) {
-                    return {
-                        ...trip,
-                        days: buildDaysFromSegments(tripSegs, trip),
-                        _hasSegments: true,
-                    };
-                } else {
-                    return { ...trip, days: [], _hasSegments: false };
+                const existing = existingMap[trip.id];
+                if (existing && existing._hasSegments) {
+                    // Keep existing segment data
+                    return { ...trip, days: existing.days, _hasSegments: true };
                 }
+                return { ...trip, days: [], _hasSegments: false };
             });
 
-            set({ trips: enrichedTrips, isLoading: false });
+            set({ trips: enrichedTrips, isLoading: false, _lastFetched: Date.now() });
         } catch (error) {
             console.error('Error fetching trips:', error);
             set({ error: error.message, isLoading: false });
@@ -79,7 +64,29 @@ const useTripStore = create((set, get) => ({
     ensureSegments: async (tripId) => {
         const store = get();
         const trip = store.trips.find(t => t.id === tripId);
-        if (!trip || trip._hasSegments) return;
+        if (!trip || trip._hasSegments) return trip;
+
+        // Lazy-load segments for this specific trip
+        const { data: segs, error } = await supabase
+            .from('trip_segments')
+            .select('*')
+            .eq('trip_id', tripId)
+            .order('day_number', { ascending: true })
+            .order('order_index', { ascending: true });
+
+        if (error) {
+            console.error('Error loading segments:', error);
+            return trip;
+        }
+
+        const days = buildDaysFromSegments(segs || [], trip);
+        const updated = { ...trip, days, _hasSegments: true };
+
+        set(state => ({
+            trips: state.trips.map(t => t.id === tripId ? updated : t),
+        }));
+
+        return updated;
     },
 
     createTrip: async (tripData) => {

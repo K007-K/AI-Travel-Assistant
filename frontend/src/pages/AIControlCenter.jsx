@@ -66,7 +66,7 @@ function computeRisks(allocation, reconciliation) {
 
 // ── Main Component ───────────────────────────────────────────────────
 const AIControlCenter = () => {
-    const { trips, currentTrip, fetchTrips } = useTripStore();
+    const { trips, currentTrip, fetchTrips, ensureSegments } = useTripStore();
     const [selectedTripId, setSelectedTripId] = useState(currentTrip || null);
     const [allocation, setAllocation] = useState(null);
     const [reconciliation, setReconciliation] = useState(null);
@@ -93,11 +93,17 @@ const AIControlCenter = () => {
 
     // Load allocation + reconciliation when trip changes
     useEffect(() => {
-        if (!trip || !trip._hasSegments) {
+        if (!trip) {
             setAllocation(null);
             setReconciliation(null);
             setDailySummary([]);
             setIsLoading(false);
+            return;
+        }
+
+        // Lazy-load segments if not yet loaded
+        if (!trip._hasSegments) {
+            ensureSegments(trip.id);
             return;
         }
 
@@ -111,7 +117,7 @@ const AIControlCenter = () => {
                     .select('metadata')
                     .eq('trip_id', trip.id)
                     .eq('type', 'allocation')
-                    .single();
+                    .maybeSingle();
 
                 const totalBudget = trip.budget || 0;
                 let finalAllocation;
