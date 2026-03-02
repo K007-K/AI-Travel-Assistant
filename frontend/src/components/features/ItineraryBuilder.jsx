@@ -70,7 +70,6 @@ const ItineraryBuilder = () => {
         dailySummary: storeDailySummary,
         bookingOptions: storeBookingOptions,
         hiddenGems: storeHiddenGems,
-        fetchHiddenGems,
         loadHiddenGems,
         validateBudget,
     } = useItineraryStore();
