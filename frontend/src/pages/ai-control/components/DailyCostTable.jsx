@@ -30,12 +30,12 @@ const DailyCostTable = ({ dailySummary }) => {
                             {dailySummary.map(day => (
                                 <tr key={day.day_number} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors">
                                     <td className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">Day {day.day_number}</td>
-                                    <td className="px-4 py-3 text-right text-slate-500">{day.activity_cost.toLocaleString()}</td>
-                                    <td className="px-4 py-3 text-right text-slate-500">{day.travel_cost.toLocaleString()}</td>
-                                    <td className="px-4 py-3 text-right text-slate-500">{day.stay_cost.toLocaleString()}</td>
-                                    <td className="px-4 py-3 text-right text-slate-500">{day.local_transport_cost.toLocaleString()}</td>
+                                    <td className="px-4 py-3 text-right text-slate-500">{(day.activity_cost || 0).toLocaleString()}</td>
+                                    <td className="px-4 py-3 text-right text-slate-500">{(day.travel_cost || 0).toLocaleString()}</td>
+                                    <td className="px-4 py-3 text-right text-slate-500">{(day.stay_cost || 0).toLocaleString()}</td>
+                                    <td className="px-4 py-3 text-right text-slate-500">{(day.local_transport_cost || 0).toLocaleString()}</td>
                                     <td className="px-4 py-3 text-right font-bold text-emerald-600 dark:text-emerald-400">
-                                        {day.total_day_cost.toLocaleString()}
+                                        {(day.total_day_cost || 0).toLocaleString()}
                                     </td>
                                 </tr>
                             ))}
