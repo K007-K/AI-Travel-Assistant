@@ -284,9 +284,10 @@ export async function orchestrateTrip(trip, callbacks = {}) {
         local_transport: Math.round(totalBudget * 0.05),
         activity: Math.round(totalBudget * 0.65),
         buffer: Math.round(totalBudget * 0.15),
-        // Remaining trackers for UI
+        // Tracking fields for "used" bars
         intercity_remaining: Math.round(totalBudget * 0.15),
         activity_remaining: Math.round(totalBudget * 0.65),
+        local_transport_used: 0,
     };
 
     if (import.meta.env.DEV) {
@@ -397,25 +398,19 @@ export async function orchestrateTrip(trip, callbacks = {}) {
                 });
             });
 
-            // 3b-ii: Local transport summary segment (from LLM total)
+            // Track local transport total from LLM for budget allocation
             const localTransportCost = parseFloat(genDay.local_transport_total) || 0;
-            if (localTransportCost > 0) {
-                allSegments.push({
-                    trip_id: trip.id,
-                    type: 'local_transport',
-                    title: `🚗 Local Transport — Day ${calendarDay}`,
-                    day_number: calendarDay,
-                    location: dayLocation,
-                    estimated_cost: localTransportCost,
-                    order_index: 999, // After all activities
-                    metadata: {
-                        transport_mode: 'auto',
-                        notes: 'AI estimated total for autos, buses, and local rides between activities',
-                        cost_source: 'ai',
-                    },
-                });
-            }
+            allocation.local_transport_used += localTransportCost;
         });
+    }
+
+    // Update local transport allocation with actual LLM data
+    if (allocation.local_transport_used > 0) {
+        // If LLM total exceeds initial 5% allocation, adjust the allocation up
+        if (allocation.local_transport_used > allocation.local_transport) {
+            allocation.local_transport = allocation.local_transport_used;
+        }
+        allocation.local_transport_remaining = allocation.local_transport - allocation.local_transport_used;
     }
 
     // 3c: Return transport from LLM

@@ -199,6 +199,12 @@ Plan dinner 1-2 hours before departure. End last activity by ${parseInt(departur
 ${!hasAccommodation && isOvernightArrival ? `NO HOTEL: This is a day trip — traveler sleeps on overnight transport, no hotel needed.` : ''}
 ${travelHours ? `Estimated travel time: ${travelHours} hours one way.` : ''}
 
+TRAIN COST REFERENCE (India): Use REALISTIC per-person fares based on budget tier:
+- Budget: Sleeper class — ~₹1/km (e.g. 500km ≈ ₹400-600/person)
+- Mid-range: 3AC — ~₹1.5-2/km (e.g. 500km ≈ ₹700-1000/person)
+- Luxury: 2AC/1AC — ~₹2.5-4/km (e.g. 500km ≈ ₹1200-2000/person)
+For BUS: AC Sleeper ~₹1-1.5/km, Non-AC ~₹0.7/km. For FLIGHTS: check typical fares for the route.
+
 ---------------------------------------------------
 ${budgetGuidance}
 

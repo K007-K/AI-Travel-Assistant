@@ -210,7 +210,8 @@ const AIControlCenter = () => {
                     from: a.location,
                     to: a.notes || '',
                     distance_tier: a.transportMode || '',
-                    per_person: a.estimated_cost ? Math.round(a.estimated_cost / (trip?.travelers || 1)) : 0,
+                    // estimated_cost IS already per-person (LLM outputs per-person costs)
+                    per_person: a.estimated_cost || 0,
                     adjusted_for_budget: false,
                 },
             }));
