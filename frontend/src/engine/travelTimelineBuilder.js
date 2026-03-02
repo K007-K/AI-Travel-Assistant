@@ -22,7 +22,7 @@ function canTravelOvernight(hours, budgetTier) {
 }
 
 function computeTravelDays(hours, budgetTier) {
-    if (hours <= 3) return 0;
+    if (hours <= 5) return 0;  // ≤5h → merge with destination day (arrive by noon, explore afternoon)
     if (canTravelOvernight(hours, budgetTier)) return 0;
     if (hours <= 12) return 1;
     if (hours <= 24) return 2;

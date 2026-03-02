@@ -36,8 +36,8 @@ function canTravelOvernight(hours, budgetTier) {
 // ── Travel days calculation ──────────────────────────────────────────
 
 function computeTravelDays(hours, budgetTier) {
-    // ≤3h → merge into explore day
-    if (hours <= 3) return 0;
+    // ≤5h → merge into explore day (arrive by noon, explore afternoon)
+    if (hours <= 5) return 0;
 
     // Overnight eligible → 0 travel days (sleep on bus/train)
     if (canTravelOvernight(hours, budgetTier)) return 0;
