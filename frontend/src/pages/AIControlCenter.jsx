@@ -103,17 +103,17 @@ const AIControlCenter = () => {
         setIsLoading(true);
 
         try {
-            // Simple budget allocation (inline — no external dependency)
+            // Budget allocation — MUST match tripOrchestrator.js exactly
             const totalBudget = trip.budget || 0;
             const derivedAllocation = {
                 total: totalBudget,
                 intercity: Math.round(totalBudget * 0.15),
-                accommodation: Math.round(totalBudget * 0.05),
+                accommodation: 0,  // Day trips — no hotel
                 local_transport: Math.round(totalBudget * 0.05),
-                activity: Math.round(totalBudget * 0.60),
+                activity: Math.round(totalBudget * 0.65),
                 buffer: Math.round(totalBudget * 0.15),
                 intercity_remaining: Math.round(totalBudget * 0.15),
-                activity_remaining: Math.round(totalBudget * 0.60),
+                activity_remaining: Math.round(totalBudget * 0.65),
             };
 
             // 2. Flatten segments from trip.days to compute reconciliation
@@ -123,6 +123,7 @@ const AIControlCenter = () => {
                 estimated_cost: a.estimated_cost || 0,
                 title: a.title,
                 day_number: 0,
+                notes: a.notes || '',
                 metadata: {
                     transport_mode: a.transportMode,
                 },
@@ -132,7 +133,6 @@ const AIControlCenter = () => {
             const categoryMap = {
                 intercity: ['outbound_travel', 'return_travel', 'intercity_travel'],
                 accommodation: ['accommodation'],
-                local_transport: ['local_transport'],
                 activity: ['activity', 'gem'],
             };
 
@@ -143,6 +143,24 @@ const AIControlCenter = () => {
                 if (derivedAllocation[`${category}_remaining`] !== undefined) {
                     derivedAllocation[`${category}_remaining`] = Math.max(0, derivedAllocation[category] - Math.round(used));
                 }
+            }
+
+            // Compute local transport used from activity notes (auto ₹XX, bus ₹XX)
+            let localTransportUsed = 0;
+            for (const seg of flatSegments) {
+                if (seg.notes) {
+                    const fareMatches = seg.notes.match(/(?:auto|bus|metro|rickshaw|cab|taxi|ride)[^₹]*₹\s*(\d+)/gi) || [];
+                    for (const match of fareMatches) {
+                        const num = match.match(/₹\s*(\d+)/);
+                        if (num) localTransportUsed += parseInt(num[1], 10);
+                    }
+                }
+            }
+            if (localTransportUsed > 0) {
+                if (localTransportUsed > derivedAllocation.local_transport) {
+                    derivedAllocation.local_transport = localTransportUsed;
+                }
+                derivedAllocation.local_transport_remaining = derivedAllocation.local_transport - localTransportUsed;
             }
 
             // 3. Reconcile (inline — just sum total cost vs budget)
