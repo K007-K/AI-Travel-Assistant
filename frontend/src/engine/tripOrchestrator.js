@@ -232,9 +232,34 @@ export async function orchestrateTrip(trip, callbacks = {}) {
         tripDurationDays = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)));
     }
 
-    const destinations = tripSegments.length > 0
-        ? tripSegments.map(s => ({ location: s.location, days: s.days || 1 }))
-        : [{ location: trip.destination, days: trip.duration_days || tripDurationDays }];
+    // Reconstruct destinations from available data:
+    // Priority 1: trip.segments (from CreateTripForm, available during initial creation)
+    // Priority 2: trip.days (from DB placeholder segments, available after reload)
+    // Priority 3: Fallback to single destination
+    let destinations;
+    if (tripSegments.length > 0) {
+        destinations = tripSegments.map(s => ({ location: s.location, days: s.days || 1 }));
+    } else if (trip.days && trip.days.length > 0) {
+        // Reconstruct from trip.days — group consecutive days at same location
+        const grouped = [];
+        trip.days.forEach(day => {
+            const loc = day.location || trip.destination;
+            if (grouped.length > 0 && grouped[grouped.length - 1].location.toLowerCase() === loc.toLowerCase()) {
+                grouped[grouped.length - 1].days++;
+            } else {
+                grouped.push({ location: loc, days: 1 });
+            }
+        });
+        destinations = grouped;
+    } else {
+        destinations = [{ location: trip.destination, days: tripDurationDays }];
+    }
+
+    // Build a multi-destination label for LLM
+    const isMultiCity = destinations.length > 1;
+    const destinationLabel = isMultiCity
+        ? destinations.map(d => `${d.location} (${d.days}d)`).join(' → ')
+        : destinations[0]?.location || trip.destination;
 
     const timeline = await buildTravelTimeline({
         startLocation: trip.start_location || '',
@@ -265,6 +290,10 @@ export async function orchestrateTrip(trip, callbacks = {}) {
         location: slot.location || trip.destination,
     }));
 
+    // Determine if accommodation is needed
+    // Multi-day intercity trips need hotels; single-day trips don't
+    const needsAccommodation = isMultiCity || explorationDays > 1;
+
     // Determine overnight context for LLM
     const isOvernightArrival = !!overnightArrival;
     const arrivalHours = overnightArrival?.hours || null;
@@ -290,17 +319,19 @@ export async function orchestrateTrip(trip, callbacks = {}) {
     const departureTime = isOvernightDeparture ? '21:00' : null;
     const departureMode = arrivalMode;
 
-    // Simple allocation for UI compatibility (no complex envelopes)
+    // Budget allocation — dynamic based on trip type
+    const accomPct = needsAccommodation ? 0.20 : 0;
+    const activityPct = needsAccommodation ? 0.45 : 0.65;
     const allocation = {
         total: totalBudget,
         intercity: Math.round(totalBudget * 0.15),
-        accommodation: 0,
+        accommodation: Math.round(totalBudget * accomPct),
         local_transport: Math.round(totalBudget * 0.05),
-        activity: Math.round(totalBudget * 0.65),
+        activity: Math.round(totalBudget * activityPct),
         buffer: Math.round(totalBudget * 0.15),
         // Tracking fields for "used" bars
         intercity_remaining: Math.round(totalBudget * 0.15),
-        activity_remaining: Math.round(totalBudget * 0.65),
+        activity_remaining: Math.round(totalBudget * activityPct),
         local_transport_used: 0,
     };
 
@@ -316,7 +347,7 @@ export async function orchestrateTrip(trip, callbacks = {}) {
     let aiPlan;
     try {
         aiPlan = await generateTripPlan({
-            destination: trip.destination,
+            destination: destinationLabel,
             days: explorationDays,
             budget: totalBudget,
             travelers,
@@ -331,7 +362,7 @@ export async function orchestrateTrip(trip, callbacks = {}) {
             isOvernightDeparture,
             departureTime,
             departureMode,
-            hasAccommodation: false, // day trips for now
+            hasAccommodation: needsAccommodation,
             travelHours: arrivalHours,
             distanceKm: arrivalDistanceKm,
             returnDistanceKm,

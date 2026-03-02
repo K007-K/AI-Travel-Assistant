@@ -198,7 +198,13 @@ Plan dinner 1-2 hours before departure. End last activity by ${parseInt(departur
         ? `Include return transport to ${startLocation} as the last item.`
         : ''}
 
-${!hasAccommodation && isOvernightArrival ? `NO HOTEL: This is a day trip — traveler sleeps on overnight transport, no hotel needed.` : ''}
+${hasAccommodation
+    ? `ACCOMMODATION NEEDED: This is a multi-day trip. Include hotel/hostel check-in as the last activity each night.
+Suggest a specific, real hotel/lodge name with realistic per-person cost for the ${budgetTier} tier.
+Add it as an activity with type "relax", e.g. "Check-in: Hotel Sri Residency" with estimated_cost as per-person share.`
+    : isOvernightArrival
+        ? `NO HOTEL: This is a day trip — traveler sleeps on overnight transport, no hotel needed.`
+        : ''}
 ${travelHours ? `Estimated travel time: ${travelHours} hours one way.` : ''}
 ${distanceKm ? `
 VERIFIED DISTANCE (from GPS/routing): ${distanceKm} km one-way${returnDistanceKm && returnDistanceKm !== distanceKm ? `, return: ${returnDistanceKm} km` : ''}.

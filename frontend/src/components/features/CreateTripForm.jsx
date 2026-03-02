@@ -110,15 +110,21 @@ const CreateTripForm = ({ onSubmit, onCancel, initialDestination }) => {
     const buildTripData = (overrideDays = null) => {
         // Segments stay EXACTLY as user requested (exploration days only)
         // The orchestrator's timeline builder handles TRAVEL day insertion
-        const segments = form.segments;
-        const totalDuration = overrideDays || segments.reduce((s, seg) => s + seg.days, 0);
+        let segments = [...form.segments.map(s => ({ ...s }))];
+        const userDays = segments.reduce((s, seg) => s + seg.days, 0);
+        const totalDuration = overrideDays || userDays;
+
+        // If duration planner added extra days, distribute them to first segment
+        if (overrideDays && overrideDays > userDays) {
+            segments[0].days += (overrideDays - userDays);
+        }
 
         let startDate = form.startDate || null;
         let endDate = null;
         if (startDate) {
             const start = new Date(startDate);
             const end = new Date(start);
-            end.setDate(start.getDate() + totalDuration - 1);
+            end.setDate(start.getDate() + totalDuration); // end_date is exclusive (day after last)
             endDate = end.toISOString();
         }
 
