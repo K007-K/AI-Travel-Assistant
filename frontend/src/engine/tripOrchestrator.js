@@ -223,9 +223,18 @@ export async function orchestrateTrip(trip, callbacks = {}) {
     // Compute timeline from OSRM (real driving hours → overnight detection)
     const plannerTier = budgetTier === 'budget' ? 'low' : budgetTier === 'luxury' ? 'high' : 'mid';
     const tripSegments = trip.segments || [];
+
+    // Compute actual trip duration from dates (segments array is NOT persisted to DB)
+    let tripDurationDays = 1;
+    if (trip.start_date && trip.end_date) {
+        const start = new Date(trip.start_date);
+        const end = new Date(trip.end_date);
+        tripDurationDays = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)));
+    }
+
     const destinations = tripSegments.length > 0
         ? tripSegments.map(s => ({ location: s.location, days: s.days || 1 }))
-        : [{ location: trip.destination, days: trip.duration_days || 1 }];
+        : [{ location: trip.destination, days: trip.duration_days || tripDurationDays }];
 
     const timeline = await buildTravelTimeline({
         startLocation: trip.start_location || '',
