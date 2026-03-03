@@ -103,24 +103,16 @@ async function geocodeCity(cityName) {
         }
     } catch { /* Photon failed — try Nominatim */ }
 
-    // Strategy 2: Nominatim fallback (works locally, may CORS in prod)
+    // Strategy 2: Supabase edge function proxy (works in both dev and prod)
     try {
-        const params = new URLSearchParams({
-            format: 'json',
-            q: cityName,
-            limit: '1',
-        });
-        const res = await fetch(
-            `https://nominatim.openstreetmap.org/search?${params}`,
-            { headers: { 'User-Agent': 'RoameoTravelApp/1.0' } }
-        );
-        if (!res.ok) return null;
-        const data = await res.json();
-        if (data.length === 0) return null;
-
-        const result = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-        setCache(cacheKey, result);
-        return result;
+        const { geocodeSearch } = await import('./geocode.js');
+        const data = await geocodeSearch(cityName, 1);
+        if (data?.length > 0) {
+            const result = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+            setCache(cacheKey, result);
+            return result;
+        }
+        return null;
     } catch {
         return null;
     }

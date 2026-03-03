@@ -52,16 +52,12 @@ function _setGeoCache(key, coords) {
     } catch { /* quota exceeded, etc */ }
 }
 
-// Fetch coordinates from OpenStreetMap Nominatim API.
+// Fetch coordinates via Supabase edge function (avoids CORS in production).
 async function _fetchFromNominatim(query) {
     try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
-        const res = await fetch(url, {
-            headers: { 'User-Agent': 'AITravelAssistant/1.0' }
-        });
-        if (!res.ok) return null;
-        const results = await res.json();
-        if (results.length > 0) {
+        const { geocodeSearch } = await import('../api/geocode.js');
+        const results = await geocodeSearch(query, 1);
+        if (results?.length > 0) {
             return { latitude: parseFloat(results[0].lat), longitude: parseFloat(results[0].lon) };
         }
         return null;

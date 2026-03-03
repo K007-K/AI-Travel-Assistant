@@ -134,11 +134,8 @@ async function geocodeAndCenter(map, query) {
     }
 
     try {
-        const res = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
-            { headers: { 'Accept-Language': 'en-US,en;q=0.9' } }
-        );
-        const data = await res.json();
+        const { geocodeSearch } = await import('../../api/geocode.js');
+        const data = await geocodeSearch(query, 1);
         if (data?.[0]) {
             const lat = parseFloat(data[0].lat);
             const lon = parseFloat(data[0].lon);
