@@ -183,9 +183,11 @@ Schedule: ${scheduleInfo}
 TRANSPORT CONTEXT:
 
 ${isOvernightArrival
-    ? `OVERNIGHT ARRIVAL: Traveler boards overnight ${arrivalMode || 'bus/train'} from ${startLocation} the previous night.
-Arrives at ${destination} at approximately ${arrivalTime || '06:00'}.
-The traveler needs to freshen up at the station/bus stand first.
+    ? `OVERNIGHT ARRIVAL: Traveler boards overnight ${arrivalMode || 'bus/train'} from ${startLocation} THE PREVIOUS NIGHT (before Day 1).
+Arrives at ${destination} at approximately ${arrivalTime || '06:00'} on Day 1 morning.
+IMPORTANT: Day 1 is ALREADY in ${destination}. The traveler is NOT in ${startLocation} on any day of this trip.
+Do NOT generate ANY activities in ${startLocation}. ALL activities from Day 1 onward must be in the destination cities.
+First activity on Day 1: freshening up at the station/bus stand in ${destination}.
 Start planning activities from ${dayStartTime}, NOT 08:00.`
     : startLocation !== 'unknown' && startLocation.toLowerCase() !== destination.toLowerCase()
         ? `Traveler arrives from ${startLocation}. Include outbound transport as the first item.`
@@ -199,9 +201,10 @@ Plan dinner 1-2 hours before departure. End last activity by ${parseInt(departur
         : ''}
 
 ${hasAccommodation
-    ? `ACCOMMODATION NEEDED: This is a multi-day trip. Include hotel/hostel check-in as the last activity each night.
-Suggest a specific, real hotel/lodge name with realistic per-person cost for the ${budgetTier} tier.
-Add it as an activity with type "relax", e.g. "Check-in: Hotel Sri Residency" with estimated_cost as per-person share.`
+    ? `ACCOMMODATION: This is a multi-day trip. At the end of each night's activities, add a "relax" type activity titled "Book a stay" with a note like:
+"Book a budget lodge/hostel around ₹${budgetTier === 'budget' ? '300-500' : budgetTier === 'mid-range' ? '800-1500' : '3000-5000'}/person/night in [city name]."
+Do NOT name any specific hotel or lodge — just give the price range for the ${budgetTier} tier.
+Set estimated_cost to the midpoint of that range per person.`
     : isOvernightArrival
         ? `NO HOTEL: This is a day trip — traveler sleeps on overnight transport, no hotel needed.`
         : ''}
@@ -294,7 +297,7 @@ SELF-VALIDATION BEFORE RETURNING:
 3. Total per-person cost (transport + activities + food) ≤ ${budgetPerPerson} ${currency}.
 4. At least 6 activities per day (including meals and logistics).
 5. At least 2 named meal activities per day.
-6. ALL activities are in ${destination}, NOT in ${startLocation}.
+6. CRITICAL: ALL activities must be in the DESTINATION cities from the Schedule above. ZERO activities should be in ${startLocation} (the origin city). If overnight arrival, Day 1 is already at ${destination}.
 7. outbound_transport and return_transport both have realistic costs.
 8. All costs are per person in ${currency}.
 9. If overnight arrival: first activity should be freshening up, day starts from arrival time.
