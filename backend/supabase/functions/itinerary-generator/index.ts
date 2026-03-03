@@ -233,6 +233,7 @@ PLANNING RULES:
 10. Include at least 2 full meals (breakfast/lunch/dinner) as separate activities with real restaurant names.
 11. LOCATION FIELD MUST be the ACTUAL place name with neighborhood — e.g. "Sri Venkateswara Temple, Tirumala Hill" NOT "Near Tirupati Railway Station". EACH activity MUST have its real location, not the same generic location for all.
 12. TYPE FIELD must be exactly one of: sightseeing, food, culture, relax, activity. Do NOT use "logistics", "nature", "shopping", "nightlife".
+13. NEVER fabricate platform numbers, seat numbers, PNR numbers, or train/bus numbers. Only mention general tips like "book in advance on IRCTC" or "check platform at station".
 
 ${travelers === 1
     ? `SOLO TRAVELER: Suggest solo-friendly experiences. Include safety tips.`
@@ -254,7 +255,7 @@ OUTPUT FORMAT (STRICT JSON — NO MARKDOWN, NO EXPLANATION):
     "departure": "21:00",
     "arrival": "${dayStartTime}",
     "is_overnight": true,
-    "notes": "Booking tips, what to carry, platform info"
+    "notes": "Booking tips, what to carry. If overnight: mention 'Boards previous night from [station]', arrival time next morning."
   },
   "days": [
     {

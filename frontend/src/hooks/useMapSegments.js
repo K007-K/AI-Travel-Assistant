@@ -84,20 +84,39 @@ export default function useMapSegments(trip) {
 
             const destination = trip?.destination || '';
 
-            // Step 1: Geocode the trip destination itself to build a viewbox
-            let destLat = null, destLng = null;
-            if (destination) {
-                const destCoords = await geocode(destination);
-                if (destCoords) {
-                    destLat = destCoords[0];
-                    destLng = destCoords[1];
-                }
+            // Step 1: Geocode ALL unique cities from trip days (multi-city support)
+            const uniqueCities = [...new Set(
+                allActivities
+                    .map(a => (a.location || '').split(',').pop()?.trim())
+                    .filter(Boolean)
+            )];
+            // Also include the main destination
+            if (destination && !uniqueCities.some(c => c.toLowerCase().includes(destination.toLowerCase()))) {
+                uniqueCities.unshift(destination);
             }
 
-            // Build a Nominatim viewbox (±3 degrees around destination)
-            const viewbox = (destLat != null && destLng != null)
-                ? `${destLng - 3},${destLat + 3},${destLng + 3},${destLat - 3}`
-                : null;
+            // Geocode all cities to build a wider viewbox
+            const cityCoords = [];
+            for (const city of uniqueCities.slice(0, 5)) { // max 5 cities
+                const coords = await geocode(city);
+                if (coords) cityCoords.push(coords);
+            }
+
+            let destLat = null, destLng = null;
+            let viewbox = null;
+
+            if (cityCoords.length > 0) {
+                // Use centroid of all cities as reference point
+                destLat = cityCoords.reduce((s, c) => s + c[0], 0) / cityCoords.length;
+                destLng = cityCoords.reduce((s, c) => s + c[1], 0) / cityCoords.length;
+
+                // Build viewbox that encompasses all cities with padding
+                const lats = cityCoords.map(c => c[0]);
+                const lngs = cityCoords.map(c => c[1]);
+                const latPad = Math.max(2, (Math.max(...lats) - Math.min(...lats)) + 1);
+                const lngPad = Math.max(2, (Math.max(...lngs) - Math.min(...lngs)) + 1);
+                viewbox = `${Math.min(...lngs) - lngPad},${Math.max(...lats) + latPad},${Math.max(...lngs) + lngPad},${Math.min(...lats) - latPad}`;
+            }
 
             const newMarkers = [];
 
@@ -157,7 +176,9 @@ export default function useMapSegments(trip) {
                     refLng = sortedLngs[mid].lng;
                 }
 
-                const MAX_DISTANCE_KM = 500;
+                // Multi-city trips can span large distances (e.g. Puducherry to Tirupati ~500km)
+                const isMultiCity = cityCoords.length > 1;
+                const MAX_DISTANCE_KM = isMultiCity ? 1500 : 500;
                 const validMarkers = newMarkers.filter(m => {
                     const dist = haversineKm(refLat, refLng, m.lat, m.lng);
                     if (dist > MAX_DISTANCE_KM) {
