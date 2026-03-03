@@ -46,8 +46,8 @@ describe('buildTravelTimeline', () => {
         expect(tl[0].overnightArrival.from).toBe('Vizag');
     });
 
-    it('non-overnight 5h → 1 TRAVEL day each way', async () => {
-        getRouteTime.mockResolvedValue({ hours: 5, distanceKm: 300, source: 'osrm' });
+    it('non-overnight 5.5h → 1 TRAVEL day each way', async () => {
+        getRouteTime.mockResolvedValue({ hours: 5.5, distanceKm: 300, source: 'osrm' });
 
         const tl = await buildTravelTimeline({
             startLocation: 'A',
@@ -56,13 +56,13 @@ describe('buildTravelTimeline', () => {
             budgetTier: 'mid',
         });
 
-        // 5h not overnight eligible → 1 TRAVEL each way
+        // 5.5h not overnight eligible → 1 TRAVEL each way
         expect(tl.filter(t => t.type === 'TRAVEL').length).toBe(2);
         expect(tl.filter(t => t.type === 'EXPLORE').length).toBe(1);
     });
 
     it('sequential day numbering', async () => {
-        getRouteTime.mockResolvedValue({ hours: 5, distanceKm: 300, source: 'osrm' });
+        getRouteTime.mockResolvedValue({ hours: 5.5, distanceKm: 300, source: 'osrm' });
 
         const tl = await buildTravelTimeline({
             startLocation: 'A',

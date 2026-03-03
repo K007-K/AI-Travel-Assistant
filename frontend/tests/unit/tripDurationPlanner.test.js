@@ -13,9 +13,11 @@ import { getRouteTime } from '@/api/routeTime.js';
 // ── Pure function tests ──────────────────────────────────────────────
 
 describe('computeTravelDays', () => {
-    it('≤3h → 0 travel days', () => {
+    it('≤5h → 0 travel days (merge with explore day)', () => {
         expect(_computeTravelDays(2.5, 'mid')).toBe(0);
         expect(_computeTravelDays(3, 'mid')).toBe(0);
+        expect(_computeTravelDays(3.6, 'mid')).toBe(0);
+        expect(_computeTravelDays(5, 'mid')).toBe(0);
     });
 
     it('6-16h budget → 0 (overnight)', () => {
@@ -27,8 +29,8 @@ describe('computeTravelDays', () => {
         expect(_computeTravelDays(9.4, 'high')).toBe(1);
     });
 
-    it('4-5h (not overnight eligible) → 1 travel day', () => {
-        expect(_computeTravelDays(5, 'mid')).toBe(1);
+    it('5.5h (not overnight eligible) → 1 travel day', () => {
+        expect(_computeTravelDays(5.5, 'mid')).toBe(1);
     });
 
     it('>16h → travel days (not overnight eligible)', () => {
