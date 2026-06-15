@@ -3,11 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Route, Wallet, Loader2, MessageSquare, Cpu, Calendar } from 'lucide-react';
 
 const ghostCodeLines = [
-    "agent.analyzeVibe({ strict: true })",
-    "await osrm.calculateOptimalRoute()",
-    "db.query('premium_ryokans_tokyo')",
-    "negotiator.balanceBudget(prefs)",
-    "generator.compileItinerary()"
+    "agent.analyzeVibe()",
+    "osrm.calculateRoute()",
+    "db.query('ryokans_tokyo')",
+    "negotiator.balance()",
+    "generator.compile()"
 ];
 
 const FeaturesGrid = () => {
@@ -115,7 +115,7 @@ const FeaturesGrid = () => {
                                 {/* Connecting lines (Only in gaps) */}
                                 <div className="absolute top-[75px] left-[25%] w-[15%] h-[2px] bg-slate-200 -z-10" />
                                 <div className="absolute top-[75px] left-[60%] w-[15%] h-[2px] bg-slate-200 -z-10" />
-                                <div className="absolute top-[170px] left-1/2 w-[2px] h-[70px] bg-gradient-to-b from-slate-200 to-transparent -z-10 -translate-x-1/2" />
+                                <div className="absolute top-[170px] left-1/2 w-[2px] h-[90px] bg-gradient-to-b from-slate-200 to-transparent -z-10 -translate-x-1/2" />
                                 
                                 {/* Pulsing rings (Centered on Node 2 at absolute grid coordinates) */}
                                 <div className={`absolute top-[75px] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[160px] h-[160px] bg-blue-500/15 rounded-full transition-all duration-1000 pointer-events-none z-0 ${animState >= 1 && animState <= 5 ? 'animate-ping opacity-100' : 'opacity-0'}`} style={{ animationDuration: '3s' }} />
@@ -139,7 +139,7 @@ const FeaturesGrid = () => {
                                         <motion.div 
                                             key="packet-2"
                                             initial={{ left: "50%", top: "180px", opacity: 0 }}
-                                            animate={{ top: "240px", opacity: [0, 1, 1, 0] }}
+                                            animate={{ top: "260px", opacity: [0, 1, 1, 0] }}
                                             exit={{ opacity: 0 }}
                                             transition={{ duration: 0.6, ease: "easeOut" }}
                                             className="absolute w-2.5 h-2.5 bg-indigo-500 rounded-full shadow-[0_0_12px_rgba(99,102,241,1)] z-20 -translate-x-1/2" 
@@ -149,7 +149,7 @@ const FeaturesGrid = () => {
                                     {animState === 4 && (
                                         <motion.div 
                                             key="packet-4"
-                                            initial={{ left: "50%", top: "240px", opacity: 0 }}
+                                            initial={{ left: "50%", top: "260px", opacity: 0 }}
                                             animate={{ top: "180px", opacity: [0, 1, 1, 0] }}
                                             exit={{ opacity: 0 }}
                                             transition={{ duration: 0.6, ease: "easeIn" }}
@@ -201,16 +201,16 @@ const FeaturesGrid = () => {
                                     </div>
 
                                     {/* Ghost Code Space */}
-                                    <div className="absolute top-[230px] left-1/2 -translate-x-1/2 w-[320px] flex flex-col gap-1.5 items-center pointer-events-none z-0">
+                                    <div className="absolute top-[260px] left-1/2 -translate-x-1/2 w-[240px] flex flex-col gap-2 items-center pointer-events-none z-10">
                                         <AnimatePresence>
                                             {animState === 3 && ghostCodeLines.map((line, i) => (
                                                 <motion.div
                                                     key={i}
-                                                    initial={{ opacity: 0, y: -10, filter: "blur(4px)" }}
-                                                    animate={{ opacity: [0, 1, 1, 0], y: 0, filter: "blur(0px)" }}
+                                                    initial={{ opacity: 0, y: -15, filter: "blur(4px)" }}
+                                                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                                                     exit={{ opacity: 0, filter: "blur(4px)" }}
-                                                    transition={{ duration: 2.2, delay: i * 0.35, ease: "easeOut" }}
-                                                    className="text-[13px] font-mono font-medium text-slate-400/90 whitespace-nowrap"
+                                                    transition={{ duration: 0.6, delay: i * 0.4, ease: "easeOut" }}
+                                                    className="text-[12px] font-mono font-bold text-slate-500 whitespace-nowrap"
                                                 >
                                                     {line}
                                                 </motion.div>
