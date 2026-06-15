@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { MeshDistortMaterial, Environment, Float } from '@react-three/drei';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, MapPin, Calendar, Users, ArrowRight } from 'lucide-react';
+import { Search, MapPin, Calendar, Users, ArrowRight, Sparkles } from 'lucide-react';
 
 const FluidShapes = () => {
     return (
