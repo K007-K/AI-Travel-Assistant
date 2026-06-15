@@ -3,11 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Route, Wallet, Loader2, MessageSquare, Cpu, Calendar } from 'lucide-react';
 
 const ghostCodeLines = [
-    "[System] Analyzing travel intent...",
-    "[DB] Querying tokyo ryokans...",
-    "[API] Calculating optimal routes...",
-    "[Agent] Negotiating budget...",
-    "[Engine] Generating itinerary..."
+    "SYS >> parse_intent({ loc: 'Tokyo', vibe: 'Luxury' })",
+    "DB >> query_ryokans({ min_rating: 4.8 })",
+    "API >> calc_transit({ optimize: 'time' })",
+    "AGENT >> balance_budget({ alloc: '$4.2k' })",
+    "ENG >> compile_itinerary({ days: 5, status: 'ok' })"
 ];
 
 const FeaturesGrid = () => {
@@ -201,7 +201,7 @@ const FeaturesGrid = () => {
                                     </div>
 
                                     {/* Ghost Code Space */}
-                                    <div className="absolute top-[300px] left-1/2 -translate-x-1/2 w-[300px] flex flex-col gap-2 items-center pointer-events-none z-10">
+                                    <div className="absolute top-[300px] left-1/2 -translate-x-1/2 w-[340px] flex flex-col gap-2 items-center pointer-events-none z-10">
                                         <AnimatePresence>
                                             {animState === 3 && ghostCodeLines.map((line, i) => (
                                                 <motion.div
@@ -210,7 +210,7 @@ const FeaturesGrid = () => {
                                                     animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                                                     exit={{ opacity: 0, filter: "blur(4px)" }}
                                                     transition={{ duration: 0.6, delay: i * 0.4, ease: "easeOut" }}
-                                                    className="text-[12px] font-mono font-bold text-slate-500 whitespace-nowrap"
+                                                    className="text-[11px] font-mono font-bold text-slate-500 whitespace-nowrap"
                                                 >
                                                     {line}
                                                 </motion.div>
