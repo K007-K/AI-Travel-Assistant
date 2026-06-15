@@ -6,9 +6,9 @@ const SearchPill = () => {
     const [focusedField, setFocusedField] = useState(null);
 
     const fields = [
-        { id: 'where', icon: MapPin, label: 'Where to?', placeholder: 'Search destinations' },
-        { id: 'when', icon: Calendar, label: 'When?', placeholder: 'Add dates' },
-        { id: 'who', icon: Users, label: 'Who?', placeholder: 'Add guests' }
+        { id: 'where', icon: MapPin, label: 'Location', placeholder: 'Where are you going?' },
+        { id: 'when', icon: Calendar, label: 'Dates', placeholder: 'Add dates' },
+        { id: 'who', icon: Users, label: 'Guests', placeholder: 'Add guests' }
     ];
 
     return (
@@ -16,7 +16,7 @@ const SearchPill = () => {
             initial={{ y: 40, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 1, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full max-w-4xl mx-auto mt-16 bg-white/70 backdrop-blur-2xl rounded-full p-2 border border-white/60 shadow-xl flex flex-col md:flex-row items-center gap-2 relative z-20"
+            className="w-full max-w-4xl mx-auto mt-16 bg-white/95 backdrop-blur-md rounded-full p-2.5 shadow-[0_20px_40px_rgba(0,0,0,0.2)] flex flex-col md:flex-row items-center relative z-20"
         >
             {fields.map((field, index) => {
                 const Icon = field.icon;
@@ -25,30 +25,30 @@ const SearchPill = () => {
                 return (
                     <React.Fragment key={field.id}>
                         <div 
-                            className={`flex-1 flex items-center gap-4 px-6 py-4 rounded-full cursor-pointer transition-all duration-300 ${isFocused ? 'bg-white shadow-sm' : 'hover:bg-white/50'}`}
+                            className={`flex-1 flex items-center gap-4 px-6 py-3 rounded-full cursor-pointer transition-colors duration-200 ${isFocused ? 'bg-slate-100/80 shadow-sm' : 'hover:bg-slate-50'}`}
                             onClick={() => setFocusedField(field.id)}
                         >
-                            <Icon className={`w-5 h-5 transition-colors ${isFocused ? 'text-slate-900' : 'text-slate-400'}`} />
+                            <Icon className={`w-5 h-5 transition-colors ${isFocused ? 'text-blue-600' : 'text-slate-400'}`} />
                             <div className="flex flex-col text-left w-full">
-                                <span className="text-[11px] font-bold text-slate-500 tracking-wider uppercase mb-0.5">{field.label}</span>
+                                <span className="text-[11px] font-bold text-slate-800 tracking-wider uppercase mb-0.5">{field.label}</span>
                                 <input 
                                     type="text" 
                                     placeholder={field.placeholder}
-                                    className="bg-transparent border-none outline-none text-base text-slate-900 placeholder:text-slate-300 w-full focus:ring-0 p-0 font-medium"
+                                    className="bg-transparent border-none outline-none text-base text-slate-900 placeholder:text-slate-400 w-full focus:ring-0 p-0 font-medium"
                                     onFocus={() => setFocusedField(field.id)}
                                     onBlur={() => setFocusedField(null)}
                                 />
                             </div>
                         </div>
                         {index < fields.length - 1 && (
-                            <div className="w-px h-10 bg-slate-200/60 hidden md:block" />
+                            <div className="w-px h-10 bg-slate-200 mx-2 hidden md:block" />
                         )}
                     </React.Fragment>
                 );
             })}
             
             <button 
-                className="w-full md:w-auto h-16 px-10 rounded-full bg-slate-900 text-white font-semibold flex items-center justify-center gap-3 shadow-md hover:bg-black transition-colors"
+                className="w-full md:w-auto h-14 px-10 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center gap-2 shadow-lg hover:bg-blue-700 transition-colors ml-2"
             >
                 <Search className="w-5 h-5" />
                 <span className="md:hidden">Search</span>
@@ -64,55 +64,52 @@ const HeroSection = () => {
         offset: ["start start", "end start"]
     });
     
+    // Parallax Physics
     const y = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
     const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
     return (
-        <section ref={ref} className="relative w-full h-[100vh] min-h-[800px] flex items-center justify-center overflow-hidden bg-[#fafafa]">
+        <section ref={ref} className="relative w-full h-[100vh] min-h-[750px] flex items-center justify-center overflow-hidden bg-black">
             
-            {/* Minimalist, bright, airy architectural background */}
+            {/* Jaw-Dropping Rich Background Image (Like tr1 or tr4) */}
             <motion.div 
                 style={{ y, opacity }}
                 className="absolute inset-0 z-0 origin-bottom"
             >
+                {/* Stunning vibrant beach/coastal image similar to tr4 */}
                 <img 
-                    src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=3000&auto=format&fit=crop" 
-                    alt="Luxury Minimalist Architecture" 
+                    src="https://images.unsplash.com/photo-1544644181-1484b3fdfc62?q=80&w=3000&auto=format&fit=crop" 
+                    alt="Vibrant Coastal Journey" 
                     className="w-full h-[120%] object-cover object-center"
                 />
                 
                 {/* 
-                  Instead of dark gradients, we use a very soft white gradient 
-                  to wash out the image slightly, making dark text perfectly readable 
-                  and enforcing an ultra-luxury, high-end light theme.
+                  Subtle elegant gradient to ensure white text pops brilliantly. 
+                  Darker at top for navbar, dark at center for headline.
                 */}
-                <div className="absolute inset-0 bg-white/30 z-10" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#fafafa] via-transparent to-transparent z-10" />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-transparent z-10" />
             </motion.div>
 
             {/* Content Overlay */}
-            <div className="relative z-20 w-full max-w-7xl mx-auto px-6 text-center pt-24">
+            <div className="relative z-20 w-full max-w-7xl mx-auto px-6 text-center pt-20">
                 
                 <motion.div
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
                 >
-                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/50 backdrop-blur-md text-slate-800 font-semibold text-xs tracking-widest uppercase mb-8 border border-white/60">
-                        <Sparkles className="w-3.5 h-3.5 text-slate-500" />
-                        The New Standard
+                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 backdrop-blur-md text-white font-semibold text-xs tracking-widest uppercase mb-6 border border-white/30 shadow-lg">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                        AI-Powered Travel
                     </span>
                     
-                    {/* Stark, crisp, dark typography on a bright background */}
-                    <h1 className="text-6xl md:text-8xl lg:text-[7.5rem] font-display font-bold tracking-tight text-slate-900 leading-[0.95]">
-                        Explore with <br className="hidden md:block" />
-                        <span className="relative inline-block">
-                            absolute clarity.
-                            <div className="absolute bottom-2 left-0 right-0 h-4 bg-slate-200/50 -z-10 rounded-full" />
-                        </span>
+                    {/* Massive, pure white, elegant typography */}
+                    <h1 className="text-6xl md:text-8xl lg:text-9xl font-display font-bold tracking-tight text-white leading-[1] drop-shadow-[0_10px_30px_rgba(0,0,0,0.3)]">
+                        Explore <br className="hidden md:block" />
+                        The World
                     </h1>
                     
-                    <p className="mt-8 text-xl text-slate-600 max-w-2xl mx-auto font-medium leading-relaxed">
+                    <p className="mt-8 text-lg md:text-xl text-white/90 max-w-2xl mx-auto font-medium leading-relaxed drop-shadow-md">
                         Experience jaw-dropping destinations curated by sentient AI. Flawless itineraries, spatial booking, and total financial clarity.
                     </p>
                 </motion.div>
