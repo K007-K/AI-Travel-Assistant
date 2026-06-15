@@ -1,11 +1,18 @@
-import { motion } from 'framer-motion';
-import {
-    Sparkles, MapPin, Wallet, MessageCircle, Calendar, ArrowRight, Shield, Globe
-} from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { Sparkles, MapPin, Wallet, MessageCircle, Calendar, ArrowRight, Shield, Globe } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogoLoop } from '../ui/LogoLoop';
-import { Button } from '../ui/Button';
 import useAuthStore from '../../store/authStore';
+
+import SmoothScroller from '../SmoothScroller';
+import InteractiveGlobe from '../canvas/InteractiveGlobe';
+import LiquidGlassButton from '../ui/LiquidGlassButton';
+import FeatureCard3D from './FeatureCard3D';
+import CinematicReveal from '../ui/CinematicReveal';
+
+gsap.registerPlugin(ScrollTrigger);
 
 const LandingPage = () => {
     const navigate = useNavigate();
@@ -15,37 +22,37 @@ const LandingPage = () => {
         {
             name: 'Araku Valley',
             country: 'India',
-            image: 'https://images.unsplash.com/photo-1609137144813-7d9921338f24?w=800&h=600&fit=crop',
+            image: 'https://images.unsplash.com/photo-1609137144813-7d9921338f24?w=1600&h=900&fit=crop',
             description: 'Coffee plantations & tribal culture',
         },
         {
             name: 'Goa',
             country: 'India',
-            image: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800&h=600&fit=crop',
+            image: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=1600&h=900&fit=crop',
             description: 'Beaches & Portuguese heritage',
         },
         {
             name: 'Jaipur',
             country: 'India',
-            image: 'https://images.unsplash.com/photo-1477587458883-47145ed94245?w=800&h=600&fit=crop',
+            image: 'https://images.unsplash.com/photo-1477587458883-47145ed94245?w=1600&h=900&fit=crop',
             description: 'Royal palaces & pink city charm',
         },
         {
             name: 'Paris',
             country: 'France',
-            image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&h=600&fit=crop',
+            image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=1600&h=900&fit=crop',
             description: 'Art, culture & romance',
         },
         {
             name: 'Tokyo',
             country: 'Japan',
-            image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&h=600&fit=crop',
+            image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=1600&h=900&fit=crop',
             description: 'Tradition meets innovation',
         },
         {
             name: 'Bali',
             country: 'Indonesia',
-            image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&h=600&fit=crop',
+            image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1600&h=900&fit=crop',
             description: 'Tropical paradise & temples',
         },
     ];
@@ -68,14 +75,6 @@ const LandingPage = () => {
             darkBg: "dark:bg-purple-500/10"
         },
         {
-            icon: MapPin,
-            title: "Discover Hidden Gems",
-            description: "Explore authentic local attractions and experiences that most tourists miss on their journey.",
-            color: "text-orange-500",
-            bg: "bg-orange-50",
-            darkBg: "dark:bg-orange-500/10"
-        },
-        {
             icon: Wallet,
             title: "Smart Budget Tracking",
             description: "Monitor your travel expenses in real-time and get accurate cost estimates to stay on budget.",
@@ -84,246 +83,278 @@ const LandingPage = () => {
             darkBg: "dark:bg-green-500/10"
         },
         {
-            icon: Shield,
-            title: "Verified Recommendations",
-            description: "Every place, restaurant, and hotel is verified to ensure quality, safety, and authenticity.",
-            color: "text-teal-500",
-            bg: "bg-teal-50",
-            darkBg: "dark:bg-teal-500/10"
+            icon: MapPin,
+            title: "Discover Hidden Gems",
+            description: "Explore authentic local attractions and experiences that most tourists miss on their journey.",
+            color: "text-orange-500",
+            bg: "bg-orange-50",
+            darkBg: "dark:bg-orange-500/10"
         },
-        {
-            icon: Globe,
-            title: "Translation & Communication",
-            description: "Break language barriers with instant translation tools to communicate confidently anywhere.",
-            color: "text-indigo-500",
-            bg: "bg-indigo-50",
-            darkBg: "dark:bg-indigo-500/10"
-        }
     ];
 
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.2,
-                duration: 0.8
-            }
-        }
-    };
+    const horizontalScrollRef = useRef(null);
+    const containerRef = useRef(null);
+    const routeLineRef = useRef(null);
 
-    const itemVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 50 } }
-    };
+    useEffect(() => {
+        // Horizontal Scroll for Destinations
+        const sections = gsap.utils.toArray(".destination-card");
+        
+        if (sections.length > 0 && containerRef.current) {
+            let scrollTween = gsap.to(sections, {
+                xPercent: -100 * (sections.length - 1),
+                ease: "none",
+                scrollTrigger: {
+                    trigger: containerRef.current,
+                    pin: true,
+                    scrub: 1,
+                    end: "+=3000",
+                }
+            });
+        }
+
+        // SVG Route Line Animation
+        if (routeLineRef.current) {
+            const length = routeLineRef.current.getTotalLength();
+            gsap.set(routeLineRef.current, { strokeDasharray: length, strokeDashoffset: length });
+            gsap.to(routeLineRef.current, {
+                strokeDashoffset: 0,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: "#features",
+                    start: "top center",
+                    end: "bottom center",
+                    scrub: true,
+                }
+            });
+        }
+
+        return () => {
+            ScrollTrigger.getAll().forEach(t => t.kill());
+        };
+    }, []);
+
+    // Staggered text animation
+    const headingText = "Travel Without Limits.";
+    const headingWords = headingText.split(" ");
 
     return (
-        <div className="min-h-screen bg-white dark:bg-[#0a0a0a] overflow-x-hidden transition-colors duration-300">
+        <div className="min-h-screen bg-slate-50 dark:bg-[#050505] overflow-x-hidden text-slate-900 dark:text-white selection:bg-blue-500/30">
+            <SmoothScroller />
+            
             {/* Hero Section */}
-            <section className="relative pt-32 pb-20 flex flex-col items-center text-center px-4 bg-gradient-to-b from-white via-blue-50/20 to-white dark:from-[#0a0a0a] dark:via-blue-950/10 dark:to-[#0a0a0a]">
+            <section className="relative w-full h-screen flex flex-col items-center justify-center text-center px-4 overflow-hidden">
+                <InteractiveGlobe />
+                
+                {/* Overlay Gradient for readability */}
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-50/50 to-slate-50 dark:via-[#050505]/50 dark:to-[#050505] pointer-events-none z-0" />
+
                 <motion.div
-                    initial="hidden"
-                    animate="visible"
-                    variants={containerVariants}
-                    className="max-w-4xl mx-auto z-10"
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                    className="relative z-10 max-w-5xl mx-auto pt-20"
                 >
-                    <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white dark:bg-white/[0.05] border border-blue-100 dark:border-blue-500/20 shadow-sm dark:shadow-none text-blue-600 dark:text-blue-400 text-sm font-medium mb-8 hover:scale-105 transition-transform cursor-default">
+                    <motion.div 
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.2, duration: 0.5 }}
+                        className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/20 dark:bg-white/5 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-lg text-blue-800 dark:text-blue-300 text-sm font-semibold mb-8 uppercase tracking-wider"
+                    >
                         <Sparkles className="w-4 h-4" />
-                        <span>AI-Powered Travel Planning</span>
+                        <span>Next-Gen AI Travel Engine</span>
                     </motion.div>
 
-                    <motion.h1 variants={itemVariants} className="text-5xl md:text-7xl font-display font-bold mb-6 text-slate-900 dark:text-white tracking-tight leading-tight">
-                        Travel Without <span className="text-blue-600 dark:bg-clip-text dark:text-transparent dark:bg-gradient-to-r dark:from-blue-400 dark:to-cyan-400 inline-block">Stress</span>
-                    </motion.h1>
+                    <h1 className="text-6xl sm:text-7xl md:text-9xl font-display font-black mb-6 tracking-tighter leading-[1.1] text-slate-900 dark:text-white drop-shadow-2xl flex flex-wrap justify-center gap-4">
+                        {headingWords.map((word, index) => (
+                            <motion.span
+                                key={index}
+                                initial={{ y: 100, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ delay: 0.3 + index * 0.1, duration: 0.8, type: "spring" }}
+                                className="inline-block"
+                            >
+                                {word === "Limits." ? (
+                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 dark:from-blue-400 dark:to-cyan-300">
+                                        {word}
+                                    </span>
+                                ) : (
+                                    word
+                                )}
+                            </motion.span>
+                        ))}
+                    </h1>
 
-                    <motion.p variants={itemVariants} className="text-xl text-slate-500 dark:text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-                        From planning to exploring, experience seamless travel with AI-powered recommendations, smart budgeting, and cultural insights.
+                    <motion.p 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.8, duration: 1 }}
+                        className="text-xl md:text-2xl text-slate-700 dark:text-slate-300 mb-12 max-w-3xl mx-auto font-light leading-relaxed drop-shadow-md"
+                    >
+                        Roameo orchestrates perfect journeys using advanced AI, real-time routing, and smart budget envelopes. The world is yours to explore.
                     </motion.p>
 
-                    <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Button
-                            onClick={() => isAuthenticated ? navigate('/ai/chat') : navigate('/login')}
-                            size="lg"
-                            className="text-lg px-8 h-12 w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-500/20 dark:shadow-blue-500/10 rounded-xl transition-all hover:scale-105 hover:-translate-y-0.5 active:scale-95 duration-300"
-                        >
-                            Start Planning <ArrowRight className="ml-2 w-5 h-5" />
-                        </Button>
-                        <a href="#destinations">
-                            <Button variant="outline" size="lg" className="text-lg px-8 h-12 w-full sm:w-auto border-slate-200 dark:border-white/[0.08] text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-500/30 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-xl transition-all hover:scale-105 duration-300">
-                                Explore Destinations
-                            </Button>
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 1, duration: 0.5 }}
+                        className="flex flex-col sm:flex-row gap-6 justify-center items-center"
+                    >
+                        <LiquidGlassButton onClick={() => isAuthenticated ? navigate('/ai/chat') : navigate('/login')} className="w-full sm:w-auto">
+                            Plan Your Journey <ArrowRight className="w-5 h-5 ml-2" />
+                        </LiquidGlassButton>
+                        <a href="#destinations" className="text-lg font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                            Discover Places
                         </a>
                     </motion.div>
                 </motion.div>
-
-                {/* Smooth Gradient Blobs */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 1.5 }}
-                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-400/5 dark:bg-blue-500/[0.03] rounded-full blur-[120px] -z-0 pointer-events-none"
-                />
+                
+                {/* Mock AI Chat Bubble floating near globe */}
+                <motion.div 
+                    animate={{ y: [0, -15, 0] }}
+                    transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                    className="absolute hidden lg:flex top-1/3 right-[10%] bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-white/20 p-4 rounded-2xl shadow-2xl items-center gap-3 z-10"
+                >
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center">
+                        <Sparkles className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Roameo AI</p>
+                        <p className="text-sm font-semibold dark:text-white">Analyzing 43 flights to Tokyo...</p>
+                    </div>
+                </motion.div>
             </section>
 
-            {/* Everything You Need Section (Features Loop) */}
-            <section id="features" className="pt-20 pb-12 bg-white dark:bg-[#0a0a0a] relative overflow-hidden transition-colors duration-300">
-                <div className="max-w-6xl mx-auto px-4 sm:px-6 mb-10 text-center">
-                    <motion.div
-                        initial={{ opacity: 0, y: 30 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, margin: "-100px" }}
-                        transition={{ duration: 0.6 }}
-                    >
-                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold mb-4 text-slate-900 dark:text-white">
-                            Everything You Need
-                        </h2>
-                        <p className="text-lg sm:text-xl text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
-                            Powerful features designed to make your travel experience effortless.
-                        </p>
-                    </motion.div>
+            {/* AI Toolkit Section with Journey Route */}
+            <section id="features" className="py-32 relative max-w-7xl mx-auto px-4 sm:px-6">
+                <div className="text-center mb-24">
+                    <h2 className="text-4xl md:text-6xl font-display font-bold mb-6 text-slate-900 dark:text-white">
+                        Your Intelligent Travel Companion
+                    </h2>
+                    <p className="text-xl text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
+                        A full suite of tools designed to make every step of your journey effortless.
+                    </p>
                 </div>
 
-                <div className="w-full pb-8">
-                    <LogoLoop
-                        speed={280}
-                        direction="left"
-                        pauseOnHover={false}
-                        items={features.map((feature, index) => (
-                            <motion.div
-                                key={index}
-                                whileHover={{
-                                    scale: 1.08,
-                                    y: -12,
-                                    zIndex: 50,
-                                    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.15)"
-                                }}
-                                layout
-                                transition={{ type: "tween", duration: 0.1, ease: "easeOut" }}
-                                className="bg-white dark:bg-white/[0.03] rounded-2xl p-6 border border-slate-100 dark:border-white/[0.06] shadow-md shadow-slate-200/40 dark:shadow-none w-[260px] mx-2 h-[300px] flex flex-col items-start justify-between text-left cursor-pointer"
-                            >
-                                <div className={`w-12 h-12 rounded-xl ${feature.bg} ${feature.darkBg} ${feature.color} flex items-center justify-center mb-4`}>
-                                    <feature.icon className="w-6 h-6" />
-                                </div>
-                                <h3 className="text-base sm:text-lg font-bold mb-2 text-slate-900 dark:text-white leading-tight">{feature.title}</h3>
-                                <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-xs sm:text-sm">
-                                    {feature.description}
-                                </p>
-                            </motion.div>
-                        ))}
-                    />
-                </div>
-            </section>
+                <div className="relative">
+                    {/* SVG Route Line */}
+                    <div className="absolute left-1/2 top-0 bottom-0 -translate-x-1/2 hidden lg:block w-1 z-0">
+                        <svg width="4" height="100%" className="absolute inset-0">
+                            <line ref={routeLineRef} x1="2" y1="0" x2="2" y2="100%" stroke="url(#gradient)" strokeWidth="4" strokeLinecap="round" strokeDasharray="10 10" />
+                            <defs>
+                                <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stopColor="#3b82f6" />
+                                    <stop offset="100%" stopColor="#8b5cf6" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
 
-            {/* Popular Destinations */}
-            <section id="destinations" className="pt-12 pb-20 relative bg-slate-50/50 dark:bg-[#080808] overflow-hidden transition-colors duration-300">
-                <div className="max-w-6xl mx-auto px-4 sm:px-6 mb-10 text-center">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.6 }}
-                    >
-                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold mb-4 text-slate-900 dark:text-white">
-                            Popular Destinations
-                        </h2>
-                        <p className="text-lg sm:text-xl text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
-                            Discover amazing places around the world.
-                        </p>
-                    </motion.div>
-                </div>
-
-                <div className="w-full pb-8">
-                    <LogoLoop
-                        speed={270}
-                        direction="right"
-                        pauseOnHover={false}
-                        items={destinations.map((destination, index) => (
-                            <motion.div
-                                key={index}
-                                whileHover={{ y: -12, scale: 1.03 }}
-                                layout
-                                transition={{ type: "tween", duration: 0.1, ease: "easeOut" }}
-                                className="group relative overflow-hidden rounded-2xl w-[260px] sm:w-[280px] h-[380px] sm:h-[400px] mx-2 cursor-pointer shadow-lg hover:shadow-2xl dark:shadow-black/50 bg-slate-800 dark:border dark:border-white/[0.06]"
-                            >
-                                <div onClick={() => isAuthenticated ? navigate('/ai/chat') : navigate('/login')} className="block w-full h-full relative">
-                                    <img
-                                        src={destination.image}
-                                        alt={destination.name}
-                                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
-                                        loading="eager"
-                                        onError={(e) => {
-                                            e.target.style.display = 'none';
-                                            e.target.parentElement.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                                        }}
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent group-hover:from-black/90 transition-all duration-300" />
-
-                                    <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6 text-white transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                                        <h3 className="text-xl sm:text-2xl font-bold mb-1.5 drop-shadow-lg">{destination.name}</h3>
-                                        <p className="text-xs sm:text-sm text-white/95 mb-2.5 font-medium flex items-center gap-1.5 drop-shadow">
-                                            <MapPin className="w-3.5 h-3.5" /> {destination.country}
-                                        </p>
-                                        <p className="text-xs sm:text-sm text-white/90 opacity-0 group-hover:opacity-100 transition-opacity duration-300 line-clamp-2 drop-shadow">
-                                            {destination.description}
-                                        </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-24 relative z-10">
+                        {features.map((feature, index) => (
+                            <CinematicReveal key={index}>
+                                <div className={`flex justify-${index % 2 === 0 ? 'end' : 'start'} lg:transform ${index % 2 === 0 ? 'lg:-translate-x-12' : 'lg:translate-x-12 mt-12 lg:mt-32'}`}>
+                                    <div className="w-full lg:w-[450px]">
+                                        <FeatureCard3D feature={feature} />
                                     </div>
+                                </div>
+                            </CinematicReveal>
+                        ))}
+                    </div>
+                </div>
+            </section>
 
-                                    <div className="absolute top-4 right-4 translate-x-12 group-hover:translate-x-0 transition-transform duration-300 delay-75">
-                                        <div className="p-2.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white hover:bg-white hover:text-blue-600 transition-colors">
-                                            <ArrowRight className="w-4 h-4" />
+            {/* Cinematic Destinations Gallery */}
+            <section id="destinations" ref={containerRef} className="h-screen w-full bg-[#030303] flex items-center relative overflow-hidden">
+                <div className="absolute top-12 left-12 z-20">
+                    <h2 className="text-4xl md:text-6xl font-display font-bold text-white drop-shadow-xl">
+                        Uncover The World
+                    </h2>
+                    <p className="text-xl text-white/70 mt-2">Scroll to explore curated destinations</p>
+                </div>
+
+                <div ref={horizontalScrollRef} className="flex h-screen w-[600vw]">
+                    {destinations.map((destination, index) => (
+                        <div key={index} className="destination-card w-screen h-full flex items-center justify-center p-8 relative flex-shrink-0 group">
+                            {/* Background Image */}
+                            <div className="absolute inset-0 overflow-hidden">
+                                <img 
+                                    src={destination.image} 
+                                    alt={destination.name}
+                                    className="w-full h-full object-cover transform scale-105 group-hover:scale-100 transition-transform duration-[2s] ease-out opacity-60"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                            </div>
+
+                            <div className="relative z-10 max-w-4xl w-full flex flex-col md:flex-row gap-12 items-end">
+                                <div className="flex-1">
+                                    <h3 className="text-6xl sm:text-8xl md:text-9xl font-display font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50 mb-4 drop-shadow-2xl">
+                                        {destination.name}
+                                    </h3>
+                                    <p className="text-2xl text-white/90 font-light flex items-center gap-3">
+                                        <MapPin className="w-6 h-6 text-blue-400" /> {destination.country}
+                                    </p>
+                                    <p className="text-lg text-white/70 mt-4 max-w-md">
+                                        {destination.description}
+                                    </p>
+                                </div>
+                                <div className="w-full md:w-[400px]">
+                                    <div className="glass p-8 rounded-3xl backdrop-blur-2xl bg-black/30 border border-white/10">
+                                        <div className="flex items-center gap-4 mb-6">
+                                            <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
+                                                <Sparkles className="w-6 h-6 text-blue-400" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-white/60">AI Insight</p>
+                                                <p className="text-white font-medium">Optimal visit: 4-5 days</p>
+                                            </div>
                                         </div>
+                                        <button 
+                                            onClick={() => isAuthenticated ? navigate('/ai/chat') : navigate('/login')}
+                                            className="w-full py-4 rounded-xl bg-white text-black font-bold hover:bg-blue-50 transition-colors flex justify-center items-center gap-2"
+                                        >
+                                            Generate Itinerary <ArrowRight className="w-5 h-5" />
+                                        </button>
                                     </div>
                                 </div>
-                            </motion.div>
-                        ))}
-                    />
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </section>
 
             {/* Final CTA Section */}
-            <section className="section py-32 relative overflow-hidden bg-white dark:bg-[#0a0a0a] transition-colors duration-300">
-                <div className="container-custom max-w-7xl mx-auto px-6 md:px-8">
-                    <div className="relative rounded-3xl overflow-hidden px-8 sm:px-12 py-20 text-center bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 dark:from-blue-600 dark:via-indigo-600 dark:to-purple-700 shadow-2xl shadow-blue-900/30 dark:shadow-blue-900/50">
-                        {/* Glossy overlay layers */}
-                        <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-black/10"></div>
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.3)_0%,transparent_50%)]"></div>
+            <section className="relative py-40 overflow-hidden bg-slate-900 dark:bg-black">
+                {/* Dynamic radar/orbit background */}
+                <div className="absolute inset-0 z-0 opacity-30 flex items-center justify-center">
+                    <div className="w-[800px] h-[800px] rounded-full border border-blue-500/20 animate-[spin_60s_linear_infinite]" />
+                    <div className="w-[600px] h-[600px] absolute rounded-full border border-blue-500/30 animate-[spin_40s_linear_infinite_reverse]" />
+                    <div className="w-[400px] h-[400px] absolute rounded-full border border-purple-500/40 animate-[spin_20s_linear_infinite]" />
+                </div>
 
-                        {/* Shine effect */}
-                        <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-white/30 via-white/10 to-transparent rounded-full blur-3xl opacity-40"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent z-0" />
 
-                        {/* Glass reflection */}
-                        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-white/25 to-transparent opacity-60"></div>
-
-
-
-                        {/* Ambient light orbs */}
-                        <div className="absolute -top-24 -right-24 w-80 h-80 bg-blue-300/40 rounded-full blur-3xl"></div>
-                        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-blue-800/30 rounded-full blur-3xl"></div>
-
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            className="relative z-10 max-w-3xl mx-auto"
-                        >
-                            <h2 className="text-4xl md:text-5xl font-display font-bold mb-6 text-white leading-tight drop-shadow-lg">
-                                Ready to plan your next trip?
-                            </h2>
-                            <p className="text-xl text-blue-50 mb-10 font-light drop-shadow-md">
-                                Join thousands of travelers getting honest, vibe-based recommendations.
-                            </p>
-                            <Button
-                                onClick={() => isAuthenticated ? navigate('/ai/chat') : navigate('/signup')}
-                                size="lg"
-                                className="bg-white/95 backdrop-blur-sm text-blue-600 hover:bg-white hover:shadow-2xl hover:shadow-white/50 text-lg px-10 h-14 shadow-xl mb-6 rounded-xl font-bold transition-all hover:scale-105 border border-white/50"
-                            >
-                                Plan My First Trip
-                            </Button>
-                            <p className="text-sm text-blue-100 font-medium mt-4 drop-shadow">
-                                Free to try • No credit card • No commitment
-                            </p>
-                        </motion.div>
-                    </div>
+                <div className="relative z-10 max-w-4xl mx-auto text-center px-4">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.8 }}
+                    >
+                        <h2 className="text-5xl md:text-7xl font-display font-bold text-white mb-8">
+                            Your Journey <br/>
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Begins Here</span>
+                        </h2>
+                        <p className="text-xl text-slate-300 mb-12 max-w-2xl mx-auto font-light">
+                            Stop spending weeks planning. Let Roameo's AI build your perfect, budget-optimized itinerary in seconds.
+                        </p>
+                        
+                        <div className="flex flex-col sm:flex-row justify-center gap-6">
+                            <LiquidGlassButton onClick={() => isAuthenticated ? navigate('/ai/chat') : navigate('/signup')} className="w-full sm:w-auto text-lg px-12 py-5">
+                                Board Flight to Future
+                            </LiquidGlassButton>
+                        </div>
+                    </motion.div>
                 </div>
             </section>
         </div>
