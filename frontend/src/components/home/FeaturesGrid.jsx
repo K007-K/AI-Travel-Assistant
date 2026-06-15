@@ -84,37 +84,91 @@ const FeaturesGrid = () => {
                         </div>
                         <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight">Real-World Routing</h3>
                         <p className="text-slate-500 font-medium leading-relaxed mb-8 relative z-10">
-                            We use OSRM to calculate actual driving times, detecting and optimizing for overnight travel. No more guesswork or missed connections.
+                            We use OSRM to calculate actual driving times, instantly evaluating hundreds of paths to select the single most optimized route.
                         </p>
                         
-                        {/* Pure CSS Routing UI Mockup */}
-                        <div className="mt-auto flex-1 w-full bg-[#f8fafc] rounded-2xl p-6 relative overflow-hidden border border-slate-100 flex flex-col justify-center gap-6 group-hover:shadow-inner transition-all">
-                            <div className="flex items-center justify-between gap-4 relative z-10">
-                                <div className="flex flex-col items-center gap-2">
-                                    <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-white shadow-lg z-10">A</div>
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Start</span>
-                                </div>
-                                <div className="flex-1 h-1 bg-slate-200 rounded-full relative">
-                                    <motion.div 
-                                        initial={{ width: 0 }} 
-                                        whileInView={{ width: "100%" }} 
-                                        transition={{ duration: 1.5, delay: 0.6, ease: "easeInOut" }} 
-                                        className="absolute inset-y-0 left-0 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]" 
-                                    />
-                                    {/* Moving dot */}
-                                    <motion.div
-                                        initial={{ left: 0 }}
-                                        whileInView={{ left: "100%" }}
-                                        transition={{ duration: 1.5, delay: 0.6, ease: "easeInOut" }}
-                                        className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-emerald-500 rounded-full shadow-md -ml-1.5"
-                                    />
-                                </div>
-                                <div className="flex flex-col items-center gap-2">
-                                    <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/30 z-10">B</div>
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">End</span>
-                                </div>
-                            </div>
-                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.02)_1px,transparent_1px)] bg-[size:10px_10px]" />
+                        {/* Pure SVG Map Optimization Animation */}
+                        <div className="mt-auto flex-1 w-full bg-[#f8fafc] rounded-2xl p-4 relative overflow-hidden border border-slate-100 flex items-center justify-center group-hover:shadow-inner transition-all min-h-[180px]">
+                            {/* Subtle Map Grid Background */}
+                            <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.03)_1px,transparent_1px)] bg-[size:20px_20px]" />
+                            
+                            <svg viewBox="0 0 400 160" className="w-full h-full relative z-10 overflow-visible">
+                                <defs>
+                                    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                                        <feGaussianBlur stdDeviation="4" result="blur" />
+                                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                    </filter>
+                                </defs>
+
+                                {/* Unoptimized Route 1 (Wavy/Long) */}
+                                <motion.path 
+                                    d="M 50 80 Q 120 10, 200 40 T 350 80" 
+                                    fill="transparent" 
+                                    strokeWidth="2" 
+                                    strokeDasharray="6 6"
+                                    strokeLinecap="round"
+                                    className="stroke-slate-300"
+                                    initial={{ pathLength: 0, opacity: 0 }}
+                                    whileInView={{ pathLength: 1, opacity: 0.3 }}
+                                    transition={{ duration: 1.5, ease: "easeInOut" }}
+                                />
+
+                                {/* Unoptimized Route 2 (Jagged) */}
+                                <motion.path 
+                                    d="M 50 80 L 120 130 L 220 110 L 280 140 L 350 80" 
+                                    fill="transparent" 
+                                    strokeWidth="2" 
+                                    strokeDasharray="6 6"
+                                    strokeLinejoin="round"
+                                    className="stroke-slate-300"
+                                    initial={{ pathLength: 0, opacity: 0 }}
+                                    whileInView={{ pathLength: 1, opacity: 0.3 }}
+                                    transition={{ duration: 1.5, ease: "easeInOut", delay: 0.2 }}
+                                />
+
+                                {/* Optimized Route (Smooth, Direct) */}
+                                <motion.path 
+                                    d="M 50 80 Q 200 120, 350 80" 
+                                    fill="transparent" 
+                                    strokeWidth="4" 
+                                    strokeLinecap="round"
+                                    className="stroke-emerald-500"
+                                    filter="url(#glow)"
+                                    initial={{ pathLength: 0, opacity: 0 }}
+                                    whileInView={{ pathLength: 1, opacity: 1 }}
+                                    transition={{ duration: 1.5, ease: "easeOut", delay: 1.2 }}
+                                />
+
+                                {/* Animated Packet on Optimized Route */}
+                                <motion.circle 
+                                    r="4" 
+                                    className="fill-white stroke-emerald-500 stroke-[2px]"
+                                    initial={{ opacity: 0, offsetDistance: "0%" }}
+                                    whileInView={{ opacity: 1, offsetDistance: "100%" }}
+                                    transition={{ 
+                                        opacity: { delay: 1.2, duration: 0.2 },
+                                        offsetDistance: { delay: 1.2, duration: 2, ease: "easeInOut", repeat: Infinity, repeatDelay: 1 }
+                                    }}
+                                    style={{ 
+                                        offsetPath: "path('M 50 80 Q 200 120, 350 80')",
+                                    }}
+                                />
+
+                                {/* Node A (Start) */}
+                                <motion.g initial={{ scale: 0 }} whileInView={{ scale: 1 }} transition={{ type: "spring", delay: 0.1 }}>
+                                    <circle cx="50" cy="80" r="14" className="fill-slate-900 shadow-lg" />
+                                    <text x="50" y="84" textAnchor="middle" className="text-[12px] font-bold fill-white">A</text>
+                                    <text x="50" y="110" textAnchor="middle" className="text-[10px] font-bold fill-slate-400 uppercase tracking-widest">Start</text>
+                                </motion.g>
+
+                                {/* Node B (End) */}
+                                <motion.g initial={{ scale: 0 }} whileInView={{ scale: 1 }} transition={{ type: "spring", delay: 0.3 }}>
+                                    <circle cx="350" cy="80" r="14" className="fill-emerald-500 shadow-lg" />
+                                    <text x="350" y="84" textAnchor="middle" className="text-[12px] font-bold fill-white">B</text>
+                                    <text x="350" y="110" textAnchor="middle" className="text-[10px] font-bold fill-emerald-600 uppercase tracking-widest">End</text>
+                                </motion.g>
+
+                            </svg>
                         </div>
                     </motion.div>
 
