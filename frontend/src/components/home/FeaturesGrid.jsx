@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Route, Wallet, Loader2 } from 'lucide-react';
+import { Sparkles, Route, Wallet, Loader2, MessageSquare, Cpu, Calendar } from 'lucide-react';
 
 const FeaturesGrid = () => {
     return (
@@ -39,107 +39,111 @@ const FeaturesGrid = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, margin: "-50px" }}
                         transition={{ duration: 0.8, ease: "easeOut" }}
-                        className="lg:col-span-7 lg:row-span-2 relative bg-[#0a0a0a] rounded-[2.5rem] overflow-hidden min-h-[500px] lg:min-h-[600px] group flex flex-col justify-end p-8 md:p-12 border border-slate-800 shadow-2xl"
+                        className="lg:col-span-7 lg:row-span-2 relative bg-white rounded-[2.5rem] overflow-hidden min-h-[500px] lg:min-h-[600px] group flex flex-col justify-between p-8 md:p-12 border border-slate-200 shadow-xl shadow-slate-200/50"
                     >
-                        {/* Majestic Aura Background */}
-                        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-                            {/* Base dark gradient */}
-                            <div className="absolute inset-0 bg-gradient-to-b from-[#0f1115] to-[#050505]" />
-                            
-                            {/* Soft top-right ambient glow (Deep Blue) */}
-                            <div className="absolute -top-[10%] -right-[10%] w-[80%] h-[80%] bg-blue-600/15 rounded-full blur-[120px] mix-blend-screen transition-opacity duration-1000 group-hover:bg-blue-600/20" />
-                            
-                            {/* Subtle center-left glow (Indigo) */}
-                            <div className="absolute top-[10%] left-[10%] w-[60%] h-[60%] bg-indigo-500/10 rounded-full blur-[100px] mix-blend-screen" />
-                        </div>
+                        {/* UI Graphic: Engine Pipeline */}
+                        <div className="w-full flex-1 flex items-center justify-center pt-8 pb-16 z-10 relative">
+                            {/* Subtle background grid for technical feel */}
+                            <div className="absolute inset-0 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-50 pointer-events-none" />
 
-                        {/* UI Graphic: AI Trip Generation Prompt */}
-                        <div className="absolute inset-y-0 right-0 w-[60%] pointer-events-none hidden lg:flex items-center justify-end z-0 overflow-hidden rounded-r-[2.5rem]">
-                            
-                            {/* Massive Glowing Orb */}
-                            <div className="absolute right-[-10%] top-1/2 -translate-y-1/2 w-[600px] h-[600px]">
-                                <motion.div 
-                                    animate={{ scale: [1, 1.1, 1], rotate: [0, 90, 0] }}
-                                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                                    className="absolute inset-0 bg-[conic-gradient(from_0deg,transparent_0_340deg,rgba(59,130,246,0.3)_360deg)] rounded-full blur-[80px] mix-blend-screen"
-                                />
-                                <div className="absolute inset-[20%] bg-blue-600/30 rounded-full blur-[80px] mix-blend-screen animate-pulse" />
-                            </div>
-
-                            {/* Front UI Panel - Massive, Bold, High Contrast */}
-                            <motion.div 
-                                initial={{ opacity: 0, x: 60 }}
-                                whileInView={{ opacity: 1, x: 0 }}
-                                transition={{ duration: 0.8, ease: "easeOut" }}
-                                className="w-[460px] bg-white/[0.05] backdrop-blur-3xl border border-white/10 rounded-3xl p-10 shadow-[0_0_60px_rgba(0,0,0,0.5)] relative z-10 translate-x-[15%]"
-                            >
-                                <div className="flex items-center gap-5 mb-8">
-                                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30 shrink-0">
-                                        <Sparkles className="w-8 h-8 text-white" />
-                                    </div>
-                                    <div>
-                                        <h4 className="text-2xl font-bold text-white tracking-tight">AI Engine</h4>
-                                        <div className="text-blue-400 font-medium mt-1">Processing Request...</div>
-                                    </div>
-                                </div>
+                            <div className="w-full max-w-2xl grid grid-cols-3 gap-6 items-center relative z-10">
                                 
-                                {/* The Prompt */}
-                                <div className="bg-black/40 rounded-2xl p-5 border border-white/5 mb-8">
-                                    <p className="text-slate-300 text-[15px] leading-relaxed italic">
-                                        "Craft a 5-day luxury Tokyo getaway. Extremely relaxing pace, authentic omakase, and a high-end spa."
-                                    </p>
-                                </div>
+                                {/* Connecting lines */}
+                                <div className="absolute top-1/2 left-[10%] w-[80%] h-[2px] bg-slate-100 -z-10 -translate-y-1/2" />
+                                <motion.div 
+                                    className="absolute top-1/2 left-[10%] w-[80%] h-[2px] bg-gradient-to-r from-transparent via-blue-500 to-transparent -z-10 -translate-y-1/2" 
+                                    animate={{ backgroundPosition: ["200% 0", "-200% 0"] }} 
+                                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                                    style={{ backgroundSize: '50% 100%' }}
+                                />
 
-                                {/* Huge Progress UI */}
-                                <div className="space-y-6">
-                                    <div>
-                                        <div className="flex justify-between text-sm font-bold text-white mb-3">
-                                            <span>Vibe Analysis</span>
-                                            <span className="text-emerald-400">100%</span>
+                                {/* Node 1: Request */}
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5 }}
+                                    className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col gap-3 shadow-sm relative group hover:shadow-md transition-shadow"
+                                >
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center">
+                                            <MessageSquare className="w-3 h-3 text-slate-500" />
                                         </div>
-                                        <div className="h-3 w-full bg-black/40 rounded-full overflow-hidden border border-white/5">
-                                            <div className="h-full w-full bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Input</span>
+                                    </div>
+                                    <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                        <p className="text-[12px] text-slate-600 font-medium leading-relaxed italic">
+                                            "5 days in Tokyo. Luxury, relaxed pace, omakase..."
+                                        </p>
+                                    </div>
+                                </motion.div>
+
+                                {/* Node 2: Gemini & Groq (The Engine) */}
+                                <motion.div 
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    whileInView={{ opacity: 1, scale: 1 }}
+                                    transition={{ duration: 0.5, delay: 0.2 }}
+                                    className="relative flex justify-center"
+                                >
+                                    {/* Pulsing rings */}
+                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120px] h-[120px] bg-blue-500/10 rounded-full animate-ping" style={{ animationDuration: '3s' }} />
+                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100px] h-[100px] bg-indigo-500/10 rounded-full animate-ping" style={{ animationDuration: '2s' }} />
+                                    
+                                    <div className="bg-white border-2 border-blue-100 rounded-3xl p-1 relative shadow-[0_0_40px_rgba(59,130,246,0.15)] z-10 w-[140px]">
+                                        <div className="absolute inset-0 rounded-3xl border-2 border-transparent bg-clip-border" style={{ backgroundImage: "linear-gradient(white, white), conic-gradient(from 0deg, #3b82f6, #8b5cf6, #3b82f6)"}} />
+                                        <div className="bg-gradient-to-b from-blue-50 to-white rounded-[1.3rem] p-5 flex flex-col items-center justify-center gap-3 relative z-10">
+                                            <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                                                <Cpu className="w-6 h-6 text-white" />
+                                            </div>
+                                            <div className="flex flex-col items-center text-center">
+                                                <span className="text-[13px] font-black text-slate-900 tracking-tight leading-none mb-1">Gemini<br/>& Groq</span>
+                                                <span className="text-[9px] text-blue-600 font-bold uppercase tracking-widest">Engine</span>
+                                            </div>
                                         </div>
                                     </div>
+                                </motion.div>
 
-                                    <div>
-                                        <div className="flex justify-between text-sm font-bold text-white mb-3">
-                                            <span>Route Optimization</span>
-                                            <span className="text-emerald-400">100%</span>
+                                {/* Node 3: Response (Itinerary) */}
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5, delay: 0.4 }}
+                                    className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col gap-3 shadow-sm relative group hover:shadow-md transition-shadow"
+                                >
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-6 h-6 rounded-full bg-emerald-50 flex items-center justify-center">
+                                            <Calendar className="w-3 h-3 text-emerald-600" />
                                         </div>
-                                        <div className="h-3 w-full bg-black/40 rounded-full overflow-hidden border border-white/5">
-                                            <div className="h-full w-full bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                                        <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Output</span>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="h-10 w-full bg-slate-50 rounded-lg border border-slate-100 flex items-center px-3 gap-2">
+                                            <div className="w-6 h-6 rounded bg-slate-200 shrink-0" />
+                                            <div className="flex-1 space-y-1.5">
+                                                <div className="h-1.5 w-full bg-slate-200 rounded-full" />
+                                                <div className="h-1.5 w-2/3 bg-slate-200 rounded-full" />
+                                            </div>
+                                        </div>
+                                        <div className="h-10 w-full bg-slate-50 rounded-lg border border-slate-100 flex items-center px-3 gap-2 opacity-50">
+                                            <div className="w-6 h-6 rounded bg-slate-200 shrink-0" />
+                                            <div className="flex-1 space-y-1.5">
+                                                <div className="h-1.5 w-full bg-slate-200 rounded-full" />
+                                                <div className="h-1.5 w-1/2 bg-slate-200 rounded-full" />
+                                            </div>
                                         </div>
                                     </div>
-
-                                    <div>
-                                        <div className="flex justify-between text-sm font-bold text-white mb-3">
-                                            <span>Securing Bookings</span>
-                                            <span className="text-blue-400">85%</span>
-                                        </div>
-                                        <div className="h-3 w-full bg-black/40 rounded-full overflow-hidden border border-white/5 relative">
-                                            <motion.div 
-                                                initial={{ width: "30%" }}
-                                                whileInView={{ width: "85%" }}
-                                                transition={{ duration: 3, ease: "easeInOut" }}
-                                                className="h-full bg-blue-500 rounded-full relative shadow-[0_0_10px_rgba(59,130,246,0.5)] overflow-hidden"
-                                            >
-                                                <div className="absolute inset-0 bg-white/30 w-full animate-[shimmer_2s_infinite]" style={{ maskImage: 'linear-gradient(to right, transparent, black, transparent)'}} />
-                                            </motion.div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </motion.div>
+                                </motion.div>
+                                
+                            </div>
                         </div>
                         
                         <div className="relative z-10 max-w-xl">
-                            <div className="w-16 h-16 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center mb-10 shadow-2xl transition-colors duration-500 group-hover:bg-white/[0.05]">
-                                <Sparkles className="w-8 h-8 text-white" strokeWidth={1.5} />
+                            <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mb-8 shadow-sm">
+                                <Sparkles className="w-8 h-8 text-blue-600" strokeWidth={1.5} />
                             </div>
-                            <h3 className="text-4xl md:text-5xl lg:text-[56px] font-display font-black text-white mb-6 leading-[1.05] tracking-tight">
+                            <h3 className="text-4xl md:text-5xl lg:text-[56px] font-display font-black text-slate-900 mb-6 leading-[1.05] tracking-tight">
                                 Sentient <br/>Orchestration.
                             </h3>
-                            <p className="text-[17px] text-slate-400 font-medium leading-relaxed max-w-[480px]">
+                            <p className="text-[17px] text-slate-500 font-medium leading-relaxed max-w-[480px]">
                                 Powered by Gemini & Groq, our multi-agent engine understands your exact vibe. It negotiates constraints, balances preferences, and generates hyper-personalized, flawless itineraries in milliseconds.
                             </p>
                         </div>
