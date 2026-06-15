@@ -15,12 +15,11 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useAuthStore from '../../store/authStore';
-import { Button } from '../ui/Button';
 import useBackgroundBrightness from '../../hooks/useBackgroundBrightness';
 import { useTheme } from '../../providers/ThemeProvider';
 
-// ── Magnetic Wrapper for 2026 Physics-Based UI ──
-const MagneticButton = ({ children, className }) => {
+// ── Ultra-Smooth Magnetic Physics ──
+const MagneticButton = ({ children, className, spring = { type: "spring", stiffness: 150, damping: 15, mass: 0.1 } }) => {
     const ref = useRef(null);
     const [position, setPosition] = useState({ x: 0, y: 0 });
 
@@ -43,7 +42,7 @@ const MagneticButton = ({ children, className }) => {
             onMouseMove={handleMouse}
             onMouseLeave={reset}
             animate={{ x: position.x, y: position.y }}
-            transition={{ type: "spring", stiffness: 150, damping: 15, mass: 0.1 }}
+            transition={spring}
             className={className}
         >
             {children}
@@ -58,25 +57,29 @@ const Navbar = () => {
     const { theme, resolvedTheme, setTheme } = useTheme();
     const isDark = resolvedTheme === 'dark';
 
+    // ── Dynamic Background Detection ──
     const isOverDark = useBackgroundBrightness(navRef);
-    const isLight = isOverDark || isDark;
+    const isLightContent = isOverDark || isDark; // If background is dark, text must be light
+    
     const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Traveler';
     const isActive = (path) => location.pathname === path;
 
     const toggleTheme = () => setTheme(isDark ? 'light' : 'dark');
 
-    // ── Ultra Premium Glassmorphism Pill Style ──
-    const pillBg = isDark
-        ? 'bg-black/50 backdrop-blur-3xl border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.8)]'
-        : 'bg-white/50 backdrop-blur-3xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.08)]';
+    // ── Masterpiece Glassmorphism ──
+    // Instead of milky white (which turns grey over black), we use ultra-sheer transparency
+    // with heavy blur, fine borders, and an inner light reflection (box-shadow inset).
+    const pillBg = isLightContent
+        ? 'bg-[#ffffff08] backdrop-blur-3xl border border-white/[0.12] shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.1)]'
+        : 'bg-white/60 backdrop-blur-3xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.8)]';
 
     const ThemeBtn = () => (
         <MagneticButton>
             <motion.button
                 onClick={toggleTheme}
-                className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 ${isDark
-                    ? 'bg-white/[0.08] hover:bg-white/[0.15] text-amber-400 border border-white/[0.05]'
-                    : 'bg-white hover:bg-slate-50 text-slate-600 shadow-sm border border-slate-200/50'
+                className={`relative flex items-center justify-center w-10 h-10 rounded-full transition-colors duration-300 ${isLightContent
+                    ? 'hover:bg-white/[0.08] text-white/90 hover:text-white'
+                    : 'hover:bg-slate-900/5 text-slate-600 hover:text-slate-900'
                     }`}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -109,58 +112,80 @@ const Navbar = () => {
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             >
-                <div className={`pointer-events-auto flex items-center justify-between px-6 py-3 rounded-full transition-all duration-500 max-w-5xl w-full ${pillBg}`}>
-                    {/* Logo */}
-                    <Link to="/" className="flex items-center gap-3 group">
-                        <motion.div 
-                            className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30"
-                            whileHover={{ rotate: 15, scale: 1.05 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 10 }}
-                        >
-                            <Plane className="w-5 h-5" />
-                        </motion.div>
-                        <span className={`font-display font-bold text-xl tracking-tight transition-colors duration-300 ${isLight ? 'text-white' : 'text-slate-900'}`}>ROAMEO</span>
-                    </Link>
-
-                    {/* Landing Page Navigation */}
-                    <div className="hidden md:flex items-center gap-2">
+                <div className={`pointer-events-auto flex items-center justify-between pl-2 pr-2 py-2 rounded-full transition-all duration-500 max-w-4xl w-full ${pillBg}`}>
+                    
+                    {/* Logo Area */}
+                    <div className="flex-1 flex items-center">
                         <MagneticButton>
-                            <Link to="/" className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${isActive('/') ? (isLight ? 'bg-white/20 text-white' : 'bg-slate-100 text-blue-600') : (isLight ? 'text-white/80 hover:text-white hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50')}`}>
-                                Home
-                            </Link>
-                        </MagneticButton>
-                        <MagneticButton>
-                            <a href="/#features" className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${isLight ? 'text-white/80 hover:text-white hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'}`}>
-                                Features
-                            </a>
-                        </MagneticButton>
-                        <MagneticButton>
-                            <Link to="/about" className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${isActive('/about') ? (isLight ? 'bg-white/20 text-white' : 'bg-slate-100 text-blue-600') : (isLight ? 'text-white/80 hover:text-white hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50')}`}>
-                                About
+                            <Link to="/" className="flex items-center gap-3 pl-2 group">
+                                <motion.div 
+                                    className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 ring-1 ring-white/20"
+                                    whileHover={{ rotate: 15, scale: 1.05 }}
+                                    transition={{ type: "spring", stiffness: 300, damping: 10 }}
+                                >
+                                    <Plane className="w-5 h-5 ml-0.5" />
+                                </motion.div>
+                                <span className={`font-display font-bold text-xl tracking-tight transition-colors duration-300 ${isLightContent ? 'text-white' : 'text-slate-900'}`}>
+                                    ROAMEO
+                                </span>
                             </Link>
                         </MagneticButton>
                     </div>
 
-                    {/* Auth Buttons + Theme Toggle */}
-                    <div className="flex items-center gap-3">
+                    {/* Central Navigation */}
+                    <div className="hidden md:flex items-center justify-center gap-1 flex-1">
+                        {['Home', 'Features', 'About'].map((item) => {
+                            const path = item === 'Home' ? '/' : `/${item.toLowerCase()}`;
+                            const active = isActive(path) || (item === 'Features' && location.hash === '#features');
+                            
+                            return (
+                                <MagneticButton key={item}>
+                                    <Link 
+                                        to={item === 'Features' ? '/#features' : path} 
+                                        className={`relative px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 ${isLightContent ? 'text-white/80 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
+                                    >
+                                        <span className="relative z-10">{item}</span>
+                                        {active && (
+                                            <motion.div 
+                                                layoutId="nav-indicator"
+                                                className={`absolute inset-0 rounded-full ${isLightContent ? 'bg-white/[0.08] border border-white/[0.05]' : 'bg-slate-900/5'}`}
+                                                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                            />
+                                        )}
+                                    </Link>
+                                </MagneticButton>
+                            );
+                        })}
+                    </div>
+
+                    {/* Right Actions */}
+                    <div className="flex items-center justify-end gap-1 flex-1 pr-1">
                         <ThemeBtn />
+                        <div className={`w-px h-5 mx-2 transition-colors duration-300 ${isLightContent ? 'bg-white/10' : 'bg-slate-200'}`}></div>
+                        
                         <MagneticButton>
-                            <Link to="/login" className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${isLight ? 'text-white hover:bg-white/10' : 'text-slate-700 hover:bg-slate-100'}`}>
+                            <Link to="/login" className={`px-4 py-2.5 rounded-full text-sm font-semibold transition-colors duration-300 ${isLightContent ? 'text-white/90 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>
                                 Log In
                             </Link>
                         </MagneticButton>
+                        
                         <MagneticButton>
                             <Link to="/signup">
                                 <motion.div 
-                                    whileHover={{ scale: 1.05 }} 
-                                    whileTap={{ scale: 0.95 }}
-                                    className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-bold px-6 py-2.5 rounded-full shadow-lg hover:shadow-xl transition-all"
+                                    whileHover={{ scale: 1.02 }} 
+                                    whileTap={{ scale: 0.98 }}
+                                    className={`relative overflow-hidden group px-6 py-2.5 rounded-full text-sm font-bold shadow-lg transition-all ${isLightContent 
+                                        ? 'bg-white text-slate-900 hover:shadow-white/20' 
+                                        : 'bg-slate-900 text-white hover:shadow-slate-900/20'}`}
                                 >
-                                    Get Started
+                                    <span className="relative z-10">Get Started</span>
+                                    {/* Subtle shine effect on hover */}
+                                    <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent z-0" />
                                 </motion.div>
                             </Link>
                         </MagneticButton>
                     </div>
+
                 </div>
             </motion.nav>
         );
@@ -177,57 +202,73 @@ const Navbar = () => {
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         >
-            <div className={`pointer-events-auto flex items-center justify-between px-3 py-2.5 rounded-full transition-all duration-500 w-fit gap-6 ${pillBg}`}>
+            <div className={`pointer-events-auto flex items-center justify-between p-2 rounded-full transition-all duration-500 w-fit gap-2 ${pillBg}`}>
+                
                 {/* Logo */}
-                <Link to="/" className="flex items-center gap-3 pl-3 group">
-                    <motion.div 
-                        className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30"
-                        whileHover={{ rotate: 15, scale: 1.05 }}
-                    >
-                        <Plane className="w-4 h-4" />
-                    </motion.div>
-                    <span className={`font-display font-bold text-lg tracking-tight hidden md:block transition-colors duration-300 ${isLight ? 'text-white' : 'text-slate-900'}`}>ROAMEO</span>
-                </Link>
+                <MagneticButton>
+                    <Link to="/" className="flex items-center gap-3 pl-2 pr-4 group">
+                        <motion.div 
+                            className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 ring-1 ring-white/20"
+                            whileHover={{ rotate: 15, scale: 1.05 }}
+                        >
+                            <Plane className="w-5 h-5 ml-0.5" />
+                        </motion.div>
+                    </Link>
+                </MagneticButton>
 
-                {/* Main Navigation (Pill structure inner links) */}
+                <div className={`w-px h-5 mx-1 transition-colors duration-300 ${isLightContent ? 'bg-white/10' : 'bg-slate-200'}`}></div>
+
+                {/* Main Navigation */}
                 <div className="hidden lg:flex items-center gap-1">
-                    <NavLink to="/" icon={<Globe className="w-4 h-4" />} label="Home" active={isActive('/')} isLight={isLight} isDark={isDark} />
+                    <NavLink to="/" icon={<Globe className="w-4 h-4" />} label="Home" active={isActive('/')} isLight={isLightContent} />
                     
                     {/* Special AI Nav Pill */}
                     <MagneticButton>
-                        <Link to="/ai" className={`group flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-full transition-all duration-300 ${isActive('/ai') || isActive('/chat')
-                            ? (isDark ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/30' : 'bg-gradient-to-r from-purple-50 to-blue-50 text-blue-700 ring-1 ring-blue-200')
-                            : (isLight ? 'text-white hover:bg-white/10 ring-1 ring-white/10' : 'text-slate-700 hover:bg-slate-100 ring-1 ring-slate-200/50')
+                        <Link to="/ai" className={`relative group flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-full transition-all duration-300 overflow-hidden ${isActive('/ai') || isActive('/chat')
+                            ? (isLightContent ? 'text-white' : 'text-blue-700')
+                            : (isLightContent ? 'text-white/80 hover:text-white' : 'text-slate-600 hover:text-slate-900')
                         }`}>
-                            <Sparkles className={`w-4 h-4 transition-transform group-hover:scale-110 ${isActive('/ai') || isActive('/chat') ? (isDark ? 'text-blue-400' : 'text-blue-600') : isLight ? 'text-white/70' : 'text-slate-400'}`} />
-                            AI Core
+                            {(isActive('/ai') || isActive('/chat')) && (
+                                <motion.div 
+                                    layoutId="nav-indicator-auth"
+                                    className={`absolute inset-0 rounded-full ${isLightContent ? 'bg-blue-500/20 border border-blue-400/30' : 'bg-blue-50 border border-blue-200'}`}
+                                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                />
+                            )}
+                            <span className="relative z-10 flex items-center gap-2">
+                                <Sparkles className={`w-4 h-4 transition-transform group-hover:scale-110 ${isActive('/ai') || isActive('/chat') ? (isLightContent ? 'text-blue-400' : 'text-blue-600') : (isLightContent ? 'text-white/70' : 'text-slate-400')}`} />
+                                AI Core
+                            </span>
                         </Link>
                     </MagneticButton>
 
-                    <div className={`w-px h-5 mx-1 transition-colors duration-300 ${isLight ? 'bg-white/20' : 'bg-slate-200/50'}`}></div>
-
-                    <NavLink to="/my-trips" icon={<Map className="w-4 h-4" />} label="Trips" active={isActive('/trips') || isActive('/my-trips')} isLight={isLight} isDark={isDark} />
-                    <NavLink to="/bookings" icon={<CreditCard className="w-4 h-4" />} label="Bookings" active={isActive('/bookings')} isLight={isLight} isDark={isDark} />
-                    <NavLink to="/favourites" icon={<Heart className="w-4 h-4" />} label="Saved" active={isActive('/favourites')} isLight={isLight} isDark={isDark} />
+                    <NavLink to="/my-trips" icon={<Map className="w-4 h-4" />} label="Trips" active={isActive('/trips') || isActive('/my-trips')} isLight={isLightContent} />
+                    <NavLink to="/bookings" icon={<CreditCard className="w-4 h-4" />} label="Bookings" active={isActive('/bookings')} isLight={isLightContent} />
+                    <NavLink to="/favourites" icon={<Heart className="w-4 h-4" />} label="Saved" active={isActive('/favourites')} isLight={isLightContent} />
                 </div>
 
+                <div className={`w-px h-5 mx-2 transition-colors duration-300 ${isLightContent ? 'bg-white/10' : 'bg-slate-200'}`}></div>
+
                 {/* Right Actions */}
-                <div className="flex items-center gap-2 pr-1">
+                <div className="flex items-center gap-1 pr-1">
                     <ThemeBtn />
-                    <div className={`flex items-center gap-2 pl-3 ml-1 border-l group cursor-pointer relative py-1 transition-colors duration-300 ${isLight ? 'border-white/20' : 'border-slate-200/50'}`}>
+                    
+                    <div className="group relative">
                         <MagneticButton>
-                            <motion.div 
-                                className={`w-10 h-10 rounded-full border flex items-center justify-center font-bold text-sm shadow-md transition-all duration-300 ${isLight
-                                    ? 'bg-white/10 border-white/20 text-white hover:bg-white/20'
-                                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-                                }`}
-                            >
-                                {displayName.charAt(0).toUpperCase()}
-                            </motion.div>
+                            <div className="cursor-pointer px-2 py-1">
+                                <motion.div 
+                                    className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 ${isLightContent
+                                        ? 'bg-[#ffffff15] text-white border border-white/10 hover:bg-[#ffffff25]'
+                                        : 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200'
+                                    }`}
+                                >
+                                    {displayName.charAt(0).toUpperCase()}
+                                </motion.div>
+                            </div>
                         </MagneticButton>
 
                         {/* Dropdown Menu */}
-                        <div className={`absolute right-0 top-full mt-4 w-56 py-2 rounded-2xl shadow-2xl border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 z-50 ${isDark
+                        <div className={`absolute right-0 top-full mt-2 w-56 py-2 rounded-2xl shadow-2xl border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 z-50 ${isDark
                             ? 'bg-[#1a1a1a]/95 backdrop-blur-xl border-white/[0.08]'
                             : 'bg-white/95 backdrop-blur-xl border-slate-200/60'
                             }`}>
@@ -256,21 +297,26 @@ const Navbar = () => {
     );
 };
 
-const NavLink = ({ to, icon, label, active, isLight, isDark }) => (
+const NavLink = ({ to, icon, label, active, isLight }) => (
     <MagneticButton>
         <Link
             to={to}
-            className={`group flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-full transition-all duration-300 ${active
-                ? (isLight
-                    ? 'text-white bg-white/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]'
-                    : 'text-slate-900 bg-white shadow-sm ring-1 ring-slate-200')
-                : (isLight ? 'text-white/80 hover:text-white hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50')
+            className={`relative group flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-full transition-colors duration-300 ${active
+                ? (isLight ? 'text-white' : 'text-slate-900')
+                : (isLight ? 'text-white/80 hover:text-white' : 'text-slate-600 hover:text-slate-900')
                 }`}
         >
-            <span className={`transition-transform duration-300 group-hover:scale-110 ${active ? (isLight ? 'text-white' : 'text-blue-600') : ''}`}>
+            {active && (
+                <motion.div 
+                    layoutId="nav-indicator-auth"
+                    className={`absolute inset-0 rounded-full ${isLight ? 'bg-white/[0.08] border border-white/[0.05]' : 'bg-slate-900/5 border border-slate-200/50'}`}
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                />
+            )}
+            <span className={`relative z-10 transition-transform duration-300 group-hover:scale-110 ${active ? (isLight ? 'text-white' : 'text-blue-600') : ''}`}>
                 {icon}
             </span>
-            {label}
+            <span className="relative z-10">{label}</span>
         </Link>
     </MagneticButton>
 );
