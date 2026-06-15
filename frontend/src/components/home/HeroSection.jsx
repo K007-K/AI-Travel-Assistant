@@ -1,152 +1,114 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search, MapPin, Calendar, Users, Sparkles } from 'lucide-react';
-
-const AuroraBackground = () => {
-    return (
-        <div className="absolute inset-0 overflow-hidden bg-[#f4f7fb] z-0 pointer-events-none">
-            {/* Liquid Mesh Glowing Orbs */}
-            <div className="absolute inset-0 opacity-70">
-                <motion.div 
-                    animate={{ 
-                        x: ['0%', '15%', '-15%', '0%'],
-                        y: ['0%', '-15%', '15%', '0%'],
-                        scale: [1, 1.1, 0.9, 1] 
-                    }}
-                    transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
-                    className="absolute -top-[10%] -left-[10%] w-[70%] h-[70%] bg-blue-300/40 rounded-full mix-blend-multiply filter blur-[120px]" 
-                />
-                <motion.div 
-                    animate={{ 
-                        x: ['0%', '-20%', '10%', '0%'],
-                        y: ['0%', '20%', '-20%', '0%'],
-                        scale: [1, 0.8, 1.2, 1] 
-                    }}
-                    transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
-                    className="absolute top-[10%] -right-[10%] w-[60%] h-[60%] bg-purple-300/40 rounded-full mix-blend-multiply filter blur-[120px]" 
-                />
-                <motion.div 
-                    animate={{ 
-                        x: ['0%', '20%', '-10%', '0%'],
-                        y: ['0%', '20%', '-20%', '0%'],
-                        scale: [1, 1.3, 0.8, 1] 
-                    }}
-                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                    className="absolute -bottom-[20%] left-[10%] w-[80%] h-[80%] bg-rose-200/40 rounded-full mix-blend-multiply filter blur-[120px]" 
-                />
-                <motion.div 
-                    animate={{ 
-                        x: ['0%', '-15%', '15%', '0%'],
-                        y: ['0%', '-15%', '15%', '0%'],
-                        scale: [1, 1.1, 0.9, 1] 
-                    }}
-                    transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-                    className="absolute bottom-[10%] right-[10%] w-[50%] h-[50%] bg-cyan-200/40 rounded-full mix-blend-multiply filter blur-[120px]" 
-                />
-            </div>
-            
-            {/* Fine grain noise texture for premium editorial feel */}
-            <div 
-                className="absolute inset-0 opacity-[0.04] mix-blend-overlay" 
-                style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }} 
-            />
-        </div>
-    );
-};
+import { Search, MapPin, Calendar, Users } from 'lucide-react';
 
 const SearchPill = () => {
-    const [focusedField, setFocusedField] = useState(null);
-
-    const fields = [
-        { id: 'where', icon: MapPin, label: 'Where to?', placeholder: 'Search destinations' },
-        { id: 'when', icon: Calendar, label: 'When?', placeholder: 'Add dates' },
-        { id: 'who', icon: Users, label: 'Who?', placeholder: 'Add guests' }
-    ];
-
     return (
-        <motion.div 
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full max-w-4xl mx-auto mt-16 bg-white/40 backdrop-blur-3xl rounded-[2rem] p-2 border border-white/60 flex flex-col md:flex-row items-center gap-2 relative z-20"
-        >
-            {fields.map((field, index) => {
-                const Icon = field.icon;
-                const isFocused = focusedField === field.id;
-                
-                return (
-                    <React.Fragment key={field.id}>
-                        <motion.div 
-                            className={`flex-1 flex items-center gap-4 px-6 py-4 rounded-[1.5rem] cursor-pointer transition-all duration-300 ${isFocused ? 'bg-white/80 shadow-sm' : 'hover:bg-white/50'}`}
-                            onClick={() => setFocusedField(field.id)}
-                            layout
-                        >
-                            <Icon className={`w-5 h-5 transition-colors duration-300 ${isFocused ? 'text-blue-600' : 'text-slate-400'}`} />
-                            <div className="flex flex-col text-left w-full">
-                                <span className="text-[11px] font-bold text-slate-800 tracking-wider uppercase mb-0.5">{field.label}</span>
-                                <input 
-                                    type="text" 
-                                    placeholder={field.placeholder}
-                                    className="bg-transparent border-none outline-none text-sm font-medium text-slate-700 placeholder:text-slate-400 w-full focus:ring-0 p-0"
-                                    onFocus={() => setFocusedField(field.id)}
-                                    onBlur={() => setFocusedField(null)}
-                                />
-                            </div>
-                        </motion.div>
-                        {index < fields.length - 1 && (
-                            <div className="w-px h-10 bg-slate-200/50 hidden md:block" />
-                        )}
-                    </React.Fragment>
-                );
-            })}
+        <div className="w-full bg-white rounded-full p-3 shadow-2xl shadow-black/10 border border-slate-100 flex flex-col md:flex-row items-center gap-2">
             
-            <motion.button 
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full md:w-auto h-16 px-10 rounded-[1.5rem] bg-slate-900 text-white font-bold flex items-center justify-center gap-3 transition-colors hover:bg-blue-600"
-            >
+            {/* Where */}
+            <div className="flex-1 flex items-center gap-4 px-6 py-3 cursor-pointer hover:bg-slate-50 rounded-[2rem] transition-colors w-full md:w-auto">
+                <MapPin className="w-5 h-5 text-slate-400" />
+                <div className="flex flex-col text-left">
+                    <span className="text-[11px] font-bold text-slate-800 tracking-wider uppercase mb-0.5">Where to?</span>
+                    <input 
+                        type="text" 
+                        placeholder="Search destinations"
+                        className="bg-transparent border-none outline-none text-sm font-medium text-slate-600 placeholder:text-slate-400 w-full focus:ring-0 p-0"
+                    />
+                </div>
+            </div>
+
+            <div className="hidden md:block w-px h-12 bg-slate-200" />
+
+            {/* When */}
+            <div className="flex-1 flex items-center gap-4 px-6 py-3 cursor-pointer hover:bg-slate-50 rounded-[2rem] transition-colors w-full md:w-auto">
+                <Calendar className="w-5 h-5 text-slate-400" />
+                <div className="flex flex-col text-left">
+                    <span className="text-[11px] font-bold text-slate-800 tracking-wider uppercase mb-0.5">When?</span>
+                    <input 
+                        type="text" 
+                        placeholder="Add dates"
+                        className="bg-transparent border-none outline-none text-sm font-medium text-slate-600 placeholder:text-slate-400 w-full focus:ring-0 p-0"
+                    />
+                </div>
+            </div>
+
+            <div className="hidden md:block w-px h-12 bg-slate-200" />
+
+            {/* Who */}
+            <div className="flex-1 flex items-center gap-4 px-6 py-3 cursor-pointer hover:bg-slate-50 rounded-[2rem] transition-colors w-full md:w-auto">
+                <Users className="w-5 h-5 text-slate-400" />
+                <div className="flex flex-col text-left">
+                    <span className="text-[11px] font-bold text-slate-800 tracking-wider uppercase mb-0.5">Who?</span>
+                    <input 
+                        type="text" 
+                        placeholder="Add guests"
+                        className="bg-transparent border-none outline-none text-sm font-medium text-slate-600 placeholder:text-slate-400 w-full focus:ring-0 p-0"
+                    />
+                </div>
+            </div>
+            
+            {/* Search Button */}
+            <button className="w-full md:w-auto h-14 px-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center justify-center gap-3 transition-colors shadow-lg shadow-blue-600/20">
                 <Search className="w-5 h-5" />
                 <span className="md:hidden">Search</span>
-            </motion.button>
-        </motion.div>
+            </button>
+        </div>
     );
 };
 
 const HeroSection = () => {
     return (
-        <section className="relative w-full h-screen min-h-[800px] flex items-center justify-center overflow-hidden bg-[#f4f7fb]">
+        <section className="relative w-full h-[85vh] min-h-[600px] flex flex-col items-center justify-between pb-0 bg-white">
             
-            {/* The Jaw-Dropping Liquid Aurora Mesh */}
-            <AuroraBackground />
-
-            {/* Content Overlay */}
-            <div className="relative z-20 w-full max-w-7xl mx-auto px-6 text-center pt-24">
+            {/* Jaw-Dropping Travel Photograph Background */}
+            <div className="absolute inset-0 z-0">
+                {/* 
+                  Using an extremely high-quality aerial shot of a tropical destination,
+                  perfectly matching the aesthetic of tr4.webp and tr2.webp.
+                */}
+                <img 
+                    src="https://images.unsplash.com/photo-1544085311-11a028465b03?q=80&w=3000&auto=format&fit=crop" 
+                    alt="Stunning Aerial Tropical View" 
+                    className="w-full h-full object-cover object-center"
+                />
                 
+                {/* Subtle dark gradient overlay to ensure the white text pops flawlessly */}
+                <div className="absolute inset-0 bg-black/30" />
+                
+                {/* Bottom gradient to blend slightly into the white section below if needed, though overlapping works better */}
+                <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/40 to-transparent" />
+            </div>
+
+            {/* Massive Bold Typography Overlay */}
+            <div className="relative z-10 text-center px-4 w-full max-w-5xl mx-auto flex-1 flex flex-col items-center justify-center pt-24">
                 <motion.div
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
                 >
-                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/50 backdrop-blur-md text-slate-700 font-semibold text-xs tracking-wide uppercase mb-8 border border-white/60">
-                        <Sparkles className="w-4 h-4 text-blue-500" />
-                        The New Standard of Travel
-                    </span>
-                    
-                    <h1 className="text-6xl md:text-[6.5rem] lg:text-[7.5rem] font-display font-black tracking-[-0.04em] text-slate-900 leading-[0.95]">
-                        Explore the world.<br className="hidden md:block" />
-                        <span className="text-slate-400">
-                            With absolute clarity.
-                        </span>
+                    <h1 className="text-6xl md:text-[6rem] lg:text-[7rem] font-display font-black tracking-tight text-white leading-[1.1] drop-shadow-xl mb-6">
+                        Explore The World
                     </h1>
                     
-                    <p className="mt-8 text-xl md:text-2xl text-slate-600 max-w-2xl mx-auto font-medium leading-relaxed tracking-tight">
-                        Experience breathtaking destinations curated by sentient AI. Flawless itineraries, spatial booking, and total financial clarity.
+                    <p className="text-xl md:text-2xl text-white/95 font-medium tracking-wide drop-shadow-lg max-w-2xl mx-auto">
+                        What we offer is an unforgettable journey and experience.
                     </p>
                 </motion.div>
-
-                <SearchPill />
-
             </div>
+
+            {/* Clean Overlapping Search Bar */}
+            {/* The translate-y-1/2 class pulls the search bar down so it exactly overlaps the hero image and the white section below it, matching the references perfectly. */}
+            <motion.div 
+                className="relative z-20 w-full max-w-5xl mx-auto px-4 translate-y-1/2"
+                initial={{ y: "80%", opacity: 0 }}
+                animate={{ y: "50%", opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+            >
+                <SearchPill />
+            </motion.div>
+
         </section>
     );
 };
