@@ -118,8 +118,13 @@ const FeaturesGrid = () => {
                                 <div className="absolute top-[170px] left-1/2 w-[2px] h-[130px] bg-gradient-to-b from-slate-200 to-transparent -z-10 -translate-x-1/2" />
                                 
                                 {/* Pulsing rings (Centered on the Engine Node body) */}
-                                <div className={`absolute top-[100px] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[180px] h-[180px] bg-blue-500/15 rounded-full transition-all duration-1000 pointer-events-none z-0 ${animState >= 1 && animState <= 5 ? 'animate-ping opacity-100' : 'opacity-0'}`} style={{ animationDuration: '3s' }} />
-                                <div className={`absolute top-[100px] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150px] h-[150px] bg-indigo-500/15 rounded-full transition-all duration-1000 pointer-events-none z-0 ${animState >= 1 && animState <= 5 ? 'animate-ping opacity-100' : 'opacity-0'}`} style={{ animationDuration: '2s' }} />
+                                {/* Wrapped in positioning divs because Tailwind's animate-ping overrides transform, which breaks -translate-x-1/2 */}
+                                <div className="absolute top-[100px] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[180px] h-[180px] pointer-events-none z-0">
+                                    <div className={`w-full h-full bg-blue-500/15 rounded-full transition-all duration-1000 ${animState >= 1 && animState <= 5 ? 'animate-ping opacity-100' : 'opacity-0'}`} style={{ animationDuration: '3s' }} />
+                                </div>
+                                <div className="absolute top-[100px] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150px] h-[150px] pointer-events-none z-0">
+                                    <div className={`w-full h-full bg-indigo-500/15 rounded-full transition-all duration-1000 ${animState >= 1 && animState <= 5 ? 'animate-ping opacity-100' : 'opacity-0'}`} style={{ animationDuration: '2s' }} />
+                                </div>
                                 
                                 {/* Animated Data Packets */}
                                 <AnimatePresence>
