@@ -1,61 +1,56 @@
-import React, { useRef, useState } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { MeshDistortMaterial, Environment, Float, ContactShadows } from '@react-three/drei';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Search, MapPin, Calendar, Users, Sparkles } from 'lucide-react';
 
-const FluidGlassShape = () => {
+const AuroraBackground = () => {
     return (
-        <>
-            <ambientLight intensity={1.5} />
-            <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={2} />
+        <div className="absolute inset-0 overflow-hidden bg-[#f4f7fb] z-0 pointer-events-none">
+            {/* Liquid Mesh Glowing Orbs */}
+            <div className="absolute inset-0 opacity-70">
+                <motion.div 
+                    animate={{ 
+                        x: ['0%', '15%', '-15%', '0%'],
+                        y: ['0%', '-15%', '15%', '0%'],
+                        scale: [1, 1.1, 0.9, 1] 
+                    }}
+                    transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+                    className="absolute -top-[10%] -left-[10%] w-[70%] h-[70%] bg-blue-300/40 rounded-full mix-blend-multiply filter blur-[120px]" 
+                />
+                <motion.div 
+                    animate={{ 
+                        x: ['0%', '-20%', '10%', '0%'],
+                        y: ['0%', '20%', '-20%', '0%'],
+                        scale: [1, 0.8, 1.2, 1] 
+                    }}
+                    transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
+                    className="absolute top-[10%] -right-[10%] w-[60%] h-[60%] bg-purple-300/40 rounded-full mix-blend-multiply filter blur-[120px]" 
+                />
+                <motion.div 
+                    animate={{ 
+                        x: ['0%', '20%', '-10%', '0%'],
+                        y: ['0%', '20%', '-20%', '0%'],
+                        scale: [1, 1.3, 0.8, 1] 
+                    }}
+                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                    className="absolute -bottom-[20%] left-[10%] w-[80%] h-[80%] bg-rose-200/40 rounded-full mix-blend-multiply filter blur-[120px]" 
+                />
+                <motion.div 
+                    animate={{ 
+                        x: ['0%', '-15%', '15%', '0%'],
+                        y: ['0%', '-15%', '15%', '0%'],
+                        scale: [1, 1.1, 0.9, 1] 
+                    }}
+                    transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+                    className="absolute bottom-[10%] right-[10%] w-[50%] h-[50%] bg-cyan-200/40 rounded-full mix-blend-multiply filter blur-[120px]" 
+                />
+            </div>
             
-            {/* Colorful lights hidden behind the shape to create gorgeous internal refractions */}
-            <pointLight position={[-5, -5, -5]} color="#3b82f6" intensity={50} distance={20} />
-            <pointLight position={[5, -5, -5]} color="#ec4899" intensity={50} distance={20} />
-            <pointLight position={[0, 5, -5]} color="#8b5cf6" intensity={50} distance={20} />
-            <pointLight position={[0, 0, 0]} color="#ffffff" intensity={20} distance={10} />
-            
-            <Float speed={2} rotationIntensity={1.5} floatIntensity={1.5}>
-                <mesh position={[3, 0, -4]} scale={1.8}>
-                    <sphereGeometry args={[2, 128, 128]} />
-                    <MeshDistortMaterial 
-                        color="#ffffff"
-                        transmission={1}
-                        roughness={0.1}
-                        thickness={2.5}
-                        ior={1.4}
-                        chromaticAberration={0.04}
-                        distort={0.4} 
-                        speed={1.5} 
-                        clearcoat={1}
-                        clearcoatRoughness={0.1}
-                    />
-                </mesh>
-            </Float>
-
-            {/* A secondary smaller floating glass element for depth */}
-            <Float speed={3} rotationIntensity={2} floatIntensity={2}>
-                <mesh position={[-4, 2, -2]} scale={0.8}>
-                    <sphereGeometry args={[1.5, 64, 64]} />
-                    <MeshDistortMaterial 
-                        color="#ffffff"
-                        transmission={1}
-                        roughness={0.2}
-                        thickness={1.5}
-                        ior={1.5}
-                        distort={0.3} 
-                        speed={2} 
-                    />
-                </mesh>
-            </Float>
-
-            {/* Soft shadows on the "floor" to ground the 3D objects */}
-            <ContactShadows position={[0, -4, 0]} opacity={0.4} scale={20} blur={2} far={4.5} />
-            
-            {/* High-quality lighting reflections */}
-            <Environment preset="studio" />
-        </>
+            {/* Fine grain noise texture for premium editorial feel */}
+            <div 
+                className="absolute inset-0 opacity-[0.04] mix-blend-overlay" 
+                style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }} 
+            />
+        </div>
     );
 };
 
@@ -70,10 +65,10 @@ const SearchPill = () => {
 
     return (
         <motion.div 
-            initial={{ y: 50, opacity: 0 }}
+            initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.4, type: 'spring', stiffness: 100 }}
-            className="w-full max-w-4xl mx-auto mt-12 bg-white/70 backdrop-blur-2xl rounded-full p-2.5 border border-white/80 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,1)] flex flex-col md:flex-row items-center gap-2 relative z-20"
+            transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="w-full max-w-4xl mx-auto mt-16 bg-white/40 backdrop-blur-3xl rounded-[2rem] p-2 border border-white/60 flex flex-col md:flex-row items-center gap-2 relative z-20"
         >
             {fields.map((field, index) => {
                 const Icon = field.icon;
@@ -82,11 +77,11 @@ const SearchPill = () => {
                 return (
                     <React.Fragment key={field.id}>
                         <motion.div 
-                            className={`flex-1 flex items-center gap-3 px-6 py-3.5 rounded-full cursor-pointer transition-colors duration-300 ${isFocused ? 'bg-white shadow-sm ring-1 ring-slate-100' : 'hover:bg-white/50'}`}
+                            className={`flex-1 flex items-center gap-4 px-6 py-4 rounded-[1.5rem] cursor-pointer transition-all duration-300 ${isFocused ? 'bg-white/80 shadow-sm' : 'hover:bg-white/50'}`}
                             onClick={() => setFocusedField(field.id)}
                             layout
                         >
-                            <Icon className={`w-5 h-5 ${isFocused ? 'text-blue-600' : 'text-slate-400'}`} />
+                            <Icon className={`w-5 h-5 transition-colors duration-300 ${isFocused ? 'text-blue-600' : 'text-slate-400'}`} />
                             <div className="flex flex-col text-left w-full">
                                 <span className="text-[11px] font-bold text-slate-800 tracking-wider uppercase mb-0.5">{field.label}</span>
                                 <input 
@@ -99,7 +94,7 @@ const SearchPill = () => {
                             </div>
                         </motion.div>
                         {index < fields.length - 1 && (
-                            <div className="w-px h-10 bg-slate-200 hidden md:block" />
+                            <div className="w-px h-10 bg-slate-200/50 hidden md:block" />
                         )}
                     </React.Fragment>
                 );
@@ -107,10 +102,10 @@ const SearchPill = () => {
             
             <motion.button 
                 whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.95 }}
-                className="w-full md:w-auto h-14 px-10 rounded-full bg-slate-900 text-white font-bold flex items-center justify-center gap-2 shadow-xl shadow-slate-900/20 hover:shadow-slate-900/30 transition-all"
+                whileTap={{ scale: 0.98 }}
+                className="w-full md:w-auto h-16 px-10 rounded-[1.5rem] bg-slate-900 text-white font-bold flex items-center justify-center gap-3 transition-colors hover:bg-blue-600"
             >
-                <Search className="w-5 h-5 text-blue-400" />
+                <Search className="w-5 h-5" />
                 <span className="md:hidden">Search</span>
             </motion.button>
         </motion.div>
@@ -119,47 +114,37 @@ const SearchPill = () => {
 
 const HeroSection = () => {
     return (
-        <section className="relative w-full h-screen min-h-[800px] flex items-center justify-center overflow-hidden bg-[#fafafa]">
+        <section className="relative w-full h-screen min-h-[800px] flex items-center justify-center overflow-hidden bg-[#f4f7fb]">
             
-            {/* Jaw-Dropping WebGL Background */}
-            <div className="absolute inset-0 z-0">
-                <Canvas camera={{ position: [0, 0, 10], fov: 45 }}>
-                    <FluidGlassShape />
-                </Canvas>
-            </div>
-
-            {/* Soft gradient to blend the 3D scene edges and ensure text readability at the bottom */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#fafafa]/40 via-transparent to-[#fafafa] z-10 pointer-events-none" />
+            {/* The Jaw-Dropping Liquid Aurora Mesh */}
+            <AuroraBackground />
 
             {/* Content Overlay */}
-            <div className="relative z-20 w-full max-w-7xl mx-auto px-6 text-center pt-20 pointer-events-none">
+            <div className="relative z-20 w-full max-w-7xl mx-auto px-6 text-center pt-24">
                 
                 <motion.div
-                    className="pointer-events-auto"
-                    initial={{ scale: 0.95, opacity: 0, filter: 'blur(10px)' }}
-                    animate={{ scale: 1, opacity: 1, filter: 'blur(0px)' }}
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
                     transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
                 >
-                    <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/60 backdrop-blur-md text-slate-800 font-semibold text-sm mb-8 border border-white shadow-sm ring-1 ring-slate-900/5">
-                        <Sparkles className="w-4 h-4 text-blue-600" />
-                        The Future of Travel in 2026
+                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/50 backdrop-blur-md text-slate-700 font-semibold text-xs tracking-wide uppercase mb-8 border border-white/60">
+                        <Sparkles className="w-4 h-4 text-blue-500" />
+                        The New Standard of Travel
                     </span>
                     
-                    <h1 className="text-6xl md:text-8xl lg:text-[7.5rem] font-display font-black tracking-tighter text-slate-900 leading-[0.95] drop-shadow-sm">
-                        Explore with <br className="hidden md:block" />
-                        <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
-                            absolute clarity.
+                    <h1 className="text-6xl md:text-[6.5rem] lg:text-[7.5rem] font-display font-black tracking-[-0.04em] text-slate-900 leading-[0.95]">
+                        Explore the world.<br className="hidden md:block" />
+                        <span className="text-slate-400">
+                            With absolute clarity.
                         </span>
                     </h1>
                     
-                    <p className="mt-8 text-xl md:text-2xl text-slate-600 max-w-2xl mx-auto font-medium leading-relaxed">
-                        Experience jaw-dropping destinations curated by sentient AI. Flawless itineraries, spatial booking, and total financial clarity.
+                    <p className="mt-8 text-xl md:text-2xl text-slate-600 max-w-2xl mx-auto font-medium leading-relaxed tracking-tight">
+                        Experience breathtaking destinations curated by sentient AI. Flawless itineraries, spatial booking, and total financial clarity.
                     </p>
                 </motion.div>
 
-                <div className="pointer-events-auto">
-                    <SearchPill />
-                </div>
+                <SearchPill />
 
             </div>
         </section>
