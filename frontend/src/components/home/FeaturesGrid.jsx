@@ -1,8 +1,64 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Route, Wallet, Loader2, MessageSquare, Cpu, Calendar } from 'lucide-react';
 
+const ghostCodeLines = [
+    "agent.analyzeVibe({ strict: true })",
+    "await osrm.calculateOptimalRoute()",
+    "db.query('premium_ryokans_tokyo')",
+    "negotiator.balanceBudget(prefs)",
+    "generator.compileItinerary()"
+];
+
 const FeaturesGrid = () => {
+    const [animState, setAnimState] = useState(0);
+    const fullText = "5 days in Tokyo. Luxury, relaxed pace, authentic omakase...";
+    const [typedText, setTypedText] = useState("");
+
+    useEffect(() => {
+        // State 0: Typing (0-3s)
+        // State 1: Send Packet In (3s-4s)
+        // State 2: Processing / Ghost Code (4s-7.5s)
+        // State 3: Send Packet Out (7.5s-8.5s)
+        // State 4: Output Reveal & Hold (8.5s-12s)
+        let isMounted = true;
+        const sequence = async () => {
+            while (isMounted) {
+                setAnimState(0);
+                await new Promise(r => setTimeout(r, 3000));
+                if(!isMounted) break;
+                setAnimState(1);
+                await new Promise(r => setTimeout(r, 1000));
+                if(!isMounted) break;
+                setAnimState(2);
+                await new Promise(r => setTimeout(r, 3500));
+                if(!isMounted) break;
+                setAnimState(3);
+                await new Promise(r => setTimeout(r, 1000));
+                if(!isMounted) break;
+                setAnimState(4);
+                await new Promise(r => setTimeout(r, 3500));
+            }
+        };
+        sequence();
+        return () => { isMounted = false; };
+    }, []);
+
+    useEffect(() => {
+        if (animState === 0) {
+            setTypedText("");
+            let i = 0;
+            const interval = setInterval(() => {
+                setTypedText(fullText.substring(0, i));
+                i++;
+                if (i > fullText.length) clearInterval(interval);
+            }, 35);
+            return () => clearInterval(interval);
+        } else if (animState > 0) {
+            setTypedText(fullText);
+        }
+    }, [animState]);
+
     return (
         <section className="w-full bg-[#fafafa] py-32 overflow-hidden">
             <div className="max-w-7xl mx-auto px-6">
@@ -42,61 +98,66 @@ const FeaturesGrid = () => {
                         className="lg:col-span-7 lg:row-span-2 relative bg-white rounded-[2.5rem] overflow-hidden min-h-[500px] lg:min-h-[600px] group flex flex-col justify-between p-8 md:p-12 border border-slate-200 shadow-xl shadow-slate-200/50 hover:-translate-y-2 hover:shadow-2xl transition-all duration-500"
                     >
                         {/* UI Graphic: Engine Pipeline */}
-                        <div className="w-full flex-1 flex flex-col items-center justify-center pt-4 pb-8 z-10 relative">
+                        <div className="w-full flex-1 flex flex-col items-center justify-start pt-6 pb-8 z-10 relative min-h-[300px]">
                             {/* Subtle background grid for technical feel */}
                             <div className="absolute inset-0 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-80 pointer-events-none" />
 
-                            <div className="w-full max-w-3xl grid grid-cols-3 gap-8 items-center relative z-10 my-auto">
+                            <div className="w-full max-w-3xl grid grid-cols-3 gap-8 items-start relative z-10 mt-4">
                                 
                                 {/* Connecting lines */}
-                                <div className="absolute top-1/2 left-[15%] w-[70%] h-[2px] bg-slate-100 -z-10 -translate-y-1/2" />
+                                <div className="absolute top-[64px] left-[15%] w-[70%] h-[2px] bg-slate-100 -z-10" />
                                 
-                                {/* Animated Data Packets */}
-                                <motion.div 
-                                    animate={{ left: ["16%", "50%"], opacity: [0, 1, 0] }}
-                                    transition={{ duration: 1.2, repeat: Infinity, ease: "circIn" }}
-                                    className="absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,1)] -z-10" 
-                                />
-                                <motion.div 
-                                    animate={{ left: ["50%", "84%"], opacity: [0, 1, 0] }}
-                                    transition={{ duration: 1.2, delay: 0.6, repeat: Infinity, ease: "circOut" }}
-                                    className="absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,1)] -z-10" 
-                                />
+                                {/* Animated Data Packets (Only visible during state 1 and 3) */}
+                                <AnimatePresence>
+                                    {animState === 1 && (
+                                        <motion.div 
+                                            initial={{ left: "16%", opacity: 0 }}
+                                            animate={{ left: "50%", opacity: [0, 1, 1, 0] }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{ duration: 1, ease: "easeIn" }}
+                                            className="absolute top-[64px] w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,1)] -z-10 -translate-y-1/2" 
+                                        />
+                                    )}
+                                    {animState === 3 && (
+                                        <motion.div 
+                                            initial={{ left: "50%", opacity: 0 }}
+                                            animate={{ left: "84%", opacity: [0, 1, 1, 0] }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{ duration: 1, ease: "easeOut" }}
+                                            className="absolute top-[64px] w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,1)] -z-10 -translate-y-1/2" 
+                                        />
+                                    )}
+                                </AnimatePresence>
 
                                 {/* Node 1: Request */}
                                 <motion.div 
-                                    initial={{ opacity: 0, y: 20 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.5 }}
-                                    className="bg-white border border-slate-200 rounded-[1.5rem] p-6 flex flex-col gap-4 shadow-sm relative group/node hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                                    className={`bg-white border rounded-[1.5rem] p-6 flex flex-col gap-4 shadow-sm relative transition-all duration-500 ${animState === 0 ? 'border-blue-200 shadow-blue-500/10' : 'border-slate-200'}`}
                                 >
                                     <div className="flex items-center gap-3 mb-2">
-                                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center group-hover/node:bg-blue-50 group-hover/node:text-blue-600 transition-colors">
-                                            <MessageSquare className="w-4 h-4 text-slate-500 group-hover/node:text-blue-600 transition-colors" />
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${animState === 0 ? 'bg-blue-50' : 'bg-slate-100'}`}>
+                                            <MessageSquare className={`w-4 h-4 transition-colors ${animState === 0 ? 'text-blue-600' : 'text-slate-500'}`} />
                                         </div>
-                                        <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider group-hover/node:text-slate-600 transition-colors">Input</span>
+                                        <span className={`text-[12px] font-bold uppercase tracking-wider transition-colors ${animState === 0 ? 'text-blue-600' : 'text-slate-400'}`}>Input</span>
                                     </div>
-                                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 group-hover/node:border-blue-100 transition-colors">
-                                        <p className="text-[13px] text-slate-600 font-medium leading-relaxed italic">
-                                            "5 days in Tokyo. Luxury, relaxed pace, authentic omakase..."
+                                    <div className={`rounded-xl p-4 border transition-colors ${animState === 0 ? 'bg-blue-50/30 border-blue-100' : 'bg-slate-50 border-slate-100'}`}>
+                                        <p className="text-[13px] text-slate-600 font-medium leading-relaxed italic min-h-[60px]">
+                                            "{typedText}<motion.span animate={{ opacity: [1, 0] }} transition={{ repeat: Infinity, duration: 0.8 }} className="inline-block w-[2px] h-[1em] bg-blue-500 align-middle ml-1"></motion.span>"
                                         </p>
                                     </div>
                                 </motion.div>
 
                                 {/* Node 2: Gemini & Groq (The Engine) */}
-                                <motion.div 
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    whileInView={{ opacity: 1, scale: 1 }}
-                                    transition={{ duration: 0.5, delay: 0.2 }}
-                                    className="relative flex justify-center group/engine cursor-default hover:scale-105 transition-transform duration-500"
-                                >
+                                <div className="relative flex justify-center">
                                     {/* Pulsing rings */}
-                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[160px] h-[160px] bg-blue-500/10 rounded-full animate-ping group-hover/engine:bg-blue-500/20 transition-colors" style={{ animationDuration: '3s' }} />
-                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[130px] h-[130px] bg-indigo-500/10 rounded-full animate-ping group-hover/engine:bg-indigo-500/20 transition-colors" style={{ animationDuration: '2s' }} />
+                                    <div className={`absolute top-[64px] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[160px] h-[160px] bg-blue-500/10 rounded-full transition-all duration-1000 ${animState === 2 ? 'animate-ping opacity-100' : 'opacity-0'}`} style={{ animationDuration: '3s' }} />
+                                    <div className={`absolute top-[64px] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[130px] h-[130px] bg-indigo-500/10 rounded-full transition-all duration-1000 ${animState === 2 ? 'animate-ping opacity-100' : 'opacity-0'}`} style={{ animationDuration: '2s' }} />
                                     
-                                    <div className="bg-white border-2 border-blue-100 rounded-[2rem] p-1.5 relative shadow-[0_0_40px_rgba(59,130,246,0.15)] z-10 w-[180px] group-hover/engine:border-blue-300 group-hover/engine:shadow-[0_0_60px_rgba(59,130,246,0.3)] transition-all duration-500">
-                                        <div className="absolute inset-0 rounded-[2rem] border-2 border-transparent bg-clip-border animate-[spin_4s_linear_infinite]" style={{ backgroundImage: "linear-gradient(white, white), conic-gradient(from 0deg, #3b82f6, #8b5cf6, #3b82f6)"}} />
-                                        <div className="bg-gradient-to-b from-blue-50 to-white rounded-[1.7rem] p-6 flex flex-col items-center justify-center gap-4 relative z-10">
+                                    <div className={`bg-white border rounded-[2rem] p-1.5 relative z-10 w-[180px] transition-all duration-500 ${animState === 2 ? 'border-transparent shadow-[0_0_60px_rgba(59,130,246,0.3)] scale-105' : 'border-blue-100 shadow-[0_0_40px_rgba(59,130,246,0.15)]'}`}>
+                                        {/* Flawless Spinning Border */}
+                                        <div className={`absolute inset-[-2px] rounded-[2.1rem] bg-[conic-gradient(from_0deg,transparent,#3b82f6,#8b5cf6,transparent)] animate-[spin_3s_linear_infinite] -z-10 transition-opacity duration-500 ${animState === 2 ? 'opacity-100' : 'opacity-0'}`} />
+                                        <div className={`absolute inset-0 bg-white rounded-[2rem] -z-10 transition-opacity duration-500 ${animState === 2 ? 'opacity-100' : 'opacity-0'}`} />
+                                        
+                                        <div className="bg-gradient-to-b from-blue-50 to-white rounded-[1.6rem] p-6 flex flex-col items-center justify-center gap-4 relative z-10">
                                             <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
                                                 <Cpu className="w-7 h-7 text-white" />
                                             </div>
@@ -106,34 +167,72 @@ const FeaturesGrid = () => {
                                             </div>
                                         </div>
                                     </div>
-                                </motion.div>
+
+                                    {/* Ghost Code Space */}
+                                    <div className="absolute top-[170px] left-1/2 -translate-x-1/2 w-[240px] flex flex-col gap-3 items-center pointer-events-none z-0">
+                                        <AnimatePresence>
+                                            {animState === 2 && ghostCodeLines.map((line, i) => (
+                                                <motion.div
+                                                    key={i}
+                                                    initial={{ opacity: 0, y: -20, filter: "blur(4px)" }}
+                                                    animate={{ opacity: [0, 0.5, 0], y: 30, filter: "blur(1px)" }}
+                                                    transition={{ duration: 2.5, delay: i * 0.4, ease: "linear" }}
+                                                    className="text-[11px] font-mono text-slate-400/80 whitespace-nowrap absolute"
+                                                >
+                                                    {line}
+                                                </motion.div>
+                                            ))}
+                                        </AnimatePresence>
+                                    </div>
+                                </div>
 
                                 {/* Node 3: Response (Itinerary) */}
                                 <motion.div 
-                                    initial={{ opacity: 0, y: 20 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.5, delay: 0.4 }}
-                                    className="bg-white border border-slate-200 rounded-[1.5rem] p-6 flex flex-col gap-4 shadow-sm relative group/out hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                                    className={`bg-white border rounded-[1.5rem] p-6 flex flex-col gap-4 shadow-sm relative transition-all duration-500 ${animState === 4 ? 'border-emerald-200 shadow-emerald-500/10' : 'border-slate-200'}`}
                                 >
                                     <div className="flex items-center gap-3 mb-2">
-                                        <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center group-hover/out:bg-emerald-100 transition-colors">
-                                            <Calendar className="w-4 h-4 text-emerald-600" />
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${animState === 4 ? 'bg-emerald-50' : 'bg-slate-100'}`}>
+                                            <Calendar className={`w-4 h-4 transition-colors ${animState === 4 ? 'text-emerald-600' : 'text-slate-500'}`} />
                                         </div>
-                                        <span className="text-[12px] font-bold text-emerald-600 uppercase tracking-wider">Output</span>
+                                        <span className={`text-[12px] font-bold uppercase tracking-wider transition-colors ${animState === 4 ? 'text-emerald-600' : 'text-slate-400'}`}>Output</span>
                                     </div>
                                     <div className="space-y-3">
-                                        <div className="h-12 w-full bg-slate-50 rounded-xl border border-slate-100 flex items-center px-4 gap-3 group-hover/out:border-emerald-100 transition-colors">
-                                            <div className="w-7 h-7 rounded-md bg-slate-200 shrink-0 group-hover/out:bg-emerald-200 transition-colors" />
-                                            <div className="flex-1 space-y-2">
-                                                <div className="h-2 w-full bg-slate-200 rounded-full group-hover/out:bg-emerald-200 transition-colors" />
-                                                <div className="h-2 w-2/3 bg-slate-200 rounded-full group-hover/out:bg-emerald-200 transition-colors" />
+                                        {/* Output Block 1 */}
+                                        <div className={`h-12 w-full rounded-xl border flex items-center px-4 gap-3 transition-colors duration-500 ${animState === 4 ? 'bg-emerald-50/50 border-emerald-100' : 'bg-slate-50 border-slate-100'}`}>
+                                            <div className={`w-7 h-7 rounded-md shrink-0 transition-colors duration-500 ${animState === 4 ? 'bg-emerald-200/50' : 'bg-slate-200'}`} />
+                                            <div className="flex-1 space-y-2 relative">
+                                                <AnimatePresence mode="wait">
+                                                    {animState === 4 ? (
+                                                        <motion.div key="data1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-1">
+                                                            <span className="text-[10px] font-bold text-slate-700 leading-none">Aman Tokyo Ryokan</span>
+                                                            <span className="text-[9px] font-medium text-emerald-600 leading-none">Booked • $850/nt</span>
+                                                        </motion.div>
+                                                    ) : (
+                                                        <motion.div key="skel1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-2">
+                                                            <div className="h-2 w-full bg-slate-200 rounded-full" />
+                                                            <div className="h-2 w-2/3 bg-slate-200 rounded-full" />
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
                                             </div>
                                         </div>
-                                        <div className="h-12 w-full bg-slate-50 rounded-xl border border-slate-100 flex items-center px-4 gap-3 opacity-50 group-hover/out:opacity-100 group-hover/out:border-emerald-100 transition-all">
-                                            <div className="w-7 h-7 rounded-md bg-slate-200 shrink-0 group-hover/out:bg-emerald-200 transition-colors" />
-                                            <div className="flex-1 space-y-2">
-                                                <div className="h-2 w-full bg-slate-200 rounded-full group-hover/out:bg-emerald-200 transition-colors" />
-                                                <div className="h-2 w-1/2 bg-slate-200 rounded-full group-hover/out:bg-emerald-200 transition-colors" />
+                                        {/* Output Block 2 */}
+                                        <div className={`h-12 w-full rounded-xl border flex items-center px-4 gap-3 transition-all duration-500 ${animState === 4 ? 'bg-blue-50/50 border-blue-100 opacity-100' : 'bg-slate-50 border-slate-100 opacity-50'}`}>
+                                            <div className={`w-7 h-7 rounded-md shrink-0 transition-colors duration-500 ${animState === 4 ? 'bg-blue-200/50' : 'bg-slate-200'}`} />
+                                            <div className="flex-1 space-y-2 relative">
+                                                <AnimatePresence mode="wait">
+                                                    {animState === 4 ? (
+                                                        <motion.div key="data2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-1">
+                                                            <span className="text-[10px] font-bold text-slate-700 leading-none">Kyoto Bullet Train</span>
+                                                            <span className="text-[9px] font-medium text-blue-600 leading-none">Reserved • 10:00 AM</span>
+                                                        </motion.div>
+                                                    ) : (
+                                                        <motion.div key="skel2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-2">
+                                                            <div className="h-2 w-full bg-slate-200 rounded-full" />
+                                                            <div className="h-2 w-1/2 bg-slate-200 rounded-full" />
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
                                             </div>
                                         </div>
                                     </div>
