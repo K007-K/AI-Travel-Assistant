@@ -54,88 +54,82 @@ const FeaturesGrid = () => {
                         </div>
 
                         {/* UI Graphic: AI Trip Generation Prompt */}
-                        <div className="absolute inset-y-0 right-0 w-[55%] pointer-events-none hidden lg:flex items-center justify-end pr-12 z-0">
-                            <div className="relative w-full max-w-[420px] flex flex-col gap-6">
-                                
-                                {/* Glow behind the input */}
-                                <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[100px] bg-blue-500/20 blur-[80px] rounded-full" />
-
-                                {/* The Magic Input Prompt */}
+                        <div className="absolute inset-y-0 right-0 w-[60%] pointer-events-none hidden lg:flex items-center justify-end z-0 overflow-hidden rounded-r-[2.5rem]">
+                            
+                            {/* Massive Glowing Orb */}
+                            <div className="absolute right-[-10%] top-1/2 -translate-y-1/2 w-[600px] h-[600px]">
                                 <motion.div 
-                                    initial={{ opacity: 0, y: 20 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.8, ease: "easeOut" }}
-                                    className="relative bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 shadow-2xl overflow-hidden group/input"
-                                >
-                                    {/* Input shimmer effect */}
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent -translate-x-full group-hover/input:animate-[shimmer_2s_infinite] pointer-events-none" />
-                                    
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shrink-0 mt-0.5">
-                                            <Sparkles className="w-4 h-4 text-blue-400" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="text-white text-[15px] leading-relaxed font-medium inline">
-                                                Craft a 5-day luxury getaway to Tokyo. I want an extremely relaxing pace, authentic omakase, and a high-end spa.
-                                                <motion.span 
-                                                    animate={{ opacity: [1, 0] }} 
-                                                    transition={{ duration: 0.8, repeat: Infinity }}
-                                                    className="inline-block w-1.5 h-4 bg-blue-500 ml-1.5 translate-y-0.5"
-                                                />
-                                            </p>
-                                        </div>
-                                    </div>
-                                </motion.div>
-
-                                {/* Orchestration Status Widget */}
-                                <motion.div 
-                                    initial={{ opacity: 0, y: 20 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-                                    className="self-end w-[85%] bg-[#0f1115] border border-white/[0.08] rounded-2xl p-5 shadow-2xl relative overflow-hidden"
-                                >
-                                    {/* Top accent line */}
-                                    <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 opacity-50" />
-                                    
-                                    <div className="flex items-center gap-3 mb-5">
-                                        <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
-                                        <span className="text-white text-[13px] font-bold tracking-wide">Orchestrating Itinerary</span>
-                                    </div>
-
-                                    {/* Dynamic Status Lines */}
-                                    <div className="space-y-4 relative">
-                                        <div className="flex items-center gap-3 opacity-40">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                                            <span className="text-slate-400 text-[12px] font-mono">Analyzed user vibe [Luxury, Relaxed]</span>
-                                        </div>
-                                        <div className="flex items-center gap-3 opacity-40">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                                            <span className="text-slate-400 text-[12px] font-mono">Optimized routes via OSRM</span>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            {/* Pulsing active dot */}
-                                            <motion.div 
-                                                animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }} 
-                                                transition={{ duration: 1.5, repeat: Infinity }}
-                                                className="w-1.5 h-1.5 rounded-full bg-blue-500" 
-                                            />
-                                            <span className="text-blue-300 text-[12px] font-mono">Securing exclusive accommodations...</span>
-                                        </div>
-                                    </div>
-                                    
-                                    {/* Progress Bar */}
-                                    <div className="w-full h-1 bg-white/5 rounded-full mt-6 overflow-hidden">
-                                        <motion.div 
-                                            initial={{ width: "30%" }}
-                                            whileInView={{ width: "85%" }}
-                                            transition={{ duration: 3, ease: "easeInOut" }}
-                                            className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full relative"
-                                        >
-                                        </motion.div>
-                                    </div>
-                                </motion.div>
-
+                                    animate={{ scale: [1, 1.1, 1], rotate: [0, 90, 0] }}
+                                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                                    className="absolute inset-0 bg-[conic-gradient(from_0deg,transparent_0_340deg,rgba(59,130,246,0.3)_360deg)] rounded-full blur-[80px] mix-blend-screen"
+                                />
+                                <div className="absolute inset-[20%] bg-blue-600/30 rounded-full blur-[80px] mix-blend-screen animate-pulse" />
                             </div>
+
+                            {/* Front UI Panel - Massive, Bold, High Contrast */}
+                            <motion.div 
+                                initial={{ opacity: 0, x: 60 }}
+                                whileInView={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.8, ease: "easeOut" }}
+                                className="w-[460px] bg-white/[0.05] backdrop-blur-3xl border border-white/10 rounded-3xl p-10 shadow-[0_0_60px_rgba(0,0,0,0.5)] relative z-10 translate-x-[15%]"
+                            >
+                                <div className="flex items-center gap-5 mb-8">
+                                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30 shrink-0">
+                                        <Sparkles className="w-8 h-8 text-white" />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-2xl font-bold text-white tracking-tight">AI Engine</h4>
+                                        <div className="text-blue-400 font-medium mt-1">Processing Request...</div>
+                                    </div>
+                                </div>
+                                
+                                {/* The Prompt */}
+                                <div className="bg-black/40 rounded-2xl p-5 border border-white/5 mb-8">
+                                    <p className="text-slate-300 text-[15px] leading-relaxed italic">
+                                        "Craft a 5-day luxury Tokyo getaway. Extremely relaxing pace, authentic omakase, and a high-end spa."
+                                    </p>
+                                </div>
+
+                                {/* Huge Progress UI */}
+                                <div className="space-y-6">
+                                    <div>
+                                        <div className="flex justify-between text-sm font-bold text-white mb-3">
+                                            <span>Vibe Analysis</span>
+                                            <span className="text-emerald-400">100%</span>
+                                        </div>
+                                        <div className="h-3 w-full bg-black/40 rounded-full overflow-hidden border border-white/5">
+                                            <div className="h-full w-full bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div className="flex justify-between text-sm font-bold text-white mb-3">
+                                            <span>Route Optimization</span>
+                                            <span className="text-emerald-400">100%</span>
+                                        </div>
+                                        <div className="h-3 w-full bg-black/40 rounded-full overflow-hidden border border-white/5">
+                                            <div className="h-full w-full bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div className="flex justify-between text-sm font-bold text-white mb-3">
+                                            <span>Securing Bookings</span>
+                                            <span className="text-blue-400">85%</span>
+                                        </div>
+                                        <div className="h-3 w-full bg-black/40 rounded-full overflow-hidden border border-white/5 relative">
+                                            <motion.div 
+                                                initial={{ width: "30%" }}
+                                                whileInView={{ width: "85%" }}
+                                                transition={{ duration: 3, ease: "easeInOut" }}
+                                                className="h-full bg-blue-500 rounded-full relative shadow-[0_0_10px_rgba(59,130,246,0.5)] overflow-hidden"
+                                            >
+                                                <div className="absolute inset-0 bg-white/30 w-full animate-[shimmer_2s_infinite]" style={{ maskImage: 'linear-gradient(to right, transparent, black, transparent)'}} />
+                                            </motion.div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
                         </div>
                         
                         <div className="relative z-10 max-w-xl">
