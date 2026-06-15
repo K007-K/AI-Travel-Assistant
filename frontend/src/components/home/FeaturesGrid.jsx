@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Route, Wallet, Plane, Utensils, Compass, Cpu } from 'lucide-react';
+import { Sparkles, Route, Wallet, Loader2 } from 'lucide-react';
 
 const FeaturesGrid = () => {
     return (
@@ -53,97 +53,88 @@ const FeaturesGrid = () => {
                             <div className="absolute top-[10%] left-[10%] w-[60%] h-[60%] bg-indigo-500/10 rounded-full blur-[100px] mix-blend-screen" />
                         </div>
 
-                        {/* UI Graphic: Multi-Agent Orchestration Workflow */}
+                        {/* UI Graphic: AI Trip Generation Prompt */}
                         <div className="absolute inset-y-0 right-0 w-[55%] pointer-events-none hidden lg:flex items-center justify-end pr-12 z-0">
-                            <div className="relative w-full max-w-[400px] h-[400px]">
-                                {/* Central Glowing Core */}
-                                <div className="absolute left-[10%] top-1/2 -translate-y-1/2 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl" />
-                                <div className="absolute left-[10%] top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 rounded-full border border-white/20 flex items-center justify-center shadow-[0_0_30px_rgba(59,130,246,0.3)] z-10">
-                                    <Cpu className="w-5 h-5 text-blue-400" />
-                                </div>
+                            <div className="relative w-full max-w-[420px] flex flex-col gap-6">
                                 
-                                {/* SVG Connecting Lines */}
-                                <svg className="absolute left-[15%] top-0 w-[85%] h-full opacity-30 z-0">
-                                    <path d="M 0 200 C 50 200, 100 80, 200 80" stroke="#60a5fa" strokeWidth="2" fill="none" strokeDasharray="4 4" />
-                                    <path d="M 0 200 C 100 200, 150 200, 200 200" stroke="#a78bfa" strokeWidth="2" fill="none" strokeDasharray="4 4" />
-                                    <path d="M 0 200 C 50 200, 100 320, 200 320" stroke="#34d399" strokeWidth="2" fill="none" strokeDasharray="4 4" />
-                                </svg>
+                                {/* Glow behind the input */}
+                                <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[100px] bg-blue-500/20 blur-[80px] rounded-full" />
 
-                                {/* Floating Agent Card 1: Flights */}
+                                {/* The Magic Input Prompt */}
                                 <motion.div 
-                                    animate={{ y: [-10, 10, -10] }}
-                                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                                    className="absolute top-[40px] right-[20px] w-[260px] bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl z-10"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.8, ease: "easeOut" }}
+                                    className="relative bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-3xl p-5 shadow-2xl overflow-hidden group/input"
                                 >
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
-                                            <Plane className="w-4 h-4 text-blue-400" />
+                                    {/* Input shimmer effect */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent -translate-x-full group-hover/input:animate-[shimmer_2s_infinite] pointer-events-none" />
+                                    
+                                    <div className="flex items-start gap-4">
+                                        <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shrink-0 mt-0.5">
+                                            <Sparkles className="w-4 h-4 text-blue-400" />
                                         </div>
-                                        <div>
-                                            <div className="text-white text-[13px] font-bold leading-tight">Logistics Agent</div>
-                                            <div className="text-blue-400 text-[10px] font-bold uppercase tracking-widest mt-0.5">Optimizing Flights</div>
+                                        <div className="flex-1">
+                                            <p className="text-white text-[15px] leading-relaxed font-medium inline">
+                                                Craft a 5-day luxury getaway to Tokyo. I want an extremely relaxing pace, authentic omakase, and a high-end spa.
+                                                <motion.span 
+                                                    animate={{ opacity: [1, 0] }} 
+                                                    transition={{ duration: 0.8, repeat: Infinity }}
+                                                    className="inline-block w-1.5 h-4 bg-blue-500 ml-1.5 translate-y-0.5"
+                                                />
+                                            </p>
                                         </div>
                                     </div>
-                                    <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                </motion.div>
+
+                                {/* Orchestration Status Widget */}
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+                                    className="self-end w-[85%] bg-[#0f1115] border border-white/[0.08] rounded-2xl p-5 shadow-2xl relative overflow-hidden"
+                                >
+                                    {/* Top accent line */}
+                                    <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 opacity-50" />
+                                    
+                                    <div className="flex items-center gap-3 mb-5">
+                                        <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+                                        <span className="text-white text-[13px] font-bold tracking-wide">Orchestrating Itinerary</span>
+                                    </div>
+
+                                    {/* Dynamic Status Lines */}
+                                    <div className="space-y-4 relative">
+                                        <div className="flex items-center gap-3 opacity-40">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                            <span className="text-slate-400 text-[12px] font-mono">Analyzed user vibe [Luxury, Relaxed]</span>
+                                        </div>
+                                        <div className="flex items-center gap-3 opacity-40">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                            <span className="text-slate-400 text-[12px] font-mono">Optimized routes via OSRM</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            {/* Pulsing active dot */}
+                                            <motion.div 
+                                                animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }} 
+                                                transition={{ duration: 1.5, repeat: Infinity }}
+                                                className="w-1.5 h-1.5 rounded-full bg-blue-500" 
+                                            />
+                                            <span className="text-blue-300 text-[12px] font-mono">Securing exclusive accommodations...</span>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Progress Bar */}
+                                    <div className="w-full h-1 bg-white/5 rounded-full mt-6 overflow-hidden">
                                         <motion.div 
-                                            animate={{ x: ["-100%", "100%"] }} 
-                                            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                                            className="w-1/2 h-full bg-blue-500 rounded-full" 
-                                        />
-                                    </div>
-                                    <div className="mt-3 flex justify-between items-center text-[10px] text-slate-500 font-mono">
-                                        <span>Scanning APIs...</span>
-                                        <span className="text-blue-400">12ms</span>
+                                            initial={{ width: "30%" }}
+                                            whileInView={{ width: "85%" }}
+                                            transition={{ duration: 3, ease: "easeInOut" }}
+                                            className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full relative"
+                                        >
+                                        </motion.div>
                                     </div>
                                 </motion.div>
 
-                                {/* Floating Agent Card 2: Hotel/Dining */}
-                                <motion.div 
-                                    animate={{ y: [10, -10, 10] }}
-                                    transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                                    className="absolute top-[160px] right-[50px] w-[260px] bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl z-10"
-                                >
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
-                                            <Utensils className="w-4 h-4 text-purple-400" />
-                                        </div>
-                                        <div>
-                                            <div className="text-white text-[13px] font-bold leading-tight">Concierge Agent</div>
-                                            <div className="text-purple-400 text-[10px] font-bold uppercase tracking-widest mt-0.5">Reserving Tables</div>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <div className="h-1.5 w-full bg-white/10 rounded-full" />
-                                        <div className="h-1.5 w-2/3 bg-white/10 rounded-full" />
-                                    </div>
-                                    <div className="mt-3 flex gap-1">
-                                        <div className="h-1 w-full bg-purple-500/50 rounded-full" />
-                                        <div className="h-1 w-full bg-purple-500/50 rounded-full" />
-                                        <div className="h-1 w-full bg-white/10 rounded-full" />
-                                    </div>
-                                </motion.div>
-
-                                {/* Floating Agent Card 3: Experience */}
-                                <motion.div 
-                                    animate={{ y: [-5, 5, -5] }}
-                                    transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                                    className="absolute top-[280px] right-[0px] w-[260px] bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl z-10"
-                                >
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                                            <Compass className="w-4 h-4 text-emerald-400" />
-                                        </div>
-                                        <div>
-                                            <div className="text-white text-[13px] font-bold leading-tight">Experience Agent</div>
-                                            <div className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest mt-0.5">Curating Local Gems</div>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <div className="h-8 w-8 rounded-lg bg-white/10 border border-white/5" />
-                                        <div className="h-8 w-8 rounded-lg bg-white/10 border border-white/5" />
-                                        <div className="h-8 w-8 rounded-lg bg-white/10 border border-white/5" />
-                                    </div>
-                                </motion.div>
                             </div>
                         </div>
                         
