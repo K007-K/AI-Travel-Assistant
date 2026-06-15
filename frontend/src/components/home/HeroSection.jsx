@@ -16,7 +16,7 @@ const SearchPill = () => {
             initial={{ y: 40, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 1, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full max-w-4xl mx-auto mt-16 bg-white/95 backdrop-blur-md rounded-full p-2.5 shadow-[0_20px_40px_rgba(0,0,0,0.2)] flex flex-col md:flex-row items-center relative z-20"
+            className="w-full max-w-4xl mx-auto mt-16 bg-white rounded-full p-2.5 shadow-2xl flex flex-col md:flex-row items-center relative z-20 border border-slate-100"
         >
             {fields.map((field, index) => {
                 const Icon = field.icon;
@@ -25,12 +25,12 @@ const SearchPill = () => {
                 return (
                     <React.Fragment key={field.id}>
                         <div 
-                            className={`flex-1 flex items-center gap-4 px-6 py-3 rounded-full cursor-pointer transition-colors duration-200 ${isFocused ? 'bg-slate-100/80 shadow-sm' : 'hover:bg-slate-50'}`}
+                            className={`flex-1 flex items-center gap-4 px-6 py-3 rounded-full cursor-pointer transition-all duration-300 relative ${isFocused ? 'bg-white shadow-[0_4px_20px_rgba(0,0,0,0.1)] ring-1 ring-slate-100 scale-[1.02] z-10' : 'hover:bg-slate-100'}`}
                             onClick={() => setFocusedField(field.id)}
                         >
                             <Icon className={`w-5 h-5 transition-colors ${isFocused ? 'text-blue-600' : 'text-slate-400'}`} />
                             <div className="flex flex-col text-left w-full">
-                                <span className="text-[11px] font-bold text-slate-800 tracking-wider uppercase mb-0.5">{field.label}</span>
+                                <span className="text-[11px] font-bold text-slate-500 tracking-wider uppercase mb-0.5">{field.label}</span>
                                 <input 
                                     type="text" 
                                     placeholder={field.placeholder}
@@ -41,7 +41,7 @@ const SearchPill = () => {
                             </div>
                         </div>
                         {index < fields.length - 1 && (
-                            <div className="w-px h-10 bg-slate-200 mx-2 hidden md:block" />
+                            <div className={`w-px h-10 bg-slate-200 mx-2 hidden md:block transition-opacity duration-300 ${focusedField === field.id || focusedField === fields[index + 1].id ? 'opacity-0' : 'opacity-100'}`} />
                         )}
                     </React.Fragment>
                 );
