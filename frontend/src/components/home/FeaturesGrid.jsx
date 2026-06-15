@@ -105,7 +105,6 @@ const FeaturesGrid = () => {
                                 
                                 {/* Drop Shadow for Routes */}
                                 <defs>
-                                    <filter id="routeGlow" x="-20%" y="-20%" width="140%" height="140%">
                                     <filter id="blueGlow" x="-20%" y="-20%" width="140%" height="140%">
                                         <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#2563eb" floodOpacity="0.4" />
                                     </filter>
