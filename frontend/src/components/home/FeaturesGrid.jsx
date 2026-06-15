@@ -39,22 +39,28 @@ const FeaturesGrid = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, margin: "-50px" }}
                         transition={{ duration: 0.8, ease: "easeOut" }}
-                        className="lg:col-span-7 lg:row-span-2 relative bg-white rounded-[2.5rem] overflow-hidden min-h-[500px] lg:min-h-[600px] group flex flex-col justify-between p-8 md:p-12 border border-slate-200 shadow-xl shadow-slate-200/50"
+                        className="lg:col-span-7 lg:row-span-2 relative bg-white rounded-[2.5rem] overflow-hidden min-h-[500px] lg:min-h-[600px] group flex flex-col justify-between p-8 md:p-12 border border-slate-200 shadow-xl shadow-slate-200/50 hover:-translate-y-2 hover:shadow-2xl transition-all duration-500"
                     >
                         {/* UI Graphic: Engine Pipeline */}
-                        <div className="w-full flex-1 flex items-center justify-center pt-8 pb-16 z-10 relative">
+                        <div className="w-full flex-1 flex flex-col items-center justify-center pt-4 pb-8 z-10 relative">
                             {/* Subtle background grid for technical feel */}
-                            <div className="absolute inset-0 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-50 pointer-events-none" />
+                            <div className="absolute inset-0 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-80 pointer-events-none" />
 
-                            <div className="w-full max-w-2xl grid grid-cols-3 gap-6 items-center relative z-10">
+                            <div className="w-full max-w-3xl grid grid-cols-3 gap-8 items-center relative z-10 my-auto">
                                 
                                 {/* Connecting lines */}
-                                <div className="absolute top-1/2 left-[10%] w-[80%] h-[2px] bg-slate-100 -z-10 -translate-y-1/2" />
+                                <div className="absolute top-1/2 left-[15%] w-[70%] h-[2px] bg-slate-100 -z-10 -translate-y-1/2" />
+                                
+                                {/* Animated Data Packets */}
                                 <motion.div 
-                                    className="absolute top-1/2 left-[10%] w-[80%] h-[2px] bg-gradient-to-r from-transparent via-blue-500 to-transparent -z-10 -translate-y-1/2" 
-                                    animate={{ backgroundPosition: ["200% 0", "-200% 0"] }} 
-                                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                                    style={{ backgroundSize: '50% 100%' }}
+                                    animate={{ left: ["16%", "50%"], opacity: [0, 1, 0] }}
+                                    transition={{ duration: 1.2, repeat: Infinity, ease: "circIn" }}
+                                    className="absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,1)] -z-10" 
+                                />
+                                <motion.div 
+                                    animate={{ left: ["50%", "84%"], opacity: [0, 1, 0] }}
+                                    transition={{ duration: 1.2, delay: 0.6, repeat: Infinity, ease: "circOut" }}
+                                    className="absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,1)] -z-10" 
                                 />
 
                                 {/* Node 1: Request */}
@@ -62,17 +68,17 @@ const FeaturesGrid = () => {
                                     initial={{ opacity: 0, y: 20 }}
                                     whileInView={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.5 }}
-                                    className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col gap-3 shadow-sm relative group hover:shadow-md transition-shadow"
+                                    className="bg-white border border-slate-200 rounded-[1.5rem] p-6 flex flex-col gap-4 shadow-sm relative group/node hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                                 >
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center">
-                                            <MessageSquare className="w-3 h-3 text-slate-500" />
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center group-hover/node:bg-blue-50 group-hover/node:text-blue-600 transition-colors">
+                                            <MessageSquare className="w-4 h-4 text-slate-500 group-hover/node:text-blue-600 transition-colors" />
                                         </div>
-                                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Input</span>
+                                        <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider group-hover/node:text-slate-600 transition-colors">Input</span>
                                     </div>
-                                    <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                                        <p className="text-[12px] text-slate-600 font-medium leading-relaxed italic">
-                                            "5 days in Tokyo. Luxury, relaxed pace, omakase..."
+                                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 group-hover/node:border-blue-100 transition-colors">
+                                        <p className="text-[13px] text-slate-600 font-medium leading-relaxed italic">
+                                            "5 days in Tokyo. Luxury, relaxed pace, authentic omakase..."
                                         </p>
                                     </div>
                                 </motion.div>
@@ -82,21 +88,21 @@ const FeaturesGrid = () => {
                                     initial={{ opacity: 0, scale: 0.9 }}
                                     whileInView={{ opacity: 1, scale: 1 }}
                                     transition={{ duration: 0.5, delay: 0.2 }}
-                                    className="relative flex justify-center"
+                                    className="relative flex justify-center group/engine cursor-default hover:scale-105 transition-transform duration-500"
                                 >
                                     {/* Pulsing rings */}
-                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120px] h-[120px] bg-blue-500/10 rounded-full animate-ping" style={{ animationDuration: '3s' }} />
-                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100px] h-[100px] bg-indigo-500/10 rounded-full animate-ping" style={{ animationDuration: '2s' }} />
+                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[160px] h-[160px] bg-blue-500/10 rounded-full animate-ping group-hover/engine:bg-blue-500/20 transition-colors" style={{ animationDuration: '3s' }} />
+                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[130px] h-[130px] bg-indigo-500/10 rounded-full animate-ping group-hover/engine:bg-indigo-500/20 transition-colors" style={{ animationDuration: '2s' }} />
                                     
-                                    <div className="bg-white border-2 border-blue-100 rounded-3xl p-1 relative shadow-[0_0_40px_rgba(59,130,246,0.15)] z-10 w-[140px]">
-                                        <div className="absolute inset-0 rounded-3xl border-2 border-transparent bg-clip-border" style={{ backgroundImage: "linear-gradient(white, white), conic-gradient(from 0deg, #3b82f6, #8b5cf6, #3b82f6)"}} />
-                                        <div className="bg-gradient-to-b from-blue-50 to-white rounded-[1.3rem] p-5 flex flex-col items-center justify-center gap-3 relative z-10">
-                                            <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                                                <Cpu className="w-6 h-6 text-white" />
+                                    <div className="bg-white border-2 border-blue-100 rounded-[2rem] p-1.5 relative shadow-[0_0_40px_rgba(59,130,246,0.15)] z-10 w-[180px] group-hover/engine:border-blue-300 group-hover/engine:shadow-[0_0_60px_rgba(59,130,246,0.3)] transition-all duration-500">
+                                        <div className="absolute inset-0 rounded-[2rem] border-2 border-transparent bg-clip-border animate-[spin_4s_linear_infinite]" style={{ backgroundImage: "linear-gradient(white, white), conic-gradient(from 0deg, #3b82f6, #8b5cf6, #3b82f6)"}} />
+                                        <div className="bg-gradient-to-b from-blue-50 to-white rounded-[1.7rem] p-6 flex flex-col items-center justify-center gap-4 relative z-10">
+                                            <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                                                <Cpu className="w-7 h-7 text-white" />
                                             </div>
                                             <div className="flex flex-col items-center text-center">
-                                                <span className="text-[13px] font-black text-slate-900 tracking-tight leading-none mb-1">Gemini<br/>& Groq</span>
-                                                <span className="text-[9px] text-blue-600 font-bold uppercase tracking-widest">Engine</span>
+                                                <span className="text-[15px] font-black text-slate-900 tracking-tight leading-none mb-1.5">Gemini<br/>& Groq</span>
+                                                <span className="text-[10px] text-blue-600 font-bold uppercase tracking-widest">Engine</span>
                                             </div>
                                         </div>
                                     </div>
@@ -107,27 +113,27 @@ const FeaturesGrid = () => {
                                     initial={{ opacity: 0, y: 20 }}
                                     whileInView={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.5, delay: 0.4 }}
-                                    className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col gap-3 shadow-sm relative group hover:shadow-md transition-shadow"
+                                    className="bg-white border border-slate-200 rounded-[1.5rem] p-6 flex flex-col gap-4 shadow-sm relative group/out hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                                 >
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <div className="w-6 h-6 rounded-full bg-emerald-50 flex items-center justify-center">
-                                            <Calendar className="w-3 h-3 text-emerald-600" />
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center group-hover/out:bg-emerald-100 transition-colors">
+                                            <Calendar className="w-4 h-4 text-emerald-600" />
                                         </div>
-                                        <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Output</span>
+                                        <span className="text-[12px] font-bold text-emerald-600 uppercase tracking-wider">Output</span>
                                     </div>
-                                    <div className="space-y-2">
-                                        <div className="h-10 w-full bg-slate-50 rounded-lg border border-slate-100 flex items-center px-3 gap-2">
-                                            <div className="w-6 h-6 rounded bg-slate-200 shrink-0" />
-                                            <div className="flex-1 space-y-1.5">
-                                                <div className="h-1.5 w-full bg-slate-200 rounded-full" />
-                                                <div className="h-1.5 w-2/3 bg-slate-200 rounded-full" />
+                                    <div className="space-y-3">
+                                        <div className="h-12 w-full bg-slate-50 rounded-xl border border-slate-100 flex items-center px-4 gap-3 group-hover/out:border-emerald-100 transition-colors">
+                                            <div className="w-7 h-7 rounded-md bg-slate-200 shrink-0 group-hover/out:bg-emerald-200 transition-colors" />
+                                            <div className="flex-1 space-y-2">
+                                                <div className="h-2 w-full bg-slate-200 rounded-full group-hover/out:bg-emerald-200 transition-colors" />
+                                                <div className="h-2 w-2/3 bg-slate-200 rounded-full group-hover/out:bg-emerald-200 transition-colors" />
                                             </div>
                                         </div>
-                                        <div className="h-10 w-full bg-slate-50 rounded-lg border border-slate-100 flex items-center px-3 gap-2 opacity-50">
-                                            <div className="w-6 h-6 rounded bg-slate-200 shrink-0" />
-                                            <div className="flex-1 space-y-1.5">
-                                                <div className="h-1.5 w-full bg-slate-200 rounded-full" />
-                                                <div className="h-1.5 w-1/2 bg-slate-200 rounded-full" />
+                                        <div className="h-12 w-full bg-slate-50 rounded-xl border border-slate-100 flex items-center px-4 gap-3 opacity-50 group-hover/out:opacity-100 group-hover/out:border-emerald-100 transition-all">
+                                            <div className="w-7 h-7 rounded-md bg-slate-200 shrink-0 group-hover/out:bg-emerald-200 transition-colors" />
+                                            <div className="flex-1 space-y-2">
+                                                <div className="h-2 w-full bg-slate-200 rounded-full group-hover/out:bg-emerald-200 transition-colors" />
+                                                <div className="h-2 w-1/2 bg-slate-200 rounded-full group-hover/out:bg-emerald-200 transition-colors" />
                                             </div>
                                         </div>
                                     </div>
@@ -155,7 +161,7 @@ const FeaturesGrid = () => {
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true, margin: "-50px" }}
                         transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-                        className="lg:col-span-5 lg:row-span-1 bg-white rounded-[2.5rem] overflow-hidden p-8 border border-slate-200 shadow-xl shadow-slate-200/50 group flex flex-col relative hover:-translate-y-1 transition-transform duration-500"
+                        className="lg:col-span-5 lg:row-span-1 bg-white rounded-[2.5rem] overflow-hidden p-8 border border-slate-200 shadow-xl shadow-slate-200/50 group flex flex-col relative hover:-translate-y-2 hover:shadow-2xl transition-all duration-500"
                     >
                         <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center mb-6 text-blue-600">
                             <Route className="w-6 h-6" />
@@ -286,7 +292,7 @@ const FeaturesGrid = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, margin: "-50px" }}
                         transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
-                        className="lg:col-span-5 lg:row-span-1 bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500 rounded-[2.5rem] overflow-hidden p-8 group flex flex-col relative text-white hover:-translate-y-1 transition-transform duration-500 shadow-2xl shadow-blue-500/30"
+                        className="lg:col-span-5 lg:row-span-1 bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500 rounded-[2.5rem] overflow-hidden p-8 group flex flex-col relative text-white hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(59,130,246,0.4)] transition-all duration-500 shadow-2xl shadow-blue-500/30"
                     >
                         {/* Decorative Background Elements */}
                         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
