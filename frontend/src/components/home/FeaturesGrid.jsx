@@ -79,7 +79,7 @@ const FeaturesGrid = () => {
                         transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
                         className="lg:col-span-5 lg:row-span-1 bg-white rounded-[2.5rem] overflow-hidden p-8 border border-slate-200 shadow-xl shadow-slate-200/50 group flex flex-col relative hover:-translate-y-1 transition-transform duration-500"
                     >
-                        <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-6 text-emerald-600">
+                        <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center mb-6 text-blue-600">
                             <Route className="w-6 h-6" />
                         </div>
                         <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight">Real-World Routing</h3>
@@ -87,88 +87,122 @@ const FeaturesGrid = () => {
                             We use OSRM to calculate actual driving times, instantly evaluating hundreds of paths to select the single most optimized route.
                         </p>
                         
-                        {/* Pure SVG Map Optimization Animation */}
-                        <div className="mt-auto flex-1 w-full bg-[#f8fafc] rounded-2xl p-4 relative overflow-hidden border border-slate-100 flex items-center justify-center group-hover:shadow-inner transition-all min-h-[180px]">
-                            {/* Subtle Map Grid Background */}
-                            <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.03)_1px,transparent_1px)] bg-[size:20px_20px]" />
-                            
-                            <svg viewBox="0 0 400 160" className="w-full h-full relative z-10 overflow-visible">
+                        {/* Realistic Apple Maps / Google Maps Mockup */}
+                        <div className="mt-auto flex-1 w-full bg-[#f4f1ea] rounded-2xl relative overflow-hidden border border-slate-200 shadow-inner group-hover:shadow-md transition-all min-h-[220px]">
+                            <svg viewBox="0 0 400 200" className="absolute inset-0 w-full h-full">
+                                {/* Map Base - Land is #f4f1ea */}
+                                {/* Ocean - Pacific (Left side) */}
+                                <path d="M 0 0 L 70 0 C 60 80, 110 140, 190 200 L 0 200 Z" fill="#e0eff8" />
+                                
+                                {/* Parks/Forests (Green areas) */}
+                                <path d="M 120 20 Q 150 60 110 90 Q 160 80 170 30 Z" fill="#e2ebd3" />
+                                <path d="M 250 120 Q 300 160 260 200 L 350 200 Q 360 140 310 110 Z" fill="#e2ebd3" />
+
+                                {/* Arterial Roads (White lines) */}
+                                <path d="M 120 -10 Q 180 100 220 210" stroke="#ffffff" strokeWidth="3" fill="none" />
+                                <path d="M -10 80 Q 150 100 410 80" stroke="#ffffff" strokeWidth="2" fill="none" />
+                                <path d="M 200 -10 Q 250 100 410 150" stroke="#ffffff" strokeWidth="2" fill="none" />
+                                
+                                {/* Drop Shadow for Routes */}
                                 <defs>
-                                    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                                        <feGaussianBlur stdDeviation="4" result="blur" />
-                                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                    <filter id="routeGlow" x="-20%" y="-20%" width="140%" height="140%">
+                                        <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#3b82f6" floodOpacity="0.4" />
                                     </filter>
                                 </defs>
 
-                                {/* Unoptimized Route 1 (Wavy/Long) */}
+                                {/* Unoptimized Route 1 (Scenic Coast) */}
                                 <motion.path 
-                                    d="M 50 80 Q 120 10, 200 40 T 350 80" 
+                                    d="M 90 50 C 70 90, 130 160, 290 140" 
                                     fill="transparent" 
-                                    strokeWidth="2" 
-                                    strokeDasharray="6 6"
+                                    stroke="#94a3b8" 
+                                    strokeWidth="3" 
                                     strokeLinecap="round"
-                                    className="stroke-slate-300"
                                     initial={{ pathLength: 0, opacity: 0 }}
-                                    whileInView={{ pathLength: 1, opacity: 0.3 }}
+                                    whileInView={{ pathLength: 1, opacity: 0.5 }}
                                     transition={{ duration: 1.5, ease: "easeInOut" }}
                                 />
 
-                                {/* Unoptimized Route 2 (Jagged) */}
+                                {/* Unoptimized Route 2 (Inland Detour) */}
                                 <motion.path 
-                                    d="M 50 80 L 120 130 L 220 110 L 280 140 L 350 80" 
+                                    d="M 90 50 C 200 10, 320 60, 290 140" 
                                     fill="transparent" 
-                                    strokeWidth="2" 
-                                    strokeDasharray="6 6"
-                                    strokeLinejoin="round"
-                                    className="stroke-slate-300"
+                                    stroke="#94a3b8" 
+                                    strokeWidth="3" 
+                                    strokeLinecap="round"
                                     initial={{ pathLength: 0, opacity: 0 }}
-                                    whileInView={{ pathLength: 1, opacity: 0.3 }}
+                                    whileInView={{ pathLength: 1, opacity: 0.5 }}
                                     transition={{ duration: 1.5, ease: "easeInOut", delay: 0.2 }}
                                 />
 
-                                {/* Optimized Route (Smooth, Direct) */}
+                                {/* Optimized Route (Direct Highway) - Blue Maps Style */}
                                 <motion.path 
-                                    d="M 50 80 Q 200 120, 350 80" 
+                                    d="M 90 50 C 180 70, 220 110, 290 140" 
                                     fill="transparent" 
-                                    strokeWidth="4" 
+                                    stroke="#3b82f6" 
+                                    strokeWidth="5" 
                                     strokeLinecap="round"
-                                    className="stroke-emerald-500"
-                                    filter="url(#glow)"
+                                    filter="url(#routeGlow)"
                                     initial={{ pathLength: 0, opacity: 0 }}
                                     whileInView={{ pathLength: 1, opacity: 1 }}
                                     transition={{ duration: 1.5, ease: "easeOut", delay: 1.2 }}
                                 />
-
-                                {/* Animated Packet on Optimized Route */}
+                                
+                                {/* Animated Moving Packet on optimized route */}
                                 <motion.circle 
                                     r="4" 
-                                    className="fill-white stroke-emerald-500 stroke-[2px]"
-                                    initial={{ opacity: 0, offsetDistance: "0%" }}
-                                    whileInView={{ opacity: 1, offsetDistance: "100%" }}
-                                    transition={{ 
-                                        opacity: { delay: 1.2, duration: 0.2 },
-                                        offsetDistance: { delay: 1.2, duration: 2, ease: "easeInOut", repeat: Infinity, repeatDelay: 1 }
-                                    }}
-                                    style={{ 
-                                        offsetPath: "path('M 50 80 Q 200 120, 350 80')",
-                                    }}
-                                />
+                                    className="fill-white stroke-blue-600 stroke-[2px] shadow-md"
+                                    initial={{ opacity: 0 }}
+                                    whileInView={{ opacity: 1 }}
+                                    transition={{ delay: 1.2, duration: 0.2 }}
+                                >
+                                    <animateMotion 
+                                        dur="2.5s" 
+                                        repeatCount="indefinite" 
+                                        begin="0s"
+                                        path="M 90 50 C 180 70, 220 110, 290 140" 
+                                    />
+                                </motion.circle>
 
-                                {/* Node A (Start) */}
+                                {/* Route Labels (Time) */}
+                                <motion.g 
+                                    initial={{ opacity: 0, y: 10 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 1.8, duration: 0.4 }}
+                                >
+                                    <rect x="175" y="70" width="46" height="20" rx="10" fill="#3b82f6" className="shadow-sm" />
+                                    <text x="198" y="84" textAnchor="middle" className="text-[10px] font-bold fill-white">5h 40m</text>
+                                </motion.g>
+
+                                {/* Start Location (San Francisco) */}
                                 <motion.g initial={{ scale: 0 }} whileInView={{ scale: 1 }} transition={{ type: "spring", delay: 0.1 }}>
-                                    <circle cx="50" cy="80" r="14" className="fill-slate-900 shadow-lg" />
-                                    <text x="50" y="84" textAnchor="middle" className="text-[12px] font-bold fill-white">A</text>
-                                    <text x="50" y="110" textAnchor="middle" className="text-[10px] font-bold fill-slate-400 uppercase tracking-widest">Start</text>
+                                    <circle cx="90" cy="50" r="6" className="fill-white stroke-slate-900 stroke-[3px]" />
+                                    <text x="90" y="35" textAnchor="middle" className="text-[11px] font-black fill-slate-900 tracking-tight" style={{textShadow: "0 1px 2px white, 0 -1px 2px white, 1px 0 2px white, -1px 0 2px white"}}>San Francisco</text>
                                 </motion.g>
 
-                                {/* Node B (End) */}
+                                {/* End Location (Los Angeles) */}
                                 <motion.g initial={{ scale: 0 }} whileInView={{ scale: 1 }} transition={{ type: "spring", delay: 0.3 }}>
-                                    <circle cx="350" cy="80" r="14" className="fill-emerald-500 shadow-lg" />
-                                    <text x="350" y="84" textAnchor="middle" className="text-[12px] font-bold fill-white">B</text>
-                                    <text x="350" y="110" textAnchor="middle" className="text-[10px] font-bold fill-emerald-600 uppercase tracking-widest">End</text>
+                                    {/* Maps Pin Icon */}
+                                    <path d="M 290 140 C 290 140, 280 128, 280 120 C 280 114.477, 284.477 110, 290 110 C 295.523 110, 300 114.477, 300 120 C 300 128, 290 140, 290 140 Z" className="fill-red-500" />
+                                    <circle cx="290" cy="120" r="3" className="fill-white" />
+                                    <text x="290" y="155" textAnchor="middle" className="text-[11px] font-black fill-slate-900 tracking-tight" style={{textShadow: "0 1px 2px white, 0 -1px 2px white, 1px 0 2px white, -1px 0 2px white"}}>Los Angeles</text>
                                 </motion.g>
-
                             </svg>
+                            
+                            {/* Floating UI Element (e.g. "Optimizing Route...") */}
+                            <motion.div 
+                                initial={{ opacity: 0, y: 10 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.5, duration: 0.5 }}
+                                className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-md rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] border border-white p-2.5 flex items-center gap-3 z-20"
+                            >
+                                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
+                                    <Sparkles className="w-4 h-4 text-blue-600" />
+                                </div>
+                                <div className="flex flex-col pr-2">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Route Selected</span>
+                                    <span className="text-[13px] font-black text-slate-800 leading-none">Saved 1h 20m</span>
+                                </div>
+                            </motion.div>
                         </div>
                     </motion.div>
 
