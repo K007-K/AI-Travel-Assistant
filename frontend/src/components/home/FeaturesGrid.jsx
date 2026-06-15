@@ -1,36 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Route, Wallet } from 'lucide-react';
-
-const FEATURES = [
-    {
-        id: 'ai-engine',
-        title: 'Sentient Orchestration',
-        description: 'Our multi-agent engine understands your exact vibe, instantly generating hyper-personalized itineraries.',
-        icon: Sparkles,
-        image: 'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?q=80&w=1000&auto=format&fit=crop',
-        iconBg: 'bg-blue-50',
-        iconColor: 'text-blue-600',
-    },
-    {
-        id: 'osrm-routing',
-        title: 'Real-World Routing',
-        description: 'Actual driving times via OSRM. We instantly detect and optimize for overnight travel to save you days.',
-        icon: Route,
-        image: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=1000&auto=format&fit=crop',
-        iconBg: 'bg-emerald-50',
-        iconColor: 'text-emerald-600',
-    },
-    {
-        id: 'smart-budget',
-        title: 'Envelope Budgeting',
-        description: 'Total financial clarity. Set a per-person budget, and our engine automatically allocates all costs.',
-        icon: Wallet,
-        image: 'https://images.unsplash.com/photo-1495474472205-16284eb86b5c?q=80&w=1000&auto=format&fit=crop',
-        iconBg: 'bg-purple-50',
-        iconColor: 'text-purple-600',
-    }
-];
+import { Sparkles, Route, Wallet, ArrowRight } from 'lucide-react';
 
 const FeaturesGrid = () => {
     return (
@@ -43,9 +13,9 @@ const FeaturesGrid = () => {
                         initial={{ opacity: 0, scale: 0.9 }}
                         whileInView={{ opacity: 1, scale: 1 }}
                         viewport={{ once: true }}
-                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-xs font-bold tracking-widest uppercase mb-6"
+                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-white text-xs font-bold tracking-widest uppercase mb-6 shadow-xl shadow-slate-900/20"
                     >
-                        <Sparkles className="w-3.5 h-3.5" />
+                        <Sparkles className="w-3.5 h-3.5 text-blue-400" />
                         The Technology
                     </motion.div>
                     <motion.h2 
@@ -53,50 +23,110 @@ const FeaturesGrid = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: 0.1 }}
-                        className="text-4xl md:text-5xl lg:text-6xl font-display font-black text-slate-900 tracking-tight max-w-4xl mx-auto leading-[1.1]"
+                        className="text-5xl md:text-6xl lg:text-7xl font-display font-black text-slate-900 tracking-tight max-w-4xl mx-auto leading-[1.05]"
                     >
-                        Architected for flawless execution.
+                        Architected for <br className="hidden md:block" />
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">flawless execution.</span>
                     </motion.h2>
                 </div>
 
-                {/* 3-Column Uniform Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                    {FEATURES.map((feature, index) => (
-                        <motion.div 
-                            key={feature.id}
-                            initial={{ opacity: 0, y: 40 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true, margin: "-50px" }}
-                            transition={{ duration: 0.7, delay: index * 0.15, ease: "easeOut" }}
-                            className="feature-card group bg-white rounded-[2rem] overflow-hidden border border-slate-100/80 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] transition-shadow duration-500 flex flex-col"
-                        >
-                            {/* Top Image Section */}
-                            <div className="relative w-full h-56 md:h-64 overflow-hidden bg-slate-100 flex-shrink-0">
-                                <img 
-                                    src={feature.image} 
-                                    alt={feature.title}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[1.5s] ease-out"
-                                    loading="lazy"
-                                />
-                                <div className="absolute inset-0 bg-slate-900/5 group-hover:bg-transparent transition-colors duration-700" />
+                {/* Asymmetrical Bento Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto">
+                    
+                    {/* Card 1: Sentient AI (Massive Cinematic Card) */}
+                    <motion.div 
+                        initial={{ opacity: 0, y: 40 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: "-50px" }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                        className="lg:col-span-7 lg:row-span-2 relative bg-slate-900 rounded-[2.5rem] overflow-hidden min-h-[500px] lg:min-h-[600px] group flex flex-col justify-end p-8 md:p-12 border border-slate-800 shadow-2xl"
+                    >
+                        <img 
+                            src="https://images.unsplash.com/photo-1506905925224-b15c92c81da5?q=80&w=2000&auto=format&fit=crop" 
+                            alt="Cinematic Landscape" 
+                            className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-110 group-hover:opacity-70 transition-all duration-[2s] ease-out"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent" />
+                        
+                        <div className="relative z-10 max-w-xl">
+                            <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center mb-8 shadow-2xl group-hover:bg-blue-600 transition-colors duration-500">
+                                <Sparkles className="w-8 h-8 text-white" />
                             </div>
+                            <h3 className="text-4xl md:text-5xl font-display font-black text-white mb-6 leading-tight tracking-tight">
+                                Sentient <br/>Orchestration.
+                            </h3>
+                            <p className="text-lg text-slate-300 font-medium leading-relaxed max-w-md">
+                                Powered by Gemini & Groq, our multi-agent engine understands your exact vibe. It negotiates constraints, balances preferences, and generates hyper-personalized, flawless itineraries in milliseconds.
+                            </p>
+                        </div>
+                    </motion.div>
 
-                            {/* Bottom Content Section */}
-                            <div className="p-8 md:p-10 flex flex-col flex-1 bg-white">
-                                {/* Integrated Icon Badge */}
-                                <div className={`w-14 h-14 rounded-2xl ${feature.iconBg} ${feature.iconColor} flex items-center justify-center mb-6 shadow-sm border border-white group-hover:scale-110 transition-transform duration-500`}>
-                                    <feature.icon className="w-6 h-6" />
+                    {/* Card 2: Routing (Sleek White Card) */}
+                    <motion.div 
+                        initial={{ opacity: 0, x: 40 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true, margin: "-50px" }}
+                        transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+                        className="lg:col-span-5 lg:row-span-1 bg-white rounded-[2.5rem] overflow-hidden p-8 border border-slate-200 shadow-xl shadow-slate-200/50 group flex flex-col relative hover:-translate-y-1 transition-transform duration-500"
+                    >
+                        <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-6 text-emerald-600">
+                            <Route className="w-6 h-6" />
+                        </div>
+                        <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight">Real-World Routing</h3>
+                        <p className="text-slate-500 font-medium leading-relaxed mb-8 relative z-10">
+                            We use OSRM to calculate actual driving times, detecting and optimizing for overnight travel. No more guesswork or missed connections.
+                        </p>
+                        
+                        <div className="mt-auto flex-1 w-full rounded-2xl overflow-hidden relative min-h-[160px] bg-slate-100 group-hover:shadow-inner transition-all">
+                            <img 
+                                src="https://images.unsplash.com/photo-1519046904884-53103b34b206?q=80&w=1000&auto=format&fit=crop" 
+                                alt="Winding road"
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
+                            />
+                        </div>
+                    </motion.div>
+
+                    {/* Card 3: Budgeting (Vibrant Gradient Glass Card) */}
+                    <motion.div 
+                        initial={{ opacity: 0, y: 40 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: "-50px" }}
+                        transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
+                        className="lg:col-span-5 lg:row-span-1 bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500 rounded-[2.5rem] overflow-hidden p-8 group flex flex-col relative text-white hover:-translate-y-1 transition-transform duration-500 shadow-2xl shadow-blue-500/30"
+                    >
+                        {/* Decorative Background Elements */}
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
+                        
+                        <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center mb-6 text-white shadow-lg">
+                            <Wallet className="w-6 h-6" />
+                        </div>
+                        <h3 className="text-2xl font-black text-white mb-3 tracking-tight drop-shadow-sm">Envelope Budgeting</h3>
+                        <p className="text-blue-100 font-medium leading-relaxed mb-8 relative z-10">
+                            Total financial clarity. Set a per-person budget, and our engine automatically allocates and balances costs across transport, food, and stays.
+                        </p>
+
+                        {/* Pure CSS Glassmorphic UI Element */}
+                        <div className="mt-auto w-full rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 p-5 relative z-10 shadow-2xl group-hover:bg-white/15 transition-colors">
+                            <div className="flex justify-between items-end mb-3">
+                                <div>
+                                    <p className="text-blue-200 text-xs font-bold tracking-wider uppercase mb-1">Total Trip Cost</p>
+                                    <p className="text-3xl font-black">$2,450</p>
                                 </div>
-                                
-                                <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight group-hover:text-blue-600 transition-colors duration-300">
-                                    {feature.title}
-                                </h3>
-                                <p className="text-slate-500 text-[15px] font-medium leading-relaxed flex-1">
-                                    {feature.description}
-                                </p>
+                                <div className="text-emerald-300 text-sm font-bold flex items-center">
+                                    Within Budget
+                                </div>
                             </div>
-                        </motion.div>
-                    ))}
+                            <div className="w-full bg-black/20 rounded-full h-2 overflow-hidden">
+                                <motion.div 
+                                    initial={{ width: 0 }}
+                                    whileInView={{ width: "75%" }}
+                                    transition={{ duration: 1.5, delay: 0.8, ease: "easeOut" }}
+                                    className="bg-emerald-400 h-full rounded-full shadow-[0_0_10px_rgba(52,211,153,0.5)]"
+                                />
+                            </div>
+                        </div>
+                    </motion.div>
+
                 </div>
             </div>
         </section>
