@@ -106,51 +106,47 @@ const FeaturesGrid = () => {
                                 {/* Drop Shadow for Routes */}
                                 <defs>
                                     <filter id="routeGlow" x="-20%" y="-20%" width="140%" height="140%">
-                                        <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#3b82f6" floodOpacity="0.4" />
+                                    <filter id="blueGlow" x="-20%" y="-20%" width="140%" height="140%">
+                                        <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#2563eb" floodOpacity="0.4" />
                                     </filter>
                                 </defs>
-
-                                {/* Unoptimized Route 1 (Scenic Coast) */}
                                 <motion.path 
-                                    d="M 90 50 C 70 90, 130 160, 290 140" 
-                                    fill="transparent" 
-                                    stroke="#94a3b8" 
-                                    strokeWidth="3" 
-                                    strokeLinecap="round"
-                                    initial={{ pathLength: 0, opacity: 0 }}
-                                    whileInView={{ pathLength: 1, opacity: 0.5 }}
-                                    transition={{ duration: 1.5, ease: "easeInOut" }}
-                                />
-
-                                {/* Unoptimized Route 2 (Inland Detour) */}
-                                <motion.path 
-                                    d="M 90 50 C 200 10, 320 60, 290 140" 
-                                    fill="transparent" 
-                                    stroke="#94a3b8" 
-                                    strokeWidth="3" 
-                                    strokeLinecap="round"
-                                    initial={{ pathLength: 0, opacity: 0 }}
-                                    whileInView={{ pathLength: 1, opacity: 0.5 }}
-                                    transition={{ duration: 1.5, ease: "easeInOut", delay: 0.2 }}
-                                />
-
-                                {/* Optimized Route (Direct Highway) - Blue Maps Style */}
-                                <motion.path 
-                                    d="M 90 50 C 180 70, 220 110, 290 140" 
-                                    fill="transparent" 
-                                    stroke="#3b82f6" 
-                                    strokeWidth="5" 
-                                    strokeLinecap="round"
-                                    filter="url(#routeGlow)"
+                                    d="M 270 80 C 350 120, 420 180, 530 240 C 580 260, 600 280, 630 290" 
+                                    fill="none" 
+                                    stroke="#1d4ed8" /* Dark Border */
+                                    strokeWidth="12" 
+                                    strokeLinecap="round" 
+                                    strokeLinejoin="round"
+                                    filter="url(#blueGlow)"
                                     initial={{ pathLength: 0, opacity: 0 }}
                                     whileInView={{ pathLength: 1, opacity: 1 }}
                                     transition={{ duration: 1.5, ease: "easeOut", delay: 1.2 }}
                                 />
-                                
-                                {/* Animated Moving Packet on optimized route */}
+                                <motion.path 
+                                    d="M 270 80 C 350 120, 420 180, 530 240 C 580 260, 600 280, 630 290" 
+                                    fill="none" 
+                                    stroke="#3b82f6" /* Light Inner */
+                                    strokeWidth="8" 
+                                    strokeLinecap="round" 
+                                    strokeLinejoin="round"
+                                    initial={{ pathLength: 0, opacity: 0 }}
+                                    whileInView={{ pathLength: 1, opacity: 1 }}
+                                    transition={{ duration: 1.5, ease: "easeOut", delay: 1.2 }}
+                                />
+
+                                {/* Intermediate Cities on Optimized Route */}
+                                <motion.g initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ delay: 1.8 }}>
+                                    <circle cx="420" cy="174" r="5" fill="#ffffff" stroke="#1d4ed8" strokeWidth="2" />
+                                    <text x="420" y="156" textAnchor="middle" className="text-[12px] font-bold fill-slate-700" style={{textShadow: "0 2px 4px white, 0 -2px 4px white, 2px 0 4px white, -2px 0 4px white, 2px 2px 4px white, -2px -2px 4px white"}}>Fresno</text>
+                                    
+                                    <circle cx="530" cy="240" r="5" fill="#ffffff" stroke="#1d4ed8" strokeWidth="2" />
+                                    <text x="545" y="235" textAnchor="start" className="text-[12px] font-bold fill-slate-700" style={{textShadow: "0 2px 4px white, 0 -2px 4px white, 2px 0 4px white, -2px 0 4px white, 2px 2px 4px white, -2px -2px 4px white"}}>Bakersfield</text>
+                                </motion.g>
+
+                                {/* Animated Packet on Optimized Route */}
                                 <motion.circle 
-                                    r="4" 
-                                    className="fill-white stroke-blue-600 stroke-[2px] shadow-md"
+                                    r="6" 
+                                    className="fill-white stroke-blue-600 stroke-[3px] shadow-xl"
                                     initial={{ opacity: 0 }}
                                     whileInView={{ opacity: 1 }}
                                     transition={{ delay: 1.2, duration: 0.2 }}
@@ -159,48 +155,52 @@ const FeaturesGrid = () => {
                                         dur="2.5s" 
                                         repeatCount="indefinite" 
                                         begin="0s"
-                                        path="M 90 50 C 180 70, 220 110, 290 140" 
+                                        path="M 270 80 C 350 120, 420 180, 530 240 C 580 260, 600 280, 630 290" 
                                     />
                                 </motion.circle>
 
-                                {/* Route Labels (Time) */}
+                                {/* Route Time Label */}
                                 <motion.g 
-                                    initial={{ opacity: 0, y: 10 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 1.8, duration: 0.4 }}
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    whileInView={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: 2, type: "spring" }}
                                 >
-                                    <rect x="175" y="70" width="46" height="20" rx="10" fill="#3b82f6" className="shadow-sm" />
-                                    <text x="198" y="84" textAnchor="middle" className="text-[10px] font-bold fill-white">5h 40m</text>
+                                    <rect x="420" y="200" width="86" height="32" rx="16" fill="#2563eb" stroke="#ffffff" strokeWidth="2" filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.15))" />
+                                    <text x="463" y="221" textAnchor="middle" className="text-[14px] font-black fill-white">5h 40m</text>
                                 </motion.g>
 
                                 {/* Start Location (San Francisco) */}
                                 <motion.g initial={{ scale: 0 }} whileInView={{ scale: 1 }} transition={{ type: "spring", delay: 0.1 }}>
-                                    <circle cx="90" cy="50" r="6" className="fill-white stroke-slate-900 stroke-[3px]" />
-                                    <text x="90" y="35" textAnchor="middle" className="text-[11px] font-black fill-slate-900 tracking-tight" style={{textShadow: "0 1px 2px white, 0 -1px 2px white, 1px 0 2px white, -1px 0 2px white"}}>San Francisco</text>
+                                    <circle cx="270" cy="80" r="12" fill="rgba(0,0,0,0.2)" transform="translate(0, 4)" filter="blur(2px)" />
+                                    <circle cx="270" cy="80" r="12" className="fill-white" />
+                                    <circle cx="270" cy="80" r="6" className="fill-blue-600" />
+                                    <text x="270" y="55" textAnchor="middle" className="text-[18px] font-black fill-slate-900 tracking-tight" style={{textShadow: "0 2px 4px white, 0 -2px 4px white, 2px 0 4px white, -2px 0 4px white, 2px 2px 4px white, -2px -2px 4px white"}}>San Francisco</text>
                                 </motion.g>
 
                                 {/* End Location (Los Angeles) */}
                                 <motion.g initial={{ scale: 0 }} whileInView={{ scale: 1 }} transition={{ type: "spring", delay: 0.3 }}>
-                                    {/* Maps Pin Icon */}
-                                    <path d="M 290 140 C 290 140, 280 128, 280 120 C 280 114.477, 284.477 110, 290 110 C 295.523 110, 300 114.477, 300 120 C 300 128, 290 140, 290 140 Z" className="fill-red-500" />
-                                    <circle cx="290" cy="120" r="3" className="fill-white" />
-                                    <text x="290" y="155" textAnchor="middle" className="text-[11px] font-black fill-slate-900 tracking-tight" style={{textShadow: "0 1px 2px white, 0 -1px 2px white, 1px 0 2px white, -1px 0 2px white"}}>Los Angeles</text>
+                                    {/* Google Maps style Red Pin */}
+                                    <ellipse cx="630" cy="290" rx="12" ry="5" fill="rgba(0,0,0,0.2)" />
+                                    <path d="M 630 290 C 630 290, 605 240, 605 215 C 605 195, 620 190, 630 190 C 640 190, 655 195, 655 215 C 655 240, 630 290, 630 290 Z" className="fill-red-500" />
+                                    <circle cx="630" cy="215" r="8" className="fill-white" />
+                                    <text x="630" y="330" textAnchor="middle" className="text-[18px] font-black fill-slate-900 tracking-tight" style={{textShadow: "0 2px 4px white, 0 -2px 4px white, 2px 0 4px white, -2px 0 4px white, 2px 2px 4px white, -2px -2px 4px white"}}>Los Angeles</text>
                                 </motion.g>
+
                             </svg>
                             
-                            {/* Floating UI Element (e.g. "Optimizing Route...") */}
+                            {/* Floating UI Overlay */}
                             <motion.div 
                                 initial={{ opacity: 0, y: 10 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.5, duration: 0.5 }}
-                                className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-md rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] border border-white p-2.5 flex items-center gap-3 z-20"
+                                className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] border border-white p-3 flex items-center gap-4 z-20"
                             >
-                                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
-                                    <Sparkles className="w-4 h-4 text-blue-600" />
+                                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
+                                    <Sparkles className="w-5 h-5 text-blue-600" />
                                 </div>
-                                <div className="flex flex-col pr-2">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Route Selected</span>
-                                    <span className="text-[13px] font-black text-slate-800 leading-none">Saved 1h 20m</span>
+                                <div className="flex flex-col pr-4">
+                                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1.5">Route Selected</span>
+                                    <span className="text-[15px] font-black text-slate-800 leading-none">Fastest Route • Saved 1h 20m</span>
                                 </div>
                             </motion.div>
                         </div>
