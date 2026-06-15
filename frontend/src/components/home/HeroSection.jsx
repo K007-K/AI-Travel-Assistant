@@ -52,10 +52,10 @@ const SearchPill = () => {
             <motion.button 
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full md:w-auto h-[68px] px-10 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold flex items-center justify-center gap-3 shadow-[0_10px_25px_-5px_rgba(59,130,246,0.5)] hover:shadow-[0_15px_35px_-5px_rgba(59,130,246,0.6)] transition-all ml-2 border border-blue-400/30"
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-105 transition-all duration-300"
             >
-                <Search className="w-5 h-5" />
-                <span className="text-lg md:hidden">Search</span>
+                <Sparkles className="w-5 h-5" />
+                Start Planning
             </motion.button>
         </motion.div>
     );
@@ -102,21 +102,19 @@ const HeroSection = () => {
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
                 >
-                    <motion.span 
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.4, duration: 0.8 }}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 backdrop-blur-md text-white font-bold text-[11px] tracking-[0.2em] uppercase mb-8 border border-white/20 shadow-[0_8px_16px_rgba(0,0,0,0.2)]"
+                    <motion.h1 
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 1.2, delay: 0.1, ease: "easeOut" }}
+                        className="text-[100px] md:text-[140px] lg:text-[180px] leading-[0.85] tracking-tighter text-white mb-6 flex flex-col items-center justify-center drop-shadow-2xl"
                     >
-                        <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                        AI-Powered Travel
-                    </motion.span>
-                    
-                    {/* Ultra-Luxury Mixed Typography */}
-                    <h1 className="text-6xl md:text-8xl lg:text-[9rem] font-display font-black tracking-tighter text-white leading-[0.9] drop-shadow-[0_15px_30px_rgba(0,0,0,0.4)]">
-                        Explore <br className="hidden md:block" />
-                        <span className="font-serif font-light italic tracking-normal text-white/95">the world</span>
-                    </h1>
+                        <span className="font-display font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70">
+                            Travel without
+                        </span>
+                        <span className="font-serif font-light italic text-[90px] md:text-[130px] lg:text-[160px] -mt-4 md:-mt-8 text-white/90">
+                            stress.
+                        </span>
+                    </motion.h1>
                     
                     <p className="mt-8 text-lg md:text-2xl text-white/90 max-w-2xl mx-auto font-medium leading-relaxed drop-shadow-[0_4px_10px_rgba(0,0,0,0.3)]">
                         Experience jaw-dropping destinations curated by sentient AI. Flawless itineraries, spatial booking, and total financial clarity.
