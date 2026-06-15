@@ -133,10 +133,10 @@ const DestinationsGrid = () => {
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.9 }}
                                 transition={{ duration: 0.5 }}
-                                className="dest-card bg-white rounded-[2rem] p-4 border border-slate-100 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] transition-shadow duration-500 group flex flex-col"
+                                className="dest-card bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-[0_10px_30px_-15px_rgba(0,0,0,0.08)] hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.12)] transition-shadow duration-500 group flex flex-col"
                             >
-                                {/* Image Container */}
-                                <div className="relative w-full aspect-[4/5] rounded-[1.5rem] overflow-hidden mb-6">
+                                {/* Edge-to-Edge Image Container */}
+                                <div className="relative w-full aspect-[4/3] overflow-hidden">
                                     <img 
                                         src={dest.image} 
                                         alt={dest.title}
@@ -145,39 +145,41 @@ const DestinationsGrid = () => {
                                 </div>
 
                                 {/* Content */}
-                                <div className="px-2 flex-1 flex flex-col">
-                                    <h3 className="text-xl font-bold text-slate-900 mb-2 leading-tight">
+                                <div className="p-6 flex-1 flex flex-col">
+                                    <h3 className="text-lg font-bold text-slate-900 mb-1.5 leading-tight line-clamp-1">
                                         {dest.title}
                                     </h3>
                                     
-                                    <div className="flex items-center gap-2 text-slate-500 mb-6">
-                                        <MapPin className="w-4 h-4" />
+                                    <div className="flex items-center gap-1.5 text-slate-500 mb-6">
+                                        <MapPin className="w-3.5 h-3.5" />
                                         <span className="text-sm font-medium">{dest.location}</span>
                                     </div>
 
-                                    {/* Micro-data row */}
-                                    <div className="flex items-center gap-4 text-xs font-bold text-slate-700 mb-8 flex-wrap">
+                                    {/* Micro-data row perfectly spaced */}
+                                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-600 mb-6 w-full px-1">
                                         <div className="flex items-center gap-1.5">
-                                            <RefreshCw className="w-3.5 h-3.5 text-blue-500" />
+                                            <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
                                             <span>Round trip</span>
                                         </div>
+                                        <div className="w-1 h-1 rounded-full bg-slate-200" />
                                         <div className="flex items-center gap-1.5">
                                             <Star className="w-3.5 h-3.5 text-amber-400" fill="currentColor" />
-                                            <span>{dest.rating} rating</span>
+                                            <span>{dest.rating}</span>
                                         </div>
+                                        <div className="w-1 h-1 rounded-full bg-slate-200" />
                                         <div className="flex items-center gap-1.5">
-                                            <CalendarDays className="w-3.5 h-3.5 text-blue-500" />
+                                            <CalendarDays className="w-3.5 h-3.5 text-slate-400" />
                                             <span>{dest.dates}</span>
                                         </div>
                                     </div>
 
                                     {/* Bottom Row */}
-                                    <div className="mt-auto flex items-end justify-between pt-6 border-t border-slate-100">
+                                    <div className="mt-auto flex items-end justify-between pt-5 border-t border-slate-100">
                                         <div>
-                                            <div className="text-2xl font-bold text-slate-900">{dest.price}</div>
-                                            <div className="text-xs font-medium text-slate-400 mt-1">{dest.duration}</div>
+                                            <div className="text-2xl font-black text-slate-900 tracking-tight">{dest.price}</div>
+                                            <div className="text-[11px] font-bold text-slate-400 mt-1 uppercase tracking-wider">{dest.duration}</div>
                                         </div>
-                                        <button className="px-8 py-3 rounded-full bg-slate-50 text-slate-900 font-bold text-sm hover:bg-slate-900 hover:text-white transition-colors duration-300 ring-1 ring-slate-200 hover:ring-slate-900">
+                                        <button className="px-6 py-2.5 rounded-full bg-white text-slate-900 font-bold text-sm hover:bg-slate-900 hover:text-white transition-colors duration-300 ring-1 ring-slate-200 hover:ring-slate-900 shadow-sm">
                                             Book
                                         </button>
                                     </div>
