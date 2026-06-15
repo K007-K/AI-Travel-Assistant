@@ -41,31 +41,26 @@ const FeaturesGrid = () => {
                         transition={{ duration: 0.8, ease: "easeOut" }}
                         className="lg:col-span-7 lg:row-span-2 relative bg-[#0a0a0a] rounded-[2.5rem] overflow-hidden min-h-[500px] lg:min-h-[600px] group flex flex-col justify-end p-8 md:p-12 border border-slate-800 shadow-2xl"
                     >
-                        {/* Pure CSS Sentient AI Orb Graphic */}
-                        <div className="absolute inset-0 flex items-center justify-center overflow-hidden opacity-80 group-hover:opacity-100 transition-opacity duration-1000">
-                            <motion.div 
-                                animate={{ scale: [1, 1.1, 1], rotate: [0, 90, 0] }} 
-                                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                                className="absolute w-[800px] h-[800px] bg-[conic-gradient(from_0deg,transparent_0_340deg,rgba(59,130,246,0.3)_360deg)] rounded-full blur-3xl mix-blend-screen" 
-                            />
-                            <div className="absolute w-[400px] h-[400px] bg-blue-600/30 rounded-full blur-[100px] mix-blend-screen animate-pulse" />
-                            <div className="absolute w-[300px] h-[300px] bg-indigo-500/20 rounded-full blur-[80px] mix-blend-screen animate-pulse delay-75" />
-                            <div className="absolute w-[150px] h-[150px] bg-cyan-400/40 rounded-full blur-[60px] mix-blend-screen animate-pulse delay-150" />
+                        {/* Majestic Aura Background */}
+                        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                            {/* Base dark gradient */}
+                            <div className="absolute inset-0 bg-gradient-to-b from-[#0f1115] to-[#050505]" />
                             
-                            {/* Abstract Data Nodes */}
-                            <div className="absolute w-full h-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] opacity-30" />
+                            {/* Soft top-right ambient glow (Deep Blue) */}
+                            <div className="absolute -top-[10%] -right-[10%] w-[80%] h-[80%] bg-blue-600/15 rounded-full blur-[120px] mix-blend-screen transition-opacity duration-1000 group-hover:bg-blue-600/20" />
+                            
+                            {/* Subtle center-left glow (Indigo) */}
+                            <div className="absolute top-[10%] left-[10%] w-[60%] h-[60%] bg-indigo-500/10 rounded-full blur-[100px] mix-blend-screen" />
                         </div>
                         
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/60 to-transparent" />
-                        
                         <div className="relative z-10 max-w-xl">
-                            <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center mb-8 shadow-2xl group-hover:bg-blue-600 transition-colors duration-500">
-                                <Sparkles className="w-8 h-8 text-white" />
+                            <div className="w-16 h-16 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center mb-10 shadow-2xl transition-colors duration-500 group-hover:bg-white/[0.05]">
+                                <Sparkles className="w-8 h-8 text-white" strokeWidth={1.5} />
                             </div>
-                            <h3 className="text-4xl md:text-5xl font-display font-black text-white mb-6 leading-tight tracking-tight">
+                            <h3 className="text-4xl md:text-5xl lg:text-[56px] font-display font-black text-white mb-6 leading-[1.05] tracking-tight">
                                 Sentient <br/>Orchestration.
                             </h3>
-                            <p className="text-lg text-slate-400 font-medium leading-relaxed max-w-md">
+                            <p className="text-[17px] text-slate-400 font-medium leading-relaxed max-w-[480px]">
                                 Powered by Gemini & Groq, our multi-agent engine understands your exact vibe. It negotiates constraints, balances preferences, and generates hyper-personalized, flawless itineraries in milliseconds.
                             </p>
                         </div>
