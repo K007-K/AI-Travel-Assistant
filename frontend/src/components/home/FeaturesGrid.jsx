@@ -114,6 +114,11 @@ const FeaturesGrid = () => {
                                 
                                 {/* Connecting lines */}
                                 <div className="absolute top-[75px] left-[15%] w-[70%] h-[2px] bg-slate-100 -z-10" />
+                                <div className="absolute top-[75px] left-1/2 w-[2px] h-[145px] bg-gradient-to-b from-slate-100 to-transparent -z-10 -translate-x-1/2" />
+                                
+                                {/* Pulsing rings (Centered on Node 2 at absolute grid coordinates) */}
+                                <div className={`absolute top-[75px] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[160px] h-[160px] bg-blue-500/15 rounded-full transition-all duration-1000 pointer-events-none z-0 ${animState >= 1 && animState <= 5 ? 'animate-ping opacity-100' : 'opacity-0'}`} style={{ animationDuration: '3s' }} />
+                                <div className={`absolute top-[75px] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[130px] h-[130px] bg-indigo-500/15 rounded-full transition-all duration-1000 pointer-events-none z-0 ${animState >= 1 && animState <= 5 ? 'animate-ping opacity-100' : 'opacity-0'}`} style={{ animationDuration: '2s' }} />
                                 
                                 {/* Animated Data Packets */}
                                 <AnimatePresence>
@@ -125,7 +130,7 @@ const FeaturesGrid = () => {
                                             animate={{ left: "50%", opacity: [0, 1, 1, 0] }}
                                             exit={{ opacity: 0 }}
                                             transition={{ duration: 0.8, ease: "easeIn" }}
-                                            className="absolute w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,1)] -z-10 -translate-y-1/2" 
+                                            className="absolute w-2.5 h-2.5 bg-blue-500 rounded-full shadow-[0_0_12px_rgba(59,130,246,1)] z-20 -translate-y-1/2" 
                                         />
                                     )}
                                     {/* Engine Down to Ghost Code */}
@@ -133,21 +138,21 @@ const FeaturesGrid = () => {
                                         <motion.div 
                                             key="packet-2"
                                             initial={{ left: "50%", top: "75px", opacity: 0 }}
-                                            animate={{ top: "180px", opacity: [0, 1, 1, 0] }}
+                                            animate={{ top: "220px", opacity: [0, 1, 1, 0] }}
                                             exit={{ opacity: 0 }}
                                             transition={{ duration: 0.6, ease: "easeOut" }}
-                                            className="absolute w-2 h-2 bg-indigo-500 rounded-full shadow-[0_0_10px_rgba(99,102,241,1)] -z-10 -translate-x-1/2" 
+                                            className="absolute w-2.5 h-2.5 bg-indigo-500 rounded-full shadow-[0_0_12px_rgba(99,102,241,1)] z-20 -translate-x-1/2" 
                                         />
                                     )}
                                     {/* Ghost Code Up to Engine */}
                                     {animState === 4 && (
                                         <motion.div 
                                             key="packet-4"
-                                            initial={{ left: "50%", top: "180px", opacity: 0 }}
+                                            initial={{ left: "50%", top: "220px", opacity: 0 }}
                                             animate={{ top: "75px", opacity: [0, 1, 1, 0] }}
                                             exit={{ opacity: 0 }}
                                             transition={{ duration: 0.6, ease: "easeIn" }}
-                                            className="absolute w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,1)] -z-10 -translate-x-1/2" 
+                                            className="absolute w-2.5 h-2.5 bg-emerald-500 rounded-full shadow-[0_0_12px_rgba(16,185,129,1)] z-20 -translate-x-1/2" 
                                         />
                                     )}
                                     {/* Engine to Output */}
@@ -158,7 +163,7 @@ const FeaturesGrid = () => {
                                             animate={{ left: "84%", opacity: [0, 1, 1, 0] }}
                                             exit={{ opacity: 0 }}
                                             transition={{ duration: 0.8, ease: "easeOut" }}
-                                            className="absolute w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,1)] -z-10 -translate-y-1/2" 
+                                            className="absolute w-2.5 h-2.5 bg-emerald-500 rounded-full shadow-[0_0_12px_rgba(16,185,129,1)] z-20 -translate-y-1/2" 
                                         />
                                     )}
                                 </AnimatePresence>
@@ -182,10 +187,6 @@ const FeaturesGrid = () => {
 
                                 {/* Node 2: Gemini & Groq (The Engine) */}
                                 <div className="relative flex justify-center">
-                                    {/* Pulsing rings */}
-                                    <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[160px] h-[160px] bg-blue-500/15 rounded-full transition-all duration-1000 ${animState >= 1 && animState <= 5 ? 'animate-ping opacity-100' : 'opacity-0'}`} style={{ animationDuration: '3s' }} />
-                                    <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[130px] h-[130px] bg-indigo-500/15 rounded-full transition-all duration-1000 ${animState >= 1 && animState <= 5 ? 'animate-ping opacity-100' : 'opacity-0'}`} style={{ animationDuration: '2s' }} />
-                                    
                                     <div className={`bg-white border-2 rounded-[2rem] p-1.5 relative z-10 w-[180px] transition-all duration-500 ${animState >= 1 && animState <= 5 ? 'border-indigo-400 shadow-[0_0_40px_rgba(99,102,241,0.3)] scale-105' : 'border-slate-100 shadow-[0_0_20px_rgba(59,130,246,0.05)]'}`}>
                                         <div className="bg-gradient-to-b from-slate-50 to-white rounded-[1.6rem] p-6 flex flex-col items-center justify-center gap-4 relative z-10">
                                             <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
@@ -199,7 +200,7 @@ const FeaturesGrid = () => {
                                     </div>
 
                                     {/* Ghost Code Space */}
-                                    <div className="absolute top-[200px] left-1/2 -translate-x-1/2 w-[280px] flex flex-col gap-3 items-center pointer-events-none z-0">
+                                    <div className="absolute top-[210px] left-1/2 -translate-x-1/2 w-[280px] flex flex-col gap-3 items-center pointer-events-none z-0">
                                         <AnimatePresence>
                                             {animState === 3 && ghostCodeLines.map((line, i) => (
                                                 <motion.div
