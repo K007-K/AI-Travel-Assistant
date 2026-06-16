@@ -71,7 +71,7 @@ const DestinationShowcase = () => {
     }, [isHovered]);
 
     return (
-        <section className="w-full bg-[#fafafa] py-32 overflow-hidden relative">
+        <section id="showcase" className="w-full bg-[#fafafa] py-32 overflow-hidden relative">
             {/* Dynamic Ambient Glow */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-blue-500/5 blur-[120px] pointer-events-none rounded-full" />
 
