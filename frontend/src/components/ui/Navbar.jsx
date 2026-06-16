@@ -105,9 +105,14 @@ const Navbar = () => {
                 <div className={`mx-auto transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${scrolled ? 'max-w-6xl px-4 md:px-6' : 'w-full max-w-7xl px-6'}`}>
                     <div className={`flex items-center justify-between transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${innerPillClass}`}>
                         
-                        {/* Logo Area */}
                         <div className="flex items-center relative z-10">
-                            <Link to="/" className="flex items-center gap-3 group">
+                            <Link 
+                                to="/" 
+                                onClick={() => {
+                                    if (location.pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                                className="flex items-center gap-3 group"
+                            >
                                 <motion.div whileHover={{ rotate: 15 }} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors duration-300 ${logoIconBg}`}>
                                     <Plane className="w-5 h-5 ml-0.5" />
                                 </motion.div>
@@ -141,6 +146,11 @@ const Navbar = () => {
                                         <Link 
                                             key={link.name}
                                             to={link.path} 
+                                            onClick={() => {
+                                                if (link.path === '/' && location.pathname === '/') {
+                                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                }
+                                            }}
                                             className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all relative ${active ? activeLinkClass : linkTextClass}`}
                                         >
                                             {link.name}
@@ -226,7 +236,13 @@ const Navbar = () => {
                     
                     {/* Logo Area */}
                     <div className="flex items-center relative z-10">
-                        <Link to="/" className="flex items-center gap-3 group">
+                        <Link 
+                            to="/" 
+                            onClick={() => {
+                                if (location.pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="flex items-center gap-3 group"
+                        >
                             <motion.div whileHover={{ rotate: 15 }} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors duration-300 ${logoIconBg}`}>
                                 <Plane className="w-5 h-5 ml-0.5" />
                             </motion.div>
