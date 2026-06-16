@@ -21,12 +21,6 @@ const Navbar = () => {
     const { user, profile, logout } = useAuthStore();
     const location = useLocation();
     const navigate = useNavigate();
-    
-    // Hide navbar on auth routes for split-screen immersion
-    const authRoutes = ['/login', '/signup', '/forgot-password', '/reset-password'];
-    if (authRoutes.includes(location.pathname)) {
-        return null;
-    }
 
     // Check if scrolled past hero to transition navbar
     const [scrolled, setScrolled] = useState(false);
@@ -73,6 +67,12 @@ const Navbar = () => {
         }
         return location.pathname === path;
     };
+
+    // Hide navbar on auth routes for split-screen immersion
+    const authRoutes = ['/login', '/signup', '/forgot-password', '/reset-password'];
+    if (authRoutes.includes(location.pathname)) {
+        return null;
+    }
 
     // Outer container (controls detachment from top)
     const navContainerClass = scrolled 
