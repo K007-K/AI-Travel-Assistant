@@ -18,10 +18,11 @@ const Navbar = () => {
     const location = useLocation();
     
     // Check if scrolled past hero to transition navbar
-    const [scrolled, setScrolled] = useState(false);
+    const [scrolled, setScrolled] = useState(typeof window !== 'undefined' ? window.scrollY > 50 : false);
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 50);
-        window.addEventListener('scroll', handleScroll);
+        handleScroll(); // Set correct state immediately on mount
+        window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 

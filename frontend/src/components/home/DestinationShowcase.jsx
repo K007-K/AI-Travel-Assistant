@@ -157,13 +157,13 @@ const DestinationShowcase = () => {
                                 }}
                                 style={isActive ? { rotateX, rotateY, transformStyle: "preserve-3d" } : {}}
                                 transition={{ type: 'spring', bounce: 0.2, duration: 0.8 }}
-                                className={`relative rounded-[2rem] overflow-hidden cursor-pointer group shadow-xl ${isActive ? 'shadow-2xl shadow-slate-900/30 ring-1 ring-white/20' : 'hover:bg-slate-100'}`}
+                                className={`relative rounded-[2rem] overflow-hidden cursor-pointer group shadow-xl transition-[box-shadow] duration-700 ${isActive ? 'shadow-2xl shadow-slate-900/30 ring-1 ring-white/20' : 'hover:bg-slate-100'}`}
                             >
                                 {/* Background Image */}
                                 <motion.img 
                                     src={dest.image}
                                     alt={dest.title}
-                                    className={`absolute inset-0 w-full h-full object-cover transition-transform duration-[3s] ease-out ${isActive ? 'scale-105' : 'scale-100 grayscale-[0.5] group-hover:grayscale-0'}`}
+                                    className={`absolute inset-0 w-full h-full object-cover transition-[transform,filter] duration-[1.5s] ease-out ${isActive ? 'scale-105 grayscale-0' : 'scale-100 grayscale-[0.6] group-hover:grayscale-[0.3]'}`}
                                 />
                                 
                                 {/* Active State Progress Bar */}
