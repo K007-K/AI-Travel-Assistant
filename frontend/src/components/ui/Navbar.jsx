@@ -30,10 +30,38 @@ const Navbar = () => {
 
     // Check if scrolled past hero to transition navbar
     const [scrolled, setScrolled] = useState(false);
+    const [isDarkBg, setIsDarkBg] = useState(true);
     const { scrollY } = useScroll();
+    
     useMotionValueEvent(scrollY, "change", (latest) => {
         setScrolled(latest > 50);
     });
+
+    React.useEffect(() => {
+        const checkSectionTheme = () => {
+            const sections = document.querySelectorAll('section');
+            const navCenterY = 50; // approximate vertical center of the navbar
+            
+            let currentSection = null;
+            for (const section of sections) {
+                const rect = section.getBoundingClientRect();
+                if (rect.top <= navCenterY && rect.bottom >= navCenterY) {
+                    currentSection = section;
+                    break;
+                }
+            }
+            
+            if (currentSection) {
+                const isDark = currentSection.classList.contains('bg-black') || 
+                               currentSection.classList.contains('bg-[#030712]');
+                setIsDarkBg(isDark);
+            }
+        };
+
+        window.addEventListener('scroll', checkSectionTheme, { passive: true });
+        checkSectionTheme();
+        return () => window.removeEventListener('scroll', checkSectionTheme);
+    }, []);
 
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -66,12 +94,15 @@ const Navbar = () => {
         );
     };
 
-    // Colors transition based on scroll
-    const logoTextClass = scrolled ? 'mix-blend-difference text-white' : 'text-white drop-shadow-md';
-    const linkTextClass = scrolled ? 'mix-blend-difference text-white hover:mix-blend-normal hover:text-blue-600' : 'text-white/90 hover:text-white drop-shadow-sm';
-    const activeLinkClass = scrolled ? 'mix-blend-difference text-white font-bold hover:mix-blend-normal hover:text-blue-600' : 'text-white font-bold drop-shadow-md';
+    // Colors transition based on scroll and background
+    const baseTextColor = isDarkBg ? 'text-white' : 'text-slate-900';
+    const mutedTextColor = isDarkBg ? 'text-white/80' : 'text-slate-600';
+
+    const logoTextClass = scrolled ? `${baseTextColor} drop-shadow-sm transition-colors duration-300` : 'text-white drop-shadow-md';
+    const linkTextClass = scrolled ? `${mutedTextColor} hover:text-blue-600 transition-colors duration-300` : 'text-white/90 hover:text-white drop-shadow-sm transition-colors duration-300';
+    const activeLinkClass = scrolled ? `${baseTextColor} font-bold hover:text-blue-600 transition-colors duration-300` : 'text-white font-bold drop-shadow-md transition-colors duration-300';
     
-    const loginClass = scrolled ? 'mix-blend-difference text-white font-bold hover:mix-blend-normal hover:text-blue-600' : 'text-white font-bold drop-shadow-md hover:text-white/90';
+    const loginClass = scrolled ? `${baseTextColor} font-bold hover:text-blue-600 transition-colors duration-300` : 'text-white font-bold drop-shadow-md hover:text-white/90 transition-colors duration-300';
     const getStartedClass = scrolled 
         ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-[0_4px_14px_rgba(37,99,235,0.3)] hover:-translate-y-0.5'
         : 'bg-white text-blue-600 font-bold hover:bg-slate-50 shadow-lg hover:-translate-y-0.5';
