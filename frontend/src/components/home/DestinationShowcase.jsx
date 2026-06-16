@@ -152,13 +152,12 @@ const DestinationShowcase = () => {
                                     hidden: { opacity: 0, y: 50, scale: 0.95 },
                                     visible: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', damping: 25, stiffness: 200 } }
                                 }}
-                                animate={{
+                                style={{ 
                                     flex: isActive ? 5 : 1,
-                                    boxShadow: isActive ? "0 25px 50px -12px rgba(15, 23, 42, 0.3)" : "0 10px 15px -3px rgba(0, 0, 0, 0.1)"
+                                    ...(isActive ? { rotateX, rotateY, transformStyle: "preserve-3d" } : {})
                                 }}
-                                style={isActive ? { rotateX, rotateY, transformStyle: "preserve-3d" } : {}}
                                 transition={{ type: 'spring', bounce: 0.2, duration: 0.8 }}
-                                className={`relative rounded-[2rem] overflow-hidden cursor-pointer group ${isActive ? 'ring-1 ring-white/20' : 'hover:bg-slate-100'}`}
+                                className={`relative rounded-[2rem] overflow-hidden cursor-pointer group transition-shadow duration-700 ${isActive ? 'ring-1 ring-white/20 shadow-[0_25px_50px_-12px_rgba(15,23,42,0.3)]' : 'hover:bg-slate-100 shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1)]'}`}
                             >
                                 {/* Background Image */}
                                 <motion.img 
