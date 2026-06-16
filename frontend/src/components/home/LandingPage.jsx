@@ -1,6 +1,7 @@
 import React from 'react';
 import HeroSection from './HeroSection';
 import FeaturesGrid from './FeaturesGrid';
+import DestinationShowcase from './DestinationShowcase';
 import SmoothScroller from '../SmoothScroller';
 
 const LandingPage = () => {
@@ -9,6 +10,7 @@ const LandingPage = () => {
             <SmoothScroller />
             <HeroSection />
             <FeaturesGrid />
+            <DestinationShowcase />
         </div>
     );
 };
