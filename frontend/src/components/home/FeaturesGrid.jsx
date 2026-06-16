@@ -95,14 +95,23 @@ const FeaturesGrid = () => {
                 </div>
 
                 {/* Asymmetrical Bento Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto">
+                <motion.div 
+                    className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto"
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: "-100px" }}
+                    variants={{
+                        hidden: {},
+                        visible: { transition: { staggerChildren: 0.2 } }
+                    }}
+                >
                     
                     {/* Card 1: Sentient AI (Massive Cinematic Card) */}
                     <motion.div 
-                        initial={{ opacity: 0, y: 40 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, margin: "-50px" }}
-                        transition={{ duration: 0.8, ease: "easeOut" }}
+                        variants={{
+                            hidden: { opacity: 0, y: 40 },
+                            visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } }
+                        }}
                         className="lg:col-span-7 lg:row-span-2 relative bg-white rounded-[2.5rem] overflow-hidden min-h-[500px] lg:min-h-[600px] group flex flex-col justify-between p-8 md:p-12 border border-slate-200 shadow-xl shadow-slate-200/50 hover:-translate-y-2 hover:shadow-2xl transition-all duration-500"
                     >
                         {/* UI Graphic: Engine Pipeline */}
@@ -175,9 +184,7 @@ const FeaturesGrid = () => {
                                 </AnimatePresence>
 
                                 {/* Node 1: Request */}
-                                <motion.div 
-                                    className={`mt-8 bg-white border-2 rounded-[1.5rem] p-6 flex flex-col gap-4 shadow-sm relative transition-all duration-500 ${animState === 0 ? 'border-blue-400 shadow-[0_0_30px_rgba(59,130,246,0.15)] scale-105' : 'border-slate-100'}`}
-                                >
+                                <div className={`mt-8 bg-white border-2 rounded-[1.5rem] p-6 flex flex-col gap-4 shadow-sm relative transition-all duration-500 ${animState === 0 ? 'border-blue-400 shadow-[0_0_30px_rgba(59,130,246,0.15)] scale-105' : 'border-slate-100'}`}>
                                     <div className="flex items-center gap-3 mb-2">
                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${animState === 0 ? 'bg-blue-50' : 'bg-slate-100'}`}>
                                             <MessageSquare className={`w-4 h-4 transition-colors ${animState === 0 ? 'text-blue-600' : 'text-slate-500'}`} />
@@ -189,7 +196,7 @@ const FeaturesGrid = () => {
                                             "{typedText}<motion.span animate={{ opacity: [1, 0] }} transition={{ repeat: Infinity, duration: 0.8 }} className="inline-block w-[2px] h-[1em] bg-blue-500 align-middle ml-1"></motion.span>"
                                         </p>
                                     </div>
-                                </motion.div>
+                                </div>
 
                                 {/* Node 2: Gemini & Groq (The Engine) */}
                                 <div className="relative flex justify-center mt-4">
@@ -225,9 +232,7 @@ const FeaturesGrid = () => {
                                 </div>
 
                                 {/* Node 3: Response (Itinerary) */}
-                                <motion.div 
-                                    className={`mt-8 bg-white border-2 rounded-[1.5rem] p-6 flex flex-col gap-4 shadow-sm relative transition-all duration-500 ${animState === 6 ? 'border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.15)] scale-105' : 'border-slate-100'}`}
-                                >
+                                <div className={`mt-8 bg-white border-2 rounded-[1.5rem] p-6 flex flex-col gap-4 shadow-sm relative transition-all duration-500 ${animState === 6 ? 'border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.15)] scale-105' : 'border-slate-100'}`}>
                                     <div className="flex items-center gap-3 mb-2">
                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${animState === 6 ? 'bg-emerald-50' : 'bg-slate-100'}`}>
                                             <Calendar className={`w-4 h-4 transition-colors ${animState === 6 ? 'text-emerald-600' : 'text-slate-500'}`} />
@@ -274,7 +279,7 @@ const FeaturesGrid = () => {
                                             </div>
                                         </div>
                                     </div>
-                                </motion.div>
+                                </div>
                                 
                             </div>
                         </div>
@@ -294,10 +299,10 @@ const FeaturesGrid = () => {
 
                     {/* Card 2: Routing (Sleek White Card) */}
                     <motion.div 
-                        initial={{ opacity: 0, x: 40 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true, margin: "-50px" }}
-                        transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+                        variants={{
+                            hidden: { opacity: 0, x: 40 },
+                            visible: { opacity: 1, x: 0, transition: { duration: 0.6, ease: "easeOut" } }
+                        }}
                         className="lg:col-span-5 lg:row-span-1 bg-white rounded-[2.5rem] overflow-hidden p-8 border border-slate-200 shadow-xl shadow-slate-200/50 group flex flex-col relative hover:-translate-y-2 hover:shadow-2xl transition-all duration-500"
                     >
                         <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center mb-6 text-blue-600">

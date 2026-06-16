@@ -71,7 +71,7 @@ const Navbar = () => {
 
                     {/* Central Navigation */}
                     <div className="hidden md:flex items-center justify-center gap-8 flex-1">
-                        {['Home', 'Destinations', 'Tours', 'Blog'].map((item) => {
+                        {['Home', 'Features', 'Showcase', 'Pricing'].map((item) => {
                             const path = item === 'Home' ? '/' : `/${item.toLowerCase()}`;
                             const active = isActive(path) || (item === 'Destinations' && location.hash === '#destinations');
                             

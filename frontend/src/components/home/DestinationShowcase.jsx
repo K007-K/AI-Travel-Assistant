@@ -79,7 +79,16 @@ const DestinationShowcase = () => {
             </div>
 
             {/* Expansion Showcase Container */}
-            <div className="w-full max-w-6xl px-4 md:px-8 h-[450px] md:h-[500px] flex gap-4">
+            <motion.div 
+                className="w-full max-w-6xl px-4 md:px-8 h-[450px] md:h-[500px] flex gap-4"
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-100px" }}
+                variants={{
+                    hidden: {},
+                    visible: { transition: { staggerChildren: 0.15 } }
+                }}
+            >
                 {destinations.map((dest) => {
                     const isActive = activeId === dest.id;
 
@@ -88,7 +97,10 @@ const DestinationShowcase = () => {
                             key={dest.id}
                             layout
                             onClick={() => setActiveId(dest.id)}
-                            initial={{ borderRadius: '2rem' }}
+                            variants={{
+                                hidden: { opacity: 0, y: 50, scale: 0.95 },
+                                visible: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', damping: 25, stiffness: 200 } }
+                            }}
                             animate={{
                                 flex: isActive ? 4 : 1,
                             }}
@@ -222,7 +234,7 @@ const DestinationShowcase = () => {
                         </motion.div>
                     );
                 })}
-            </div>
+            </motion.div>
         </section>
     );
 };
