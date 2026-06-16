@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
     Sparkles,
@@ -8,9 +8,12 @@ import {
     Globe,
     Plane,
     LogOut,
-    Settings
+    Settings,
+    Menu,
+    X,
+    LayoutDashboard
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
 import useAuthStore from '../../store/authStore';
 
 const Navbar = () => {
@@ -18,32 +21,62 @@ const Navbar = () => {
     const location = useLocation();
     
     // Check if scrolled past hero to transition navbar
-    const [scrolled, setScrolled] = useState(typeof window !== 'undefined' ? window.scrollY > 50 : false);
-    useEffect(() => {
-        const handleScroll = () => setScrolled(window.scrollY > 50);
-        handleScroll(); // Set correct state immediately on mount
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+    const [scrolled, setScrolled] = useState(false);
+    const { scrollY } = useScroll();
+    useMotionValueEvent(scrollY, "change", (latest) => {
+        setScrolled(latest > 50);
+    });
+
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
     const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Traveler';
-    const isActive = (path) => location.pathname === path;
+    const isActive = (path) => {
+        if (path.startsWith('/#')) {
+            return location.pathname === '/' && location.hash === path.substring(1);
+        }
+        return location.pathname === path;
+    };
 
-    // ── Transparent to Solid White Transition ──
+    // ── Floating Pill Dynamic Classes ──
+    // Outer container (controls detachment from top)
     const navContainerClass = scrolled 
-        ? 'bg-white/80 backdrop-blur-xl border-b border-slate-200/50 shadow-sm py-3'
-        : 'bg-transparent py-6';
+        ? 'py-4' // Scrolled: Detached
+        : 'py-0 bg-transparent'; // Top: Attached edge-to-edge
 
+    // Inner pill (controls width, background, glass effect)
+    const innerPillClass = scrolled
+        ? 'max-w-6xl px-4 md:px-6 h-[4.5rem] rounded-[2.5rem] bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl border border-white/40 dark:border-slate-700/50 shadow-[0_8px_32px_rgba(0,0,0,0.08)]'
+        : 'w-full max-w-7xl px-6 h-24'; // Top: Wide and taller
+
+    // Colors transition based on scroll
     const logoTextClass = scrolled ? 'text-slate-900' : 'text-white drop-shadow-md';
-    const linkTextClass = scrolled ? 'text-slate-600 hover:text-blue-600' : 'text-white hover:text-white/80 drop-shadow-sm';
+    const linkTextClass = scrolled ? 'text-slate-600 hover:text-slate-900' : 'text-white/90 hover:text-white drop-shadow-sm';
     const activeLinkClass = scrolled ? 'text-blue-600 font-bold' : 'text-white font-bold drop-shadow-md';
     
-    const loginClass = scrolled ? 'text-slate-700 hover:text-blue-600' : 'text-white hover:text-white/80 drop-shadow-sm';
+    const loginClass = scrolled ? 'text-slate-700 hover:text-slate-900' : 'text-white font-bold drop-shadow-md hover:text-white/90';
     const getStartedClass = scrolled 
-        ? 'bg-blue-600 text-white hover:bg-blue-700'
-        : 'bg-white text-slate-900 hover:bg-slate-100 shadow-lg';
+        ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-[0_4px_14px_rgba(37,99,235,0.3)] hover:-translate-y-0.5'
+        : 'bg-white text-blue-600 font-bold hover:bg-slate-50 shadow-lg hover:-translate-y-0.5';
 
-    const logoIconBg = scrolled ? 'bg-blue-600 text-white' : 'bg-white text-blue-600';
+    const logoIconBg = scrolled ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'bg-white text-blue-600 shadow-md shadow-white/20';
+
+    const handleNavClick = (path) => {
+        setMobileMenuOpen(false);
+        if (path.startsWith('/#')) {
+            const element = document.getElementById(path.substring(2));
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    };
+
+    const guestLinks = [
+        { name: 'Home', path: '/' },
+        { name: 'Features', path: '/#features' },
+        { name: 'Showcase', path: '/#showcase' },
+        { name: 'Pricing', path: '/#pricing' },
+    ];
 
     // -------------------------------------------------------------------------
     // RENDER: LANDING PAGE NAVBAR (Unauthenticated)
@@ -51,59 +84,115 @@ const Navbar = () => {
     if (!user) {
         return (
             <motion.nav 
-                className={`fixed top-0 left-0 right-0 z-50 flex justify-center transition-all duration-500 ${navContainerClass}`}
-                initial={{ y: -50, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${navContainerClass}`}
+                initial={{ y: -100 }}
+                animate={{ y: 0 }}
             >
-                <div className="flex items-center justify-between w-full max-w-7xl px-6">
-                    
-                    {/* Logo Area */}
-                    <div className="flex-1 flex items-center">
-                        <Link to="/" className="flex items-center gap-3 group">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-300 shadow-sm ${logoIconBg}`}>
-                                <Plane className="w-4 h-4 ml-0.5" />
-                            </div>
-                            <span className={`font-display font-black text-xl tracking-tight transition-colors duration-300 ${logoTextClass}`}>
-                                ROAMEO
-                            </span>
-                        </Link>
-                    </div>
-
-                    {/* Central Navigation */}
-                    <div className="hidden md:flex items-center justify-center gap-8 flex-1">
-                        {['Home', 'Features', 'Showcase', 'Pricing'].map((item) => {
-                            const path = item === 'Home' ? '/' : `/${item.toLowerCase()}`;
-                            const active = isActive(path) || (item === 'Destinations' && location.hash === '#destinations');
-                            
-                            return (
-                                <Link 
-                                    key={item}
-                                    to={item === 'Destinations' ? '/#destinations' : path} 
-                                    className={`text-sm font-semibold transition-all duration-300 relative group ${active ? activeLinkClass : linkTextClass}`}
-                                >
-                                    {item}
-                                    {/* Minimalist underline hover effect */}
-                                    <div className={`absolute -bottom-1 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full ${scrolled ? 'bg-blue-600' : 'bg-white'}`} />
-                                    {active && <div className={`absolute -bottom-1 left-0 w-full h-0.5 ${scrolled ? 'bg-blue-600' : 'bg-white'}`} />}
-                                </Link>
-                            );
-                        })}
-                    </div>
-
-                    {/* Right Actions */}
-                    <div className="flex items-center justify-end gap-6 flex-1">
-                        <Link to="/login" className={`text-sm font-bold transition-colors ${loginClass}`}>
-                            Log In
-                        </Link>
+                <div className={`mx-auto transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${scrolled ? 'max-w-6xl px-4 md:px-6' : 'w-full max-w-7xl px-6'}`}>
+                    <div className={`flex items-center justify-between transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${innerPillClass}`}>
                         
-                        <Link to="/signup">
-                            <div className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ${getStartedClass}`}>
-                                Get Started
+                        {/* Logo Area */}
+                        <div className="flex items-center relative z-10">
+                            <Link to="/" className="flex items-center gap-3 group">
+                                <motion.div whileHover={{ rotate: 15 }} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors duration-300 ${logoIconBg}`}>
+                                    <Plane className="w-5 h-5 ml-0.5" />
+                                </motion.div>
+                                <span className={`font-display font-black text-2xl tracking-tight transition-colors duration-300 ${logoTextClass}`}>
+                                    ROAMEO
+                                </span>
+                            </Link>
+                        </div>
+
+                        {/* Central Navigation - Floating Pill Indicator */}
+                        <div className="hidden lg:flex items-center absolute left-1/2 -translate-x-1/2">
+                            <div className={`flex items-center gap-2 p-1.5 rounded-full transition-colors duration-300 ${scrolled ? 'bg-slate-100/50' : ''}`}>
+                                {guestLinks.map((link) => {
+                                    const active = isActive(link.path);
+                                    return link.path.startsWith('/#') ? (
+                                        <a 
+                                            key={link.name}
+                                            href={link.path}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                handleNavClick(link.path);
+                                            }}
+                                            className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all relative cursor-pointer ${active ? activeLinkClass : linkTextClass}`}
+                                        >
+                                            {link.name}
+                                            {active && scrolled && (
+                                                <motion.div layoutId="activeNavIndicator" className="absolute inset-0 bg-white rounded-full shadow-sm -z-10 border border-slate-200/50" />
+                                            )}
+                                        </a>
+                                    ) : (
+                                        <Link 
+                                            key={link.name}
+                                            to={link.path} 
+                                            className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all relative ${active ? activeLinkClass : linkTextClass}`}
+                                        >
+                                            {link.name}
+                                            {active && scrolled && (
+                                                <motion.div layoutId="activeNavIndicator" className="absolute inset-0 bg-white rounded-full shadow-sm -z-10 border border-slate-200/50" />
+                                            )}
+                                        </Link>
+                                    );
+                                })}
                             </div>
-                        </Link>
+                        </div>
+
+                        {/* Right Actions */}
+                        <div className="hidden lg:flex items-center justify-end gap-6 z-10">
+                            <Link to="/login" className={`text-sm font-bold transition-colors ${loginClass}`}>
+                                Log In
+                            </Link>
+                            
+                            <Link to="/signup">
+                                <div className={`px-6 py-3 rounded-full text-sm font-bold transition-all duration-300 ${getStartedClass}`}>
+                                    Get Started
+                                </div>
+                            </Link>
+                        </div>
+
+                        {/* Mobile Menu Button */}
+                        <button
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            className={`lg:hidden p-2 rounded-xl transition-colors z-10 ${scrolled ? 'bg-slate-100 text-slate-600' : 'bg-white/20 text-white backdrop-blur-md border border-white/30'}`}
+                        >
+                            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                        </button>
                     </div>
 
+                    {/* Mobile Menu */}
+                    <AnimatePresence>
+                        {mobileMenuOpen && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="lg:hidden overflow-hidden mt-2 bg-white rounded-3xl shadow-xl border border-slate-200"
+                            >
+                                <div className="p-4 space-y-2">
+                                    {guestLinks.map((link) => (
+                                        <Link
+                                            key={link.name}
+                                            to={link.path}
+                                            onClick={() => setMobileMenuOpen(false)}
+                                            className="block px-5 py-3.5 rounded-2xl text-slate-700 font-bold hover:bg-slate-50 transition-colors"
+                                        >
+                                            {link.name}
+                                        </Link>
+                                    ))}
+                                    <div className="pt-4 mt-4 border-t border-slate-100 space-y-3">
+                                        <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="block w-full text-center py-3.5 bg-slate-50 rounded-2xl font-bold text-slate-700">
+                                            Log In
+                                        </Link>
+                                        <Link to="/signup" onClick={() => setMobileMenuOpen(false)} className="block w-full text-center py-3.5 bg-blue-600 text-white rounded-2xl font-bold shadow-lg">
+                                            Get Started
+                                        </Link>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </motion.nav>
         );
@@ -114,86 +203,128 @@ const Navbar = () => {
     // -------------------------------------------------------------------------
     return (
         <motion.nav 
-            className={`fixed top-0 left-0 right-0 z-50 flex justify-center transition-all duration-500 ${navContainerClass}`}
-            initial={{ y: -50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${navContainerClass}`}
+            initial={{ y: -100 }}
+            animate={{ y: 0 }}
         >
-            <div className="flex items-center justify-between w-full max-w-7xl px-6">
-                
-                {/* Logo */}
-                <Link to="/" className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-300 shadow-sm ${logoIconBg}`}>
-                        <Plane className="w-4 h-4 ml-0.5" />
-                    </div>
-                </Link>
-
-                {/* Main Navigation */}
-                <div className="hidden lg:flex items-center gap-6">
-                    <NavLink to="/" icon={<Globe className="w-4 h-4" />} label="Home" active={isActive('/')} scrolled={scrolled} />
+            <div className={`mx-auto transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${scrolled ? 'max-w-6xl px-4 md:px-6' : 'w-full max-w-7xl px-6'}`}>
+                <div className={`flex items-center justify-between transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${innerPillClass}`}>
                     
-                    <Link to="/ai" className={`flex items-center gap-2 text-sm font-bold transition-all duration-300 ${isActive('/ai') || isActive('/chat')
-                        ? (scrolled ? 'text-blue-600' : 'text-amber-300 drop-shadow-md')
-                        : (scrolled ? 'text-slate-600 hover:text-blue-600' : 'text-white hover:text-white/80 drop-shadow-sm')
-                    }`}>
-                        <Sparkles className="w-4 h-4" />
-                        AI Core
-                    </Link>
+                    {/* Logo Area */}
+                    <div className="flex items-center relative z-10">
+                        <Link to="/" className="flex items-center gap-3 group">
+                            <motion.div whileHover={{ rotate: 15 }} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors duration-300 ${logoIconBg}`}>
+                                <Plane className="w-5 h-5 ml-0.5" />
+                            </motion.div>
+                            <span className={`hidden md:block font-display font-black text-2xl tracking-tight transition-colors duration-300 ${logoTextClass}`}>
+                                ROAMEO
+                            </span>
+                        </Link>
+                    </div>
 
-                    <NavLink to="/my-trips" icon={<Map className="w-4 h-4" />} label="Trips" active={isActive('/trips') || isActive('/my-trips')} scrolled={scrolled} />
-                    <NavLink to="/bookings" icon={<CreditCard className="w-4 h-4" />} label="Bookings" active={isActive('/bookings')} scrolled={scrolled} />
-                    <NavLink to="/favourites" icon={<Heart className="w-4 h-4" />} label="Saved" active={isActive('/favourites')} scrolled={scrolled} />
-                </div>
-
-                {/* Right Actions */}
-                <div className="flex items-center gap-2">
-                    <div className="group relative">
-                        <div className="cursor-pointer px-1">
-                            <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm transition-colors shadow-sm ${scrolled ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' : 'bg-white text-blue-600 hover:bg-white/90'}`}>
-                                {displayName.charAt(0).toUpperCase()}
-                            </div>
-                        </div>
-
-                        {/* Dropdown Menu */}
-                        <div className="absolute right-0 top-full mt-4 w-56 py-2 rounded-xl shadow-xl border bg-white border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                            <div className="px-4 py-3 border-b border-slate-50">
-                                <p className="text-sm font-bold text-slate-900">{displayName}</p>
-                                <p className="text-xs text-slate-500">{user.email}</p>
-                            </div>
-                            <div className="py-2">
-                                <Link to="/settings" className="flex items-center gap-3 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600">
-                                    <Settings className="w-4 h-4" />
-                                    Settings
-                                </Link>
-                                <button
-                                    onClick={() => logout()}
-                                    className="w-full text-left px-4 py-2 text-sm text-red-500 flex items-center gap-3 hover:bg-red-50 mt-1"
-                                >
-                                    <LogOut className="w-4 h-4" />
-                                    Sign Out
-                                </button>
-                            </div>
+                    {/* Main Navigation */}
+                    <div className="hidden lg:flex items-center absolute left-1/2 -translate-x-1/2">
+                        <div className={`flex items-center gap-2 p-1.5 rounded-full transition-colors duration-300 ${scrolled ? 'bg-slate-100/50' : ''}`}>
+                            <NavLink to="/" icon={<Globe className="w-4 h-4" />} label="Home" active={isActive('/')} scrolled={scrolled} />
+                            <NavLink to="/ai" icon={<Sparkles className="w-4 h-4" />} label="AI Core" active={isActive('/ai') || isActive('/chat')} scrolled={scrolled} />
+                            <NavLink to="/my-trips" icon={<Map className="w-4 h-4" />} label="Trips" active={isActive('/trips') || isActive('/my-trips')} scrolled={scrolled} />
+                            <NavLink to="/bookings" icon={<CreditCard className="w-4 h-4" />} label="Bookings" active={isActive('/bookings')} scrolled={scrolled} />
+                            <NavLink to="/favourites" icon={<Heart className="w-4 h-4" />} label="Saved" active={isActive('/favourites')} scrolled={scrolled} />
                         </div>
                     </div>
+
+                    {/* Right Actions */}
+                    <div className="flex items-center justify-end gap-2 z-10">
+                        <div className="group relative">
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+                                className={`flex items-center gap-2 p-1 pr-3 rounded-full border transition-all duration-300 ${scrolled ? 'bg-slate-100 border-slate-200' : 'bg-white/20 backdrop-blur-md border-white/30'}`}
+                            >
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-sm ${scrolled ? 'bg-white text-blue-600' : 'bg-white text-blue-600'}`}>
+                                    {displayName.charAt(0).toUpperCase()}
+                                </div>
+                                <span className={`text-sm font-bold max-w-[100px] truncate ${scrolled ? 'text-slate-700' : 'text-white'}`}>
+                                    {displayName}
+                                </span>
+                            </motion.button>
+
+                            {/* Dropdown Menu */}
+                            <AnimatePresence>
+                                {profileMenuOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-10" onClick={() => setProfileMenuOpen(false)} />
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                            className="absolute right-0 top-full mt-3 w-64 bg-white rounded-3xl shadow-xl border border-slate-200 p-2 z-20"
+                                        >
+                                            <div className="p-4 border-b border-slate-100 mb-2">
+                                                <p className="text-sm font-bold text-slate-900">{displayName}</p>
+                                                <p className="text-xs font-medium text-slate-500 mt-1 truncate">{user.email}</p>
+                                            </div>
+                                            <Link to="/settings" onClick={() => setProfileMenuOpen(false)} className="flex items-center gap-3 w-full p-3 rounded-2xl hover:bg-slate-50 text-slate-700 transition-colors text-sm font-bold">
+                                                <Settings className="w-4 h-4" /> Settings
+                                            </Link>
+                                            <button onClick={() => { logout(); setProfileMenuOpen(false); }} className="flex items-center gap-3 w-full p-3 rounded-2xl hover:bg-red-50 text-red-600 transition-colors text-sm font-bold mt-1">
+                                                <LogOut className="w-4 h-4" /> Sign Out
+                                            </button>
+                                        </motion.div>
+                                    </>
+                                )}
+                            </AnimatePresence>
+                        </div>
+
+                        {/* Mobile Menu Button for Authenticated State */}
+                        <button
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            className={`lg:hidden p-2 ml-2 rounded-xl transition-colors ${scrolled ? 'bg-slate-100 text-slate-600' : 'bg-white/20 text-white backdrop-blur-md border border-white/30'}`}
+                        >
+                            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                        </button>
+                    </div>
                 </div>
+
+                {/* Mobile Menu for Authenticated State */}
+                <AnimatePresence>
+                    {mobileMenuOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="lg:hidden overflow-hidden mt-2 bg-white rounded-3xl shadow-xl border border-slate-200"
+                        >
+                            <div className="p-4 space-y-2">
+                                <Link to="/" onClick={() => setMobileMenuOpen(false)} className="block px-5 py-3.5 rounded-2xl text-slate-700 font-bold hover:bg-slate-50">Home</Link>
+                                <Link to="/ai" onClick={() => setMobileMenuOpen(false)} className="block px-5 py-3.5 rounded-2xl text-blue-600 font-bold hover:bg-slate-50">AI Core</Link>
+                                <Link to="/my-trips" onClick={() => setMobileMenuOpen(false)} className="block px-5 py-3.5 rounded-2xl text-slate-700 font-bold hover:bg-slate-50">Trips</Link>
+                                <Link to="/bookings" onClick={() => setMobileMenuOpen(false)} className="block px-5 py-3.5 rounded-2xl text-slate-700 font-bold hover:bg-slate-50">Bookings</Link>
+                                <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="w-full text-left px-5 py-3.5 text-red-600 font-bold hover:bg-red-50 rounded-2xl mt-4 border-t border-slate-100">Sign Out</button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </motion.nav>
     );
 };
 
 const NavLink = ({ to, icon, label, active, scrolled }) => {
-    const linkTextClass = scrolled ? 'text-slate-600 hover:text-blue-600' : 'text-white hover:text-white/80 drop-shadow-sm';
+    const linkTextClass = scrolled ? 'text-slate-600 hover:text-slate-900' : 'text-white/90 hover:text-white drop-shadow-sm';
     const activeLinkClass = scrolled ? 'text-blue-600 font-bold' : 'text-white font-bold drop-shadow-md';
 
     return (
         <Link
             to={to}
-            className={`flex items-center gap-2 text-sm font-semibold transition-all duration-300 relative group ${active ? activeLinkClass : linkTextClass}`}
+            className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all relative flex items-center gap-2 cursor-pointer ${active ? activeLinkClass : linkTextClass}`}
         >
             <span>{icon}</span>
             <span>{label}</span>
-            <div className={`absolute -bottom-1 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full ${scrolled ? 'bg-blue-600' : 'bg-white'}`} />
-            {active && <div className={`absolute -bottom-1 left-0 w-full h-0.5 ${scrolled ? 'bg-blue-600' : 'bg-white'}`} />}
+            {active && scrolled && (
+                <motion.div layoutId="activeAuthIndicator" className="absolute inset-0 bg-white rounded-full shadow-sm -z-10 border border-slate-200/50" />
+            )}
         </Link>
     );
 };
