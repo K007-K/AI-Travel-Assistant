@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Mail, Lock, ArrowRight, Loader } from 'lucide-react';
+import { User, Mail, Lock, ArrowRight, Loader, Plane, MapPin } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 
 const Signup = () => {
@@ -22,56 +22,80 @@ const Signup = () => {
         clearError();
         try {
             await signup(name, email, password);
-            navigate('/'); // Redirect to home or dashboard after signup
+            navigate('/'); 
         } catch (err) {
             // Error is handled in store
         }
     };
 
-    const inputClasses = "flex h-11 w-full rounded-xl border border-slate-200 dark:border-white/[0.1] bg-slate-50 dark:bg-white/[0.04] px-3 py-2 pl-12 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/50 transition-colors";
-
     return (
-        <div className="min-h-screen pt-20 pb-12 flex items-center justify-center bg-slate-50 dark:bg-[#0a0a0a] px-4">
-            <div className="w-full max-w-md">
-                <div className="bg-white dark:bg-[#111111] rounded-3xl shadow-xl dark:shadow-2xl dark:shadow-black/50 overflow-hidden border border-slate-200 dark:border-white/[0.08] p-8">
-                    <div className="text-center mb-8">
-                        <h1 className="text-3xl font-display font-bold text-slate-900 dark:text-white mb-2">Create Account</h1>
-                        <p className="text-slate-600 dark:text-slate-400">Start planning your dream trips today.</p>
+        <div className="min-h-screen w-full flex bg-white dark:bg-[#030712] selection:bg-blue-200 selection:text-blue-900 overflow-hidden">
+            
+            {/* Left Side: The Interface */}
+            <div className="w-full lg:w-[45%] flex flex-col p-8 sm:p-12 lg:p-16 xl:p-24 relative z-10 overflow-y-auto">
+                
+                {/* Logo / Back to Home */}
+                <Link to="/" className="flex items-center gap-2 group w-max mb-12 lg:mb-auto">
+                    <div className="p-2.5 rounded-xl bg-blue-600 group-hover:bg-blue-500 transition-colors shadow-lg shadow-blue-500/20">
+                        <Plane className="w-5 h-5 text-white" />
                     </div>
+                    <span className="text-xl font-display font-black text-slate-900 dark:text-white tracking-tight">
+                        ROAMEO
+                    </span>
+                </Link>
+
+                <div className="w-full max-w-md mx-auto my-auto space-y-8">
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                    >
+                        <h1 className="text-4xl lg:text-5xl font-display font-black text-slate-900 dark:text-white mb-3 tracking-tight">Join Roameo.</h1>
+                        <p className="text-slate-500 dark:text-slate-400 font-medium">Create your free account to unlock sentient travel orchestration.</p>
+                    </motion.div>
 
                     {error && (
                         <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 p-3 rounded-xl text-sm mb-6 text-center border border-transparent dark:border-red-500/20"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 p-4 rounded-2xl text-sm font-medium flex items-center border border-red-100 dark:border-red-500/20 shadow-sm"
                         >
                             {error}
                         </motion.div>
                     )}
 
-                    <div className="space-y-4 mb-6">
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                        className="space-y-4"
+                    >
                         <button
                             onClick={() => loginWithGoogle()}
-                            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-slate-200 dark:border-white/[0.1] rounded-xl hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors font-medium text-slate-700 dark:text-slate-200"
+                            className="w-full flex items-center justify-center gap-3 px-4 py-3.5 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-white/[0.08] rounded-2xl hover:bg-slate-50 dark:hover:bg-white/[0.04] hover:shadow-md transition-all font-bold text-slate-700 dark:text-slate-200 group"
                         >
-                            <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
-                            Continue with Google
+                            <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                            Sign up with Google
                         </button>
-                        <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                                <span className="w-full border-t border-slate-200 dark:border-white/[0.08]"></span>
-                            </div>
-                            <div className="relative flex justify-center text-xs uppercase">
-                                <span className="bg-white dark:bg-[#111111] px-2 text-slate-500 dark:text-slate-500">Or continue with email</span>
-                            </div>
+                        
+                        <div className="relative flex items-center py-4">
+                            <div className="flex-grow border-t border-slate-200 dark:border-white/[0.08]"></div>
+                            <span className="flex-shrink-0 mx-4 text-xs font-bold uppercase tracking-widest text-slate-400">or use email</span>
+                            <div className="flex-grow border-t border-slate-200 dark:border-white/[0.08]"></div>
                         </div>
-                    </div>
+                    </motion.div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Full Name</label>
-                            <div className="relative">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500">
+                    <motion.form 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                        onSubmit={handleSubmit} 
+                        className="space-y-5"
+                    >
+                        <div className="space-y-1.5">
+                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">Full Name</label>
+                            <div className="relative group">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors">
                                     <User className="w-5 h-5" />
                                 </div>
                                 <input
@@ -79,16 +103,16 @@ const Signup = () => {
                                     required
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    className={inputClasses}
+                                    className="flex h-12 w-full rounded-2xl border border-slate-200 dark:border-white/[0.1] bg-slate-50 dark:bg-white/[0.02] px-3 py-2 pl-12 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/50 focus:bg-white dark:focus:bg-[#0a0a0a] transition-all shadow-sm"
                                     placeholder="John Doe"
                                 />
                             </div>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email Address</label>
-                            <div className="relative">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500">
+                        <div className="space-y-1.5">
+                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">Email</label>
+                            <div className="relative group">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors">
                                     <Mail className="w-5 h-5" />
                                 </div>
                                 <input
@@ -96,26 +120,26 @@ const Signup = () => {
                                     required
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className={inputClasses}
-                                    placeholder="you@example.com"
+                                    className="flex h-12 w-full rounded-2xl border border-slate-200 dark:border-white/[0.1] bg-slate-50 dark:bg-white/[0.02] px-3 py-2 pl-12 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/50 focus:bg-white dark:focus:bg-[#0a0a0a] transition-all shadow-sm"
+                                    placeholder="name@example.com"
                                 />
                             </div>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Password</label>
-                            <div className="relative">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500">
+                        <div className="space-y-1.5">
+                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">Password</label>
+                            <div className="relative group">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors">
                                     <Lock className="w-5 h-5" />
                                 </div>
                                 <input
                                     type="password"
                                     required
+                                    minLength={6}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className={inputClasses}
+                                    className="flex h-12 w-full rounded-2xl border border-slate-200 dark:border-white/[0.1] bg-slate-50 dark:bg-white/[0.02] px-3 py-2 pl-12 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/50 focus:bg-white dark:focus:bg-[#0a0a0a] transition-all shadow-sm"
                                     placeholder="••••••••"
-                                    minLength={6}
                                 />
                             </div>
                         </div>
@@ -123,26 +147,70 @@ const Signup = () => {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center justify-center gap-2 group transition-all shadow-lg shadow-blue-600/20 dark:shadow-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full h-12 mt-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center justify-center gap-2 group transition-all shadow-[0_4px_14px_rgba(37,99,235,0.3)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.4)] disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5"
                         >
                             {isLoading ? (
                                 <Loader className="w-5 h-5 animate-spin" />
                             ) : (
                                 <>
-                                    Sign Up <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                    Create Account <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                 </>
                             )}
                         </button>
-                    </form>
+                    </motion.form>
 
-                    <div className="mt-8 text-center text-sm text-slate-600 dark:text-slate-400">
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.6, delay: 0.4 }}
+                        className="text-center text-sm font-medium text-slate-600 dark:text-slate-400 pt-4"
+                    >
                         Already have an account?{' '}
-                        <Link to="/login" className="font-semibold text-primary-600 dark:text-blue-400 hover:text-primary-500">
-                            Sign in
+                        <Link to="/login" className="font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 hover:underline underline-offset-4 transition-all">
+                            Sign in instead
                         </Link>
-                    </div>
+                    </motion.div>
                 </div>
             </div>
+
+            {/* Right Side: The Vision (Split Screen) */}
+            <div className="hidden lg:flex w-[55%] relative overflow-hidden bg-slate-900 rounded-l-[3rem] shadow-[-20px_0_40px_rgba(0,0,0,0.1)] my-4 mr-4">
+                <motion.img 
+                    initial={{ scale: 1.1 }}
+                    animate={{ scale: 1 }}
+                    transition={{ duration: 10, ease: "easeOut" }}
+                    src="https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=3000&auto=format&fit=crop" 
+                    alt="Kyoto Travel" 
+                    className="absolute inset-0 w-full h-full object-cover object-center"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent" />
+                
+                {/* Floating Testimonial */}
+                <div className="absolute bottom-16 left-16 right-16">
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                        className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl text-white shadow-2xl relative overflow-hidden"
+                    >
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-500" />
+                        <MapPin className="w-8 h-8 text-emerald-400 mb-4" />
+                        <p className="text-2xl font-serif font-light leading-snug italic mb-6">
+                            "I just typed 'Take me to Kyoto for 5 days' and it handled flights, hotels, and a full itinerary inside my budget. Insane."
+                        </p>
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-emerald-600/20 border border-emerald-400/30 flex items-center justify-center font-bold text-emerald-300">
+                                MD
+                            </div>
+                            <div>
+                                <p className="font-bold text-sm tracking-wide">Marcus D.</p>
+                                <p className="text-xs text-white/60 font-medium uppercase tracking-widest">Early Adopter</p>
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+            </div>
+
         </div>
     );
 };
