@@ -154,16 +154,23 @@ const DestinationShowcase = () => {
                                 }}
                                 animate={{
                                     flex: isActive ? 5 : 1,
+                                    boxShadow: isActive ? "0 25px 50px -12px rgba(15, 23, 42, 0.3)" : "0 10px 15px -3px rgba(0, 0, 0, 0.1)"
                                 }}
                                 style={isActive ? { rotateX, rotateY, transformStyle: "preserve-3d" } : {}}
                                 transition={{ type: 'spring', bounce: 0.2, duration: 0.8 }}
-                                className={`relative rounded-[2rem] overflow-hidden cursor-pointer group shadow-xl transition-[box-shadow] duration-700 ${isActive ? 'shadow-2xl shadow-slate-900/30 ring-1 ring-white/20' : 'hover:bg-slate-100'}`}
+                                className={`relative rounded-[2rem] overflow-hidden cursor-pointer group ${isActive ? 'ring-1 ring-white/20' : 'hover:bg-slate-100'}`}
                             >
                                 {/* Background Image */}
                                 <motion.img 
                                     src={dest.image}
                                     alt={dest.title}
-                                    className={`absolute inset-0 w-full h-full object-cover transition-[transform,filter] duration-[1.5s] ease-out ${isActive ? 'scale-105 grayscale-0' : 'scale-100 grayscale-[0.6] group-hover:grayscale-[0.3]'}`}
+                                    initial={false}
+                                    animate={{ 
+                                        scale: isActive ? 1.05 : 1,
+                                        filter: isActive ? "grayscale(0%)" : "grayscale(60%)"
+                                    }}
+                                    transition={{ duration: 1.5, ease: "easeOut" }}
+                                    className="absolute inset-0 w-full h-full object-cover"
                                 />
                                 
                                 {/* Active State Progress Bar */}
