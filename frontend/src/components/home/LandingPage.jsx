@@ -2,6 +2,7 @@ import React from 'react';
 import HeroSection from './HeroSection';
 import FeaturesGrid from './FeaturesGrid';
 import DestinationShowcase from './DestinationShowcase';
+import FreeCTASection from './FreeCTASection';
 import SmoothScroller from '../SmoothScroller';
 
 const LandingPage = () => {
@@ -11,6 +12,7 @@ const LandingPage = () => {
             <HeroSection />
             <FeaturesGrid />
             <DestinationShowcase />
+            <FreeCTASection />
         </div>
     );
 };
