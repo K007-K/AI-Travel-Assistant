@@ -99,18 +99,18 @@ const FeaturesGrid = () => {
                     className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto"
                     initial="hidden"
                     whileInView="visible"
-                    viewport={{ once: true, margin: "-100px" }}
+                    viewport={{ once: true, amount: 0.15 }}
                     variants={{
                         hidden: {},
-                        visible: { transition: { staggerChildren: 0.2 } }
+                        visible: { transition: { staggerChildren: 0.3 } }
                     }}
                 >
                     
                     {/* Card 1: Sentient AI (Massive Cinematic Card) */}
                     <motion.div 
                         variants={{
-                            hidden: { opacity: 0, y: 50, scale: 0.95 },
-                            visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 100, damping: 20 } }
+                            hidden: { opacity: 0, y: 120, filter: "blur(20px)" },
+                            visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 1.2, ease: [0.16, 1, 0.3, 1] } }
                         }}
                         className="lg:col-span-7 lg:row-span-2 relative bg-white rounded-[2.5rem] overflow-hidden min-h-[500px] lg:min-h-[600px] group flex flex-col justify-between p-8 md:p-12 border border-slate-200 shadow-xl shadow-slate-200/50 hover:-translate-y-2 hover:shadow-2xl transition-all duration-500"
                     >
@@ -300,8 +300,8 @@ const FeaturesGrid = () => {
                     {/* Card 2: Routing (Sleek White Card) */}
                     <motion.div 
                         variants={{
-                            hidden: { opacity: 0, y: 50, scale: 0.95 },
-                            visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 100, damping: 20 } }
+                            hidden: { opacity: 0, y: 120, filter: "blur(20px)" },
+                            visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 1.2, ease: [0.16, 1, 0.3, 1] } }
                         }}
                         className="lg:col-span-5 lg:row-span-1 bg-white rounded-[2.5rem] overflow-hidden p-8 border border-slate-200 shadow-xl shadow-slate-200/50 group flex flex-col relative hover:-translate-y-2 hover:shadow-2xl transition-all duration-500"
                     >
