@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
     Sparkles,
     Map,
@@ -19,6 +19,7 @@ import useAuthStore from '../../store/authStore';
 const Navbar = () => {
     const { user, profile, logout } = useAuthStore();
     const location = useLocation();
+    const navigate = useNavigate();
     
     // Hide navbar on auth routes for split-screen immersion
     const authRoutes = ['/login', '/signup', '/forgot-password', '/reset-password'];
@@ -70,9 +71,16 @@ const Navbar = () => {
     const handleNavClick = (path) => {
         setMobileMenuOpen(false);
         if (path.startsWith('/#')) {
-            const element = document.getElementById(path.substring(2));
-            if (element) {
-                element.scrollIntoView({ behavior: 'smooth' });
+            if (location.pathname !== '/') {
+                navigate(path);
+            } else {
+                navigate(path, { replace: true });
+                setTimeout(() => {
+                    const element = document.getElementById(path.substring(2));
+                    if (element) {
+                        element.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }, 50);
             }
         }
     };

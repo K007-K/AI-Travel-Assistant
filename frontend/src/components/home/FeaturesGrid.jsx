@@ -68,7 +68,7 @@ const FeaturesGrid = () => {
     }, [animState]);
 
     return (
-        <section className="w-full bg-[#fafafa] py-32 overflow-hidden">
+        <section id="features" className="w-full bg-[#fafafa] py-32 overflow-hidden">
             <div className="max-w-7xl mx-auto px-6">
                 
                 {/* Header Section */}
