@@ -240,29 +240,33 @@ const DestinationShowcase = () => {
                                                         </p>
                                                     </div>
 
-                                                    {/* Right: visionOS Glass Itinerary Panel */}
-                                                    <div className="hidden md:block w-[340px] bg-[#1a1a24]/50 backdrop-blur-3xl backdrop-saturate-150 ring-1 ring-white/10 rounded-[2rem] p-6 shadow-[0_24px_48px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)] pointer-events-auto shrink-0 transform transition-transform hover:-translate-y-2 relative overflow-hidden group/panel">
+                                                    {/* Right: Liquid Glass Itinerary Panel */}
+                                                    <div className="hidden md:block w-[340px] bg-white/[0.08] backdrop-blur-[32px] backdrop-saturate-[180%] border-t border-l border-white/30 border-b border-r border-white/10 rounded-[2rem] p-6 shadow-[0_8px_32px_rgba(0,0,0,0.3)] pointer-events-auto shrink-0 relative overflow-hidden">
                                                         
+                                                        {/* Liquid Refraction Shine */}
+                                                        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" />
+                                                        <div className="absolute inset-0 bg-gradient-to-br from-white-[0.05] via-transparent to-transparent pointer-events-none" />
+
                                                         <div className="relative z-10">
-                                                            <div className="flex items-center gap-4 mb-5 border-b border-white/10 pb-5">
-                                                                <div className="w-10 h-10 rounded-[14px] bg-gradient-to-b from-blue-500 to-indigo-600 flex items-center justify-center shadow-[0_4px_16px_rgba(59,130,246,0.5),inset_0_1px_1px_rgba(255,255,255,0.3)]">
-                                                                    <Star className="w-5 h-5 text-white" fill="currentColor" strokeWidth={1} />
+                                                            <div className="flex items-center gap-4 mb-5 border-b border-white/20 pb-5">
+                                                                <div className="w-10 h-10 rounded-[14px] bg-white/20 border border-white/30 flex items-center justify-center shadow-[inset_0_0_20px_rgba(255,255,255,0.2)] backdrop-blur-md">
+                                                                    <Star className="w-5 h-5 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" fill="currentColor" strokeWidth={1} />
                                                                 </div>
                                                                 <div>
-                                                                    <p className="text-[13px] font-black uppercase tracking-widest text-white/95">AI Curated Plan</p>
+                                                                    <p className="text-[13px] font-black uppercase tracking-widest text-white drop-shadow-sm">AI Curated Plan</p>
                                                                 </div>
                                                             </div>
                                                             <div className="space-y-4 mb-6">
                                                                 {dest.plan.map((item, index) => (
                                                                     <div key={index} className="flex items-center gap-3.5">
-                                                                        <div className="w-6 h-6 rounded-full bg-white/10 ring-1 ring-white/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] flex items-center justify-center text-[10px] font-black text-white shrink-0">
+                                                                        <div className="w-6 h-6 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-[10px] font-black text-white shrink-0 backdrop-blur-sm">
                                                                             {index + 1}
                                                                         </div>
-                                                                        <p className="text-[14px] text-white/80 font-medium leading-tight">{item}</p>
+                                                                        <p className="text-[14px] text-white/90 font-medium leading-tight drop-shadow-sm">{item}</p>
                                                                     </div>
                                                                 ))}
                                                             </div>
-                                                            <button className="w-full py-3.5 bg-white/5 hover:bg-white/15 ring-1 ring-white/15 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] text-white/90 text-xs font-bold uppercase tracking-widest rounded-xl transition-all duration-300 flex items-center justify-center gap-2">
+                                                            <button className="w-full py-3.5 bg-white/10 hover:bg-white/20 border border-white/30 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all duration-300 flex items-center justify-center gap-2 backdrop-blur-md shadow-[0_4px_15px_rgba(0,0,0,0.1)]">
                                                                 View Full Itinerary <ArrowRight className="w-4 h-4" />
                                                             </button>
                                                         </div>
