@@ -471,7 +471,7 @@ const FeaturesGrid = () => {
                         </div>
                     </motion.div>
 
-                </div>
+                </motion.div>
             </div>
         </section>
     );
