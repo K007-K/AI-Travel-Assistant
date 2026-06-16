@@ -240,34 +240,37 @@ const DestinationShowcase = () => {
                                                         </p>
                                                     </div>
 
-                                                    {/* Right: Liquid Glass Itinerary Panel */}
-                                                    <div className="hidden md:block w-[340px] bg-white/[0.08] backdrop-blur-[32px] backdrop-saturate-[180%] border-t border-l border-white/30 border-b border-r border-white/10 rounded-[2rem] p-6 shadow-[0_8px_32px_rgba(0,0,0,0.3)] pointer-events-auto shrink-0 relative overflow-hidden">
+                                                    {/* Right: Premium Glass Itinerary Panel */}
+                                                    <div className="hidden md:block w-[340px] rounded-3xl p-6 relative overflow-hidden bg-white/10 backdrop-blur-2xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] shrink-0">
                                                         
-                                                        {/* Liquid Refraction Shine */}
-                                                        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" />
-                                                        <div className="absolute inset-0 bg-gradient-to-br from-white-[0.05] via-transparent to-transparent pointer-events-none" />
+                                                        {/* Inner 3D Highlight */}
+                                                        <div className="absolute inset-0 rounded-3xl ring-1 ring-inset ring-white/10 pointer-events-none" />
+                                                        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-50" />
 
                                                         <div className="relative z-10">
-                                                            <div className="flex items-center gap-4 mb-5 border-b border-white/20 pb-5">
-                                                                <div className="w-10 h-10 rounded-[14px] bg-white/20 border border-white/30 flex items-center justify-center shadow-[inset_0_0_20px_rgba(255,255,255,0.2)] backdrop-blur-md">
-                                                                    <Star className="w-5 h-5 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" fill="currentColor" strokeWidth={1} />
+                                                            <div className="flex items-center gap-4 mb-6 pb-5 border-b border-white/10">
+                                                                <div className="w-12 h-12 rounded-[16px] bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.5)] border border-white/20 relative overflow-hidden group-hover:scale-110 transition-transform duration-500">
+                                                                    <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                                                    <Star className="w-5 h-5 text-white relative z-10" fill="currentColor" />
                                                                 </div>
                                                                 <div>
-                                                                    <p className="text-[13px] font-black uppercase tracking-widest text-white drop-shadow-sm">AI Curated Plan</p>
+                                                                    <p className="text-[14px] font-black uppercase tracking-widest text-white drop-shadow-md">AI Curated Plan</p>
                                                                 </div>
                                                             </div>
+                                                            
                                                             <div className="space-y-4 mb-6">
                                                                 {dest.plan.map((item, index) => (
-                                                                    <div key={index} className="flex items-center gap-3.5">
-                                                                        <div className="w-6 h-6 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-[10px] font-black text-white shrink-0 backdrop-blur-sm">
+                                                                    <div key={index} className="flex items-center gap-4">
+                                                                        <div className="w-7 h-7 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-xs font-bold text-white shadow-inner backdrop-blur-sm shrink-0">
                                                                             {index + 1}
                                                                         </div>
-                                                                        <p className="text-[14px] text-white/90 font-medium leading-tight drop-shadow-sm">{item}</p>
+                                                                        <p className="text-sm font-medium text-white/95 drop-shadow-sm leading-snug">{item}</p>
                                                                     </div>
                                                                 ))}
                                                             </div>
-                                                            <button className="w-full py-3.5 bg-white/10 hover:bg-white/20 border border-white/30 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all duration-300 flex items-center justify-center gap-2 backdrop-blur-md shadow-[0_4px_15px_rgba(0,0,0,0.1)]">
-                                                                View Full Itinerary <ArrowRight className="w-4 h-4" />
+                                                            
+                                                            <button className="w-full py-3.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(255,255,255,0.15)] relative overflow-hidden">
+                                                                <span className="relative z-10 flex items-center gap-2">View Full Itinerary <ArrowRight className="w-4 h-4" /></span>
                                                             </button>
                                                         </div>
                                                     </div>
