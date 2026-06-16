@@ -19,7 +19,7 @@ const destinations = [
         id: 2,
         title: "Amalfi Coast",
         subtitle: "Mediterranean Dream",
-        image: "https://images.unsplash.com/photo-1533090161767-e6ffed986c88?q=80&w=2000&auto=format&fit=crop",
+        image: "https://images.unsplash.com/photo-1612698093158-e07ac200d44e?q=80&w=2000&auto=format&fit=crop",
         tags: ["7 Days", "Boating", "Scenic"],
         plan: [
             { time: "10:00 AM", title: "Riva Yacht to Capri", desc: "Private charter along the rugged coastline." },
