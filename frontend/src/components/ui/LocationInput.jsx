@@ -10,7 +10,8 @@ const LocationInput = ({
     placeholder = "City or Airport",
     // eslint-disable-next-line no-unused-vars
     icon: Icon = MapPin,
-    className = ""
+    className = "",
+    variant = "default" // "default" | "glass"
 }) => {
     const [suggestions, setSuggestions] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
@@ -101,7 +102,11 @@ const LocationInput = ({
                     value={value}
                     onChange={handleInputChange}
                     placeholder={placeholder}
-                    className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                    className={`w-full pl-10 pr-10 py-3.5 outline-none transition-all ${
+                        variant === 'glass' 
+                        ? "bg-white/10 dark:bg-black/20 border border-white/20 dark:border-white/10 text-white placeholder-white/70 backdrop-blur-md rounded-2xl focus:bg-white/20 dark:focus:bg-white/10 focus:border-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.1)]"
+                        : "bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent text-slate-900 dark:text-slate-100 placeholder-slate-400"
+                    }`}
                 />
                 {isLoading && (
                     <div className="absolute right-3 top-3">
@@ -116,7 +121,11 @@ const LocationInput = ({
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 10 }}
-                        className="absolute z-50 left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 max-h-60 overflow-y-auto scrollbar-thin"
+                        className={`absolute z-50 left-0 right-0 mt-2 rounded-xl shadow-xl border max-h-60 overflow-y-auto scrollbar-thin ${
+                            variant === 'glass'
+                            ? "bg-white/95 dark:bg-[#141414]/95 backdrop-blur-xl border-white/20 dark:border-white/10"
+                            : "bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700"
+                        }`}
                     >
                         {suggestions.map((loc, idx) => (
                             <button
