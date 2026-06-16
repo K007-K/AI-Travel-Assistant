@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
 import useAuthStore from '../../store/authStore';
+import { LiquidContainer } from './liquid-glass-button';
 
 const Navbar = () => {
     const { user, profile, logout } = useAuthStore();
@@ -45,16 +46,25 @@ const Navbar = () => {
         return location.pathname === path;
     };
 
-    // ── Floating Pill Dynamic Classes ──
     // Outer container (controls detachment from top)
     const navContainerClass = scrolled 
         ? 'py-4' // Scrolled: Detached
         : 'py-0 bg-transparent'; // Top: Attached edge-to-edge
 
-    // Inner pill (controls width, background, glass effect)
-    const innerPillClass = scrolled
-        ? 'max-w-6xl px-4 md:px-6 h-[4.5rem] rounded-[2.5rem] bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl border border-white/40 dark:border-slate-700/50 shadow-[0_8px_32px_rgba(0,0,0,0.08)]'
-        : 'w-full max-w-7xl px-6 h-24'; // Top: Wide and taller
+    const NavContainer = ({ children }) => {
+        if (scrolled) {
+            return (
+                <LiquidContainer className="w-full h-[4.5rem] px-4 md:px-6 transition-all duration-500">
+                    {children}
+                </LiquidContainer>
+            );
+        }
+        return (
+            <div className="flex items-center justify-between w-full max-w-7xl px-6 h-24 transition-all duration-500">
+                {children}
+            </div>
+        );
+    };
 
     // Colors transition based on scroll
     const logoTextClass = scrolled ? 'text-slate-900' : 'text-white drop-shadow-md';
@@ -103,7 +113,7 @@ const Navbar = () => {
                 animate={{ y: 0 }}
             >
                 <div className={`mx-auto transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${scrolled ? 'max-w-6xl px-4 md:px-6' : 'w-full max-w-7xl px-6'}`}>
-                    <div className={`flex items-center justify-between transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${innerPillClass}`}>
+                    <NavContainer>
                         
                         <div className="flex items-center relative z-10">
                             <Link 
@@ -183,7 +193,7 @@ const Navbar = () => {
                         >
                             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                         </button>
-                    </div>
+                    </NavContainer>
 
                     {/* Mobile Menu */}
                     <AnimatePresence>
@@ -232,7 +242,7 @@ const Navbar = () => {
             animate={{ y: 0 }}
         >
             <div className={`mx-auto transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${scrolled ? 'max-w-6xl px-4 md:px-6' : 'w-full max-w-7xl px-6'}`}>
-                <div className={`flex items-center justify-between transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${innerPillClass}`}>
+                <NavContainer>
                     
                     {/* Logo Area */}
                     <div className="flex items-center relative z-10">
@@ -315,7 +325,7 @@ const Navbar = () => {
                             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                         </button>
                     </div>
-                </div>
+                </NavContainer>
 
                 {/* Mobile Menu for Authenticated State */}
                 <AnimatePresence>
