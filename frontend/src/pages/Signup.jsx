@@ -37,12 +37,12 @@ const Signup = () => {
                     initial={{ scale: 1.1 }}
                     animate={{ scale: 1 }}
                     transition={{ duration: 15, ease: "easeOut" }}
-                    src="https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=3000&auto=format&fit=crop" 
-                    alt="Kyoto Travel" 
+                    src="https://images.unsplash.com/photo-1510414842594-a61c69b5ae57?q=80&w=3000&auto=format&fit=crop" 
+                    alt="Maldives Travel" 
                     className="w-full h-full object-cover object-center"
                 />
-                <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[4px]" />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-slate-900/30" />
+                <div className="absolute inset-0 bg-black/30" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
             </div>
 
             {/* Logo - Top Left */}
@@ -61,7 +61,7 @@ const Signup = () => {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                    className="bg-white/10 backdrop-blur-2xl border border-white/20 p-8 sm:p-10 rounded-[2.5rem] shadow-[0_0_80px_rgba(0,0,0,0.5)]"
+                    className="bg-black/30 backdrop-blur-2xl border border-white/20 p-8 sm:p-10 rounded-[2.5rem] shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
                 >
                     <div className="text-center mb-8">
                         <h1 className="text-3xl font-display font-black text-white mb-2 tracking-tight drop-shadow-sm">Join Roameo.</h1>
