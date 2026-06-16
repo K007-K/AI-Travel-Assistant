@@ -109,8 +109,8 @@ const FeaturesGrid = () => {
                     {/* Card 1: Sentient AI (Massive Cinematic Card) */}
                     <motion.div 
                         variants={{
-                            hidden: { opacity: 0, y: 40 },
-                            visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } }
+                            hidden: { opacity: 0, y: 50, scale: 0.95 },
+                            visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 100, damping: 20 } }
                         }}
                         className="lg:col-span-7 lg:row-span-2 relative bg-white rounded-[2.5rem] overflow-hidden min-h-[500px] lg:min-h-[600px] group flex flex-col justify-between p-8 md:p-12 border border-slate-200 shadow-xl shadow-slate-200/50 hover:-translate-y-2 hover:shadow-2xl transition-all duration-500"
                     >
@@ -300,8 +300,8 @@ const FeaturesGrid = () => {
                     {/* Card 2: Routing (Sleek White Card) */}
                     <motion.div 
                         variants={{
-                            hidden: { opacity: 0, x: 40 },
-                            visible: { opacity: 1, x: 0, transition: { duration: 0.6, ease: "easeOut" } }
+                            hidden: { opacity: 0, y: 50, scale: 0.95 },
+                            visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 100, damping: 20 } }
                         }}
                         className="lg:col-span-5 lg:row-span-1 bg-white rounded-[2.5rem] overflow-hidden p-8 border border-slate-200 shadow-xl shadow-slate-200/50 group flex flex-col relative hover:-translate-y-2 hover:shadow-2xl transition-all duration-500"
                     >
@@ -430,10 +430,10 @@ const FeaturesGrid = () => {
 
                     {/* Card 3: Budgeting (Vibrant Gradient Glass Card) */}
                     <motion.div 
-                        initial={{ opacity: 0, y: 40 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, margin: "-50px" }}
-                        transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
+                        variants={{
+                            hidden: { opacity: 0, y: 50, scale: 0.95 },
+                            visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 100, damping: 20 } }
+                        }}
                         className="lg:col-span-5 lg:row-span-1 bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500 rounded-[2.5rem] overflow-hidden p-8 group flex flex-col relative text-white hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(59,130,246,0.4)] transition-all duration-500 shadow-2xl shadow-blue-500/30"
                     >
                         {/* Decorative Background Elements */}
