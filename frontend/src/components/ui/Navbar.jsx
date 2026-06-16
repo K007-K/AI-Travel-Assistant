@@ -30,7 +30,7 @@ const Navbar = () => {
 
     // ── Transparent to Solid White Transition ──
     const navContainerClass = scrolled 
-        ? 'bg-white shadow-md py-3'
+        ? 'bg-white/80 backdrop-blur-xl border-b border-slate-200/50 shadow-sm py-3'
         : 'bg-transparent py-6';
 
     const logoTextClass = scrolled ? 'text-slate-900' : 'text-white drop-shadow-md';

@@ -233,19 +233,18 @@ const DestinationShowcase = () => {
                                                         </p>
                                                     </div>
 
-                                                    {/* Right: Glassmorphic Itinerary Panel */}
-                                                    <div className="hidden md:block w-[340px] bg-slate-900/40 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 shadow-2xl pointer-events-auto shrink-0 transform transition-transform hover:-translate-y-2 relative overflow-hidden group/panel">
+                                                    {/* Right: Liquid Glass Itinerary Panel */}
+                                                    <div className="hidden md:block w-[340px] bg-black/10 backdrop-blur-[40px] border border-white/20 rounded-3xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.3)] pointer-events-auto shrink-0 transform transition-transform hover:-translate-y-2 relative overflow-hidden group/panel">
                                                         {/* Subtle inner glow */}
-                                                        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-50 pointer-events-none" />
+                                                        <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-30 pointer-events-none" />
                                                         
                                                         <div className="relative z-10">
                                                             <div className="flex items-center gap-4 mb-5 border-b border-white/10 pb-5">
-                                                                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.4)]">
+                                                                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.6)]">
                                                                     <Star className="w-5 h-5 text-white" />
                                                                 </div>
                                                                 <div>
-                                                                    <p className="text-[13px] font-black uppercase tracking-widest text-white mb-0.5">AI Curated Plan</p>
-                                                                    <p className="text-[11px] font-semibold text-emerald-400 tracking-wide">Generated in 1.2s</p>
+                                                                    <p className="text-[13px] font-black uppercase tracking-widest text-white">AI Curated Plan</p>
                                                                 </div>
                                                             </div>
                                                             <div className="space-y-4 mb-6">
