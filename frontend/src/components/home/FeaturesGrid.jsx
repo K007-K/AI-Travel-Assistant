@@ -101,10 +101,11 @@ const FeaturesGrid = () => {
                     <motion.div 
                         initial={{ opacity: 0, y: 60 }}
                         whileInView={{ opacity: 1, y: 0 }}
+                        whileHover={{ y: -8, boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)" }}
                         viewport={{ once: true, margin: "-50px" }}
                         transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
                         style={{ willChange: "transform, opacity" }}
-                        className="lg:col-span-7 lg:row-span-2 relative bg-white rounded-[2.5rem] overflow-hidden min-h-[500px] lg:min-h-[600px] group flex flex-col justify-between p-8 md:p-12 border border-slate-200 shadow-xl shadow-slate-200/50 hover:-translate-y-2 hover:shadow-2xl transition-all duration-500"
+                        className="lg:col-span-7 lg:row-span-2 relative bg-white rounded-[2.5rem] overflow-hidden min-h-[500px] lg:min-h-[600px] group flex flex-col justify-between p-8 md:p-12 border border-slate-200 shadow-xl shadow-slate-200/50"
                     >
                         {/* UI Graphic: Engine Pipeline */}
                         <div className="w-full flex-1 flex flex-col items-center justify-start pt-6 pb-8 z-10 relative min-h-[300px]">
@@ -293,10 +294,11 @@ const FeaturesGrid = () => {
                     <motion.div 
                         initial={{ opacity: 0, y: 60 }}
                         whileInView={{ opacity: 1, y: 0 }}
+                        whileHover={{ y: -8, boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)" }}
                         viewport={{ once: true, margin: "-50px" }}
                         transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
                         style={{ willChange: "transform, opacity" }}
-                        className="lg:col-span-5 lg:row-span-1 bg-white rounded-[2.5rem] overflow-hidden p-8 border border-slate-200 shadow-xl shadow-slate-200/50 group flex flex-col relative hover:-translate-y-2 hover:shadow-2xl transition-all duration-500"
+                        className="lg:col-span-5 lg:row-span-1 bg-white rounded-[2.5rem] overflow-hidden p-8 border border-slate-200 shadow-xl shadow-slate-200/50 group flex flex-col relative"
                     >
                         <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center mb-6 text-blue-600">
                             <Route className="w-6 h-6" />
@@ -425,10 +427,11 @@ const FeaturesGrid = () => {
                     <motion.div 
                         initial={{ opacity: 0, y: 60 }}
                         whileInView={{ opacity: 1, y: 0 }}
+                        whileHover={{ y: -8, boxShadow: "0 20px 40px rgba(59, 130, 246, 0.4)" }}
                         viewport={{ once: true, margin: "-50px" }}
                         transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
                         style={{ willChange: "transform, opacity" }}
-                        className="lg:col-span-5 lg:row-span-1 bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500 rounded-[2.5rem] overflow-hidden p-8 group flex flex-col relative text-white hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(59,130,246,0.4)] transition-all duration-500 shadow-2xl shadow-blue-500/30"
+                        className="lg:col-span-5 lg:row-span-1 bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500 rounded-[2.5rem] overflow-hidden p-8 group flex flex-col relative text-white shadow-2xl shadow-blue-500/30"
                     >
                         {/* Decorative Background Elements */}
                         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/3" />
