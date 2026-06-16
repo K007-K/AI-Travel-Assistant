@@ -96,16 +96,18 @@ const LocationInput = ({
                 </label>
             )}
             <div className="relative">
-                <Icon className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                <div className={`absolute left-0 top-0 bottom-0 flex items-center justify-center ${variant === 'glass' ? 'w-14' : 'w-12'}`}>
+                    <Icon className="w-5 h-5 text-slate-400" />
+                </div>
                 <input
                     type="text"
                     value={value}
                     onChange={handleInputChange}
                     placeholder={placeholder}
-                    className={`w-full pl-10 pr-10 py-3.5 outline-none transition-all ${
+                    className={`w-full outline-none transition-all ${
                         variant === 'glass' 
-                        ? "bg-white/10 dark:bg-black/20 border border-white/20 dark:border-white/10 text-white placeholder-white/70 backdrop-blur-md rounded-2xl focus:bg-white/20 dark:focus:bg-white/10 focus:border-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.1)]"
-                        : "bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent text-slate-900 dark:text-slate-100 placeholder-slate-400"
+                        ? "bg-white/40 dark:bg-black/40 border border-white/40 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-600 dark:placeholder-white/70 backdrop-blur-2xl rounded-[2.5rem] focus:bg-white/60 dark:focus:bg-black/60 shadow-[0_8px_32px_rgba(0,0,0,0.05)] py-5 pl-14 pr-10 text-lg"
+                        : "pl-10 pr-10 py-3.5 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent text-slate-900 dark:text-slate-100 placeholder-slate-400"
                     }`}
                 />
                 {isLoading && (
