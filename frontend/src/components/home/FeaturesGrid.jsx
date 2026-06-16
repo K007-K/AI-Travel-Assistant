@@ -95,23 +95,15 @@ const FeaturesGrid = () => {
                 </div>
 
                 {/* Asymmetrical Bento Grid */}
-                <motion.div 
-                    className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto"
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, amount: 0.15 }}
-                    variants={{
-                        hidden: {},
-                        visible: { transition: { staggerChildren: 0.3 } }
-                    }}
-                >
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto">
                     
                     {/* Card 1: Sentient AI (Massive Cinematic Card) */}
                     <motion.div 
-                        variants={{
-                            hidden: { opacity: 0, y: 120, filter: "blur(20px)" },
-                            visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 1.2, ease: [0.16, 1, 0.3, 1] } }
-                        }}
+                        initial={{ opacity: 0, y: 60 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: "-50px" }}
+                        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                        style={{ willChange: "transform, opacity" }}
                         className="lg:col-span-7 lg:row-span-2 relative bg-white rounded-[2.5rem] overflow-hidden min-h-[500px] lg:min-h-[600px] group flex flex-col justify-between p-8 md:p-12 border border-slate-200 shadow-xl shadow-slate-200/50 hover:-translate-y-2 hover:shadow-2xl transition-all duration-500"
                     >
                         {/* UI Graphic: Engine Pipeline */}
@@ -299,10 +291,11 @@ const FeaturesGrid = () => {
 
                     {/* Card 2: Routing (Sleek White Card) */}
                     <motion.div 
-                        variants={{
-                            hidden: { opacity: 0, y: 120, filter: "blur(20px)" },
-                            visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 1.2, ease: [0.16, 1, 0.3, 1] } }
-                        }}
+                        initial={{ opacity: 0, y: 60 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: "-50px" }}
+                        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+                        style={{ willChange: "transform, opacity" }}
                         className="lg:col-span-5 lg:row-span-1 bg-white rounded-[2.5rem] overflow-hidden p-8 border border-slate-200 shadow-xl shadow-slate-200/50 group flex flex-col relative hover:-translate-y-2 hover:shadow-2xl transition-all duration-500"
                     >
                         <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center mb-6 text-blue-600">
@@ -430,14 +423,15 @@ const FeaturesGrid = () => {
 
                     {/* Card 3: Budgeting (Vibrant Gradient Glass Card) */}
                     <motion.div 
-                        variants={{
-                            hidden: { opacity: 0, y: 50, scale: 0.95 },
-                            visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 100, damping: 20 } }
-                        }}
+                        initial={{ opacity: 0, y: 60 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: "-50px" }}
+                        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
+                        style={{ willChange: "transform, opacity" }}
                         className="lg:col-span-5 lg:row-span-1 bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500 rounded-[2.5rem] overflow-hidden p-8 group flex flex-col relative text-white hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(59,130,246,0.4)] transition-all duration-500 shadow-2xl shadow-blue-500/30"
                     >
                         {/* Decorative Background Elements */}
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/3" />
                         
                         <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center mb-6 text-white shadow-lg">
                             <Wallet className="w-6 h-6" />
@@ -471,7 +465,7 @@ const FeaturesGrid = () => {
                         </div>
                     </motion.div>
 
-                </motion.div>
+                </div>
             </div>
         </section>
     );
