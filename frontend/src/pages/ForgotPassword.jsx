@@ -140,7 +140,7 @@ const ForgotPassword = () => {
             </div>
 
             {/* Right Side: The Vision (Split Screen) */}
-            <div className="hidden lg:flex w-[55%] relative overflow-hidden bg-slate-900 rounded-l-[3rem] shadow-[-20px_0_40px_rgba(0,0,0,0.1)] my-4 mr-4">
+            <div className="hidden lg:flex w-[55%] relative overflow-hidden bg-slate-900 shadow-[-20px_0_40px_rgba(0,0,0,0.1)]">
                 <motion.img 
                     initial={{ scale: 1.1 }}
                     animate={{ scale: 1 }}
