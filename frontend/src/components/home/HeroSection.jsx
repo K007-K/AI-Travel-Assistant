@@ -1,9 +1,11 @@
 import React, { useRef, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Search, MapPin, Calendar, Users, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const SearchPill = () => {
     const [focusedField, setFocusedField] = useState(null);
+    const navigate = useNavigate();
 
     const fields = [
         { id: 'where', icon: MapPin, label: 'Location', placeholder: 'Where are you going?' },
@@ -50,6 +52,7 @@ const SearchPill = () => {
             })}
             
             <motion.button 
+                onClick={() => navigate('/signup')}
                 whileHover={{ scale: 1.04, boxShadow: "0 20px 40px -10px rgba(59,130,246,0.6)" }}
                 whileTap={{ scale: 0.96 }}
                 className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-blue-500/30 transition-colors duration-300 group"

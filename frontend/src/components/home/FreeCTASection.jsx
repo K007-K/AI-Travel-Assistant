@@ -1,9 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const FreeCTASection = () => {
+    const navigate = useNavigate();
+
     return (
         <section id="join" className="w-full bg-[#030712] py-32 md:py-48 overflow-hidden relative border-t border-white/[0.05]">
             
@@ -58,17 +60,16 @@ const FreeCTASection = () => {
                     transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
                     className="flex flex-col sm:flex-row items-center gap-4"
                 >
-                    <Link to="/signup">
-                        <motion.button 
-                            whileHover={{ scale: 1.05, boxShadow: "0 20px 40px -10px rgba(59,130,246,0.5)" }}
-                            whileTap={{ scale: 0.95 }}
-                            className="flex items-center justify-center gap-2 bg-white text-slate-900 px-10 py-4 rounded-full font-bold text-lg shadow-[0_0_40px_rgba(255,255,255,0.1)] transition-colors duration-300 group"
-                        >
-                            <Sparkles className="w-5 h-5 text-blue-600 group-hover:animate-pulse" />
-                            Create Your Free Account
-                            <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-blue-600 transition-colors" />
-                        </motion.button>
-                    </Link>
+                    <motion.button 
+                        onClick={() => navigate('/signup')}
+                        whileHover={{ scale: 1.05, boxShadow: "0 20px 40px -10px rgba(59,130,246,0.5)" }}
+                        whileTap={{ scale: 0.95 }}
+                        className="flex items-center justify-center gap-2 bg-white text-slate-900 px-10 py-4 rounded-full font-bold text-lg shadow-[0_0_40px_rgba(255,255,255,0.1)] transition-colors duration-300 group"
+                    >
+                        <Sparkles className="w-5 h-5 text-blue-600 group-hover:animate-pulse" />
+                        Create Your Free Account
+                        <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                    </motion.button>
                 </motion.div>
 
                 {/* Micro-assurances */}

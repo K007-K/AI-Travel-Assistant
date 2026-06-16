@@ -174,16 +174,14 @@ const Navbar = () => {
                         </div>
 
                         {/* Right Actions */}
-                        <div className="hidden lg:flex items-center justify-end gap-6 z-10">
-                            <Link to="/login" className={`text-sm font-bold transition-colors ${loginClass}`}>
+                        <div className="hidden lg:flex items-center justify-end gap-6 z-10 relative pointer-events-auto">
+                            <button onClick={() => navigate('/login')} className={`text-sm font-bold transition-colors ${loginClass}`}>
                                 Log In
-                            </Link>
+                            </button>
                             
-                            <Link to="/signup">
-                                <div className={`px-6 py-3 rounded-full text-sm font-bold transition-all duration-300 ${getStartedClass}`}>
-                                    Get Started
-                                </div>
-                            </Link>
+                            <button onClick={() => navigate('/signup')} className={`px-6 py-3 rounded-full text-sm font-bold transition-all duration-300 ${getStartedClass}`}>
+                                Get Started
+                            </button>
                         </div>
 
                         {/* Mobile Menu Button */}
@@ -216,12 +214,12 @@ const Navbar = () => {
                                         </Link>
                                     ))}
                                     <div className="pt-4 mt-4 border-t border-slate-100 space-y-3">
-                                        <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="block w-full text-center py-3.5 bg-slate-50 rounded-2xl font-bold text-slate-700">
+                                        <button onClick={() => { setMobileMenuOpen(false); navigate('/login'); }} className="block w-full text-center py-3.5 bg-slate-50 rounded-2xl font-bold text-slate-700">
                                             Log In
-                                        </Link>
-                                        <Link to="/signup" onClick={() => setMobileMenuOpen(false)} className="block w-full text-center py-3.5 bg-blue-600 text-white rounded-2xl font-bold shadow-lg">
+                                        </button>
+                                        <button onClick={() => { setMobileMenuOpen(false); navigate('/signup'); }} className="block w-full text-center py-3.5 bg-blue-600 text-white rounded-2xl font-bold shadow-lg">
                                             Get Started
-                                        </Link>
+                                        </button>
                                     </div>
                                 </div>
                             </motion.div>
