@@ -67,11 +67,11 @@ const Navbar = () => {
     };
 
     // Colors transition based on scroll
-    const logoTextClass = scrolled ? 'text-slate-900' : 'text-white drop-shadow-md';
-    const linkTextClass = scrolled ? 'text-slate-600 hover:text-slate-900' : 'text-white/90 hover:text-white drop-shadow-sm';
-    const activeLinkClass = scrolled ? 'text-blue-600 font-bold' : 'text-white font-bold drop-shadow-md';
+    const logoTextClass = scrolled ? 'mix-blend-difference text-white' : 'text-white drop-shadow-md';
+    const linkTextClass = scrolled ? 'mix-blend-difference text-white hover:mix-blend-normal hover:text-blue-600' : 'text-white/90 hover:text-white drop-shadow-sm';
+    const activeLinkClass = scrolled ? 'mix-blend-difference text-white font-bold hover:mix-blend-normal hover:text-blue-600' : 'text-white font-bold drop-shadow-md';
     
-    const loginClass = scrolled ? 'text-slate-700 hover:text-slate-900' : 'text-white font-bold drop-shadow-md hover:text-white/90';
+    const loginClass = scrolled ? 'mix-blend-difference text-white font-bold hover:mix-blend-normal hover:text-blue-600' : 'text-white font-bold drop-shadow-md hover:text-white/90';
     const getStartedClass = scrolled 
         ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-[0_4px_14px_rgba(37,99,235,0.3)] hover:-translate-y-0.5'
         : 'bg-white text-blue-600 font-bold hover:bg-slate-50 shadow-lg hover:-translate-y-0.5';
@@ -134,7 +134,7 @@ const Navbar = () => {
 
                         {/* Central Navigation - Floating Pill Indicator */}
                         <div className="hidden lg:flex items-center absolute left-1/2 -translate-x-1/2">
-                            <div className={`flex items-center gap-2 p-1.5 rounded-full transition-colors duration-300 ${scrolled ? 'bg-slate-100/50' : ''}`}>
+                            <div className="flex items-center gap-2 p-1.5 rounded-full transition-colors duration-300">
                                 {guestLinks.map((link) => {
                                     const active = isActive(link.path);
                                     return link.path.startsWith('/#') ? (
@@ -148,9 +148,6 @@ const Navbar = () => {
                                             className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all relative cursor-pointer ${active ? activeLinkClass : linkTextClass}`}
                                         >
                                             {link.name}
-                                            {active && scrolled && (
-                                                <motion.div layoutId="activeNavIndicator" className="absolute inset-0 bg-white rounded-full shadow-sm -z-10 border border-slate-200/50" />
-                                            )}
                                         </a>
                                     ) : (
                                         <Link 
@@ -164,9 +161,6 @@ const Navbar = () => {
                                             className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all relative ${active ? activeLinkClass : linkTextClass}`}
                                         >
                                             {link.name}
-                                            {active && scrolled && (
-                                                <motion.div layoutId="activeNavIndicator" className="absolute inset-0 bg-white rounded-full shadow-sm -z-10 border border-slate-200/50" />
-                                            )}
                                         </Link>
                                     );
                                 })}
@@ -262,7 +256,7 @@ const Navbar = () => {
 
                     {/* Main Navigation */}
                     <div className="hidden lg:flex items-center absolute left-1/2 -translate-x-1/2">
-                        <div className={`flex items-center gap-2 p-1.5 rounded-full transition-colors duration-300 ${scrolled ? 'bg-slate-100/50' : ''}`}>
+                        <div className="flex items-center gap-2 p-1.5 rounded-full transition-colors duration-300">
                             <NavLink to="/" icon={<Globe className="w-4 h-4" />} label="Home" active={isActive('/')} scrolled={scrolled} />
                             <NavLink to="/ai" icon={<Sparkles className="w-4 h-4" />} label="AI Core" active={isActive('/ai') || isActive('/chat')} scrolled={scrolled} />
                             <NavLink to="/my-trips" icon={<Map className="w-4 h-4" />} label="Trips" active={isActive('/trips') || isActive('/my-trips')} scrolled={scrolled} />
@@ -360,9 +354,6 @@ const NavLink = ({ to, icon, label, active, scrolled }) => {
         >
             <span>{icon}</span>
             <span>{label}</span>
-            {active && scrolled && (
-                <motion.div layoutId="activeAuthIndicator" className="absolute inset-0 bg-white rounded-full shadow-sm -z-10 border border-slate-200/50" />
-            )}
         </Link>
     );
 };
