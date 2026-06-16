@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Compass, Star, ArrowRight } from 'lucide-react';
 
 const destinations = [
@@ -57,7 +57,7 @@ const DestinationShowcase = () => {
     const [activeId, setActiveId] = useState(1);
     const [isHovered, setIsHovered] = useState(false);
 
-    // Auto-play logic (Cycles every 5s unless hovered)
+    // Auto-play logic
     useEffect(() => {
         if (isHovered) return;
         const interval = setInterval(() => {
@@ -66,42 +66,16 @@ const DestinationShowcase = () => {
                 const nextIndex = (currentIndex + 1) % destinations.length;
                 return destinations[nextIndex].id;
             });
-        }, 5000);
+        }, 6000);
         return () => clearInterval(interval);
     }, [isHovered]);
 
-    // 3D Parallax Tilt Logic for the Active Card
-    const x = useMotionValue(0);
-    const y = useMotionValue(0);
-    const mouseXSpring = useSpring(x, { stiffness: 150, damping: 20 });
-    const mouseYSpring = useSpring(y, { stiffness: 150, damping: 20 });
-    const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["4deg", "-4deg"]);
-    const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-4deg", "4deg"]);
-
-    const handleMouseMove = (e) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const width = rect.width;
-        const height = rect.height;
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-        x.set(mouseX / width - 0.5);
-        y.set(mouseY / height - 0.5);
-    };
-
-    const handleMouseLeave = () => {
-        x.set(0);
-        y.set(0);
-        setIsHovered(false);
-    };
-
     return (
         <section className="w-full bg-[#fafafa] py-32 overflow-hidden relative">
-            
             {/* Dynamic Ambient Glow */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-blue-500/5 blur-[120px] pointer-events-none rounded-full" />
 
             <div className="max-w-7xl mx-auto px-6 relative z-10">
-                
                 {/* Header Section */}
                 <div className="text-center mb-16">
                     <motion.div 
@@ -125,163 +99,148 @@ const DestinationShowcase = () => {
                     </motion.h2>
                 </div>
 
-                {/* Expansion Showcase Container */}
-                <motion.div 
-                    className="w-full max-w-6xl mx-auto h-[500px] flex gap-4"
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, margin: "-100px" }}
-                    variants={{
-                        hidden: {},
-                        visible: { transition: { staggerChildren: 0.15 } }
-                    }}
+                {/* Spatial Bento Grid Container */}
+                <div 
+                    className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6 w-full h-[800px] lg:h-[650px]"
                     onMouseEnter={() => setIsHovered(true)}
-                    onMouseLeave={handleMouseLeave}
-                    onMouseMove={handleMouseMove}
-                    style={{ perspective: 1200 }}
+                    onMouseLeave={() => setIsHovered(false)}
                 >
-                    {destinations.map((dest) => {
-                        const isActive = activeId === dest.id;
+                    {/* HERO TILE (Left/Top) */}
+                    <div className="lg:col-span-3 h-[500px] lg:h-full w-full relative perspective-[2000px]">
+                        {destinations.map(dest => {
+                            if (dest.id !== activeId) return null;
+                            return (
+                                <motion.div
+                                    key={`hero-${dest.id}`}
+                                    layoutId={`card-${dest.id}`}
+                                    className="absolute inset-0 rounded-[2.5rem] overflow-hidden shadow-2xl bg-slate-900 z-10"
+                                    transition={{ type: "spring", damping: 30, stiffness: 150 }}
+                                >
+                                    {/* Cinematic Background */}
+                                    <motion.img
+                                        layoutId={`img-${dest.id}`}
+                                        src={dest.image}
+                                        alt={dest.title}
+                                        className="absolute inset-0 w-full h-full object-cover"
+                                    />
+                                    
+                                    {/* Gradient Overlays */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none opacity-90" />
+                                    <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent pointer-events-none opacity-50" />
 
-                        return (
-                            <motion.div
-                                key={dest.id}
-                                layout
-                                onClick={() => setActiveId(dest.id)}
-                                variants={{
-                                    hidden: { opacity: 0, y: 50, scale: 0.95 },
-                                    visible: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', damping: 25, stiffness: 200 } }
-                                }}
-                                style={{ 
-                                    flex: isActive ? 5 : 1,
-                                    ...(isActive ? { rotateX, rotateY, transformStyle: "preserve-3d" } : {})
-                                }}
-                                transition={{ type: 'spring', bounce: 0.2, duration: 0.8 }}
-                                className={`relative rounded-[2rem] overflow-hidden cursor-pointer group transition-shadow duration-700 ${isActive ? 'ring-1 ring-white/20 shadow-[0_25px_50px_-12px_rgba(15,23,42,0.3)]' : 'hover:bg-slate-100 shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1)]'}`}
-                            >
-                                {/* Background Image */}
-                                <motion.img 
-                                    src={dest.image}
-                                    alt={dest.title}
-                                    initial={false}
-                                    animate={{ 
-                                        scale: isActive ? 1.05 : 1,
-                                        filter: isActive ? "grayscale(0%)" : "grayscale(60%)"
-                                    }}
-                                    transition={{ duration: 1.5, ease: "easeOut" }}
-                                    className="absolute inset-0 w-full h-full object-cover"
-                                />
-                                
-                                {/* Active State Progress Bar */}
-                                {isActive && (
-                                    <div className="absolute top-0 left-0 right-0 h-1.5 bg-black/20 z-50 overflow-hidden">
-                                        <motion.div 
-                                            key={activeId} // Resets animation when ID changes
-                                            initial={{ width: "0%" }}
-                                            animate={{ width: isHovered ? "0%" : "100%" }}
-                                            transition={{ duration: isHovered ? 0 : 5, ease: "linear" }}
-                                            className="h-full bg-white/90 shadow-[0_0_10px_rgba(255,255,255,0.8)]"
-                                        />
-                                    </div>
-                                )}
+                                    {/* Hero Content */}
+                                    <div className="absolute inset-0 p-8 md:p-12 flex flex-col justify-end pointer-events-none">
+                                        <div className="flex flex-col xl:flex-row items-start xl:items-end justify-between w-full gap-8">
+                                            
+                                            {/* Left: Title & Tags */}
+                                            <div className="flex-1 pointer-events-auto">
+                                                <motion.div 
+                                                    initial={{ opacity: 0, y: 20 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ delay: 0.3 }}
+                                                    className="flex flex-wrap gap-2 mb-5"
+                                                >
+                                                    {dest.tags.map(tag => (
+                                                        <span key={tag} className="px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-white bg-white/20 backdrop-blur-md rounded-full border border-white/30 shadow-sm">
+                                                            {tag}
+                                                        </span>
+                                                    ))}
+                                                </motion.div>
+                                                
+                                                <motion.h3 
+                                                    initial={{ opacity: 0, x: -30 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    transition={{ delay: 0.4, type: "spring", stiffness: 100 }}
+                                                    className="text-6xl md:text-[6rem] xl:text-[7rem] font-display font-black text-white tracking-tight mb-2 leading-none" 
+                                                    style={{ textShadow: "0 10px 40px rgba(0,0,0,0.8)" }}
+                                                >
+                                                    {dest.title}
+                                                </motion.h3>
+                                                
+                                                <motion.p 
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    transition={{ delay: 0.5 }}
+                                                    className="text-xl md:text-2xl font-medium text-white/90 drop-shadow-md"
+                                                >
+                                                    {dest.subtitle}
+                                                </motion.p>
+                                            </div>
 
-                                {/* Collapsed State UI */}
-                                <AnimatePresence>
-                                    {!isActive && (
-                                        <motion.div 
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            transition={{ duration: 0.2 }}
-                                            className="absolute inset-0 bg-black/50 group-hover:bg-black/30 transition-colors flex flex-col items-center justify-end pb-8"
-                                        >
-                                            <div 
-                                                className="text-white font-display font-bold text-2xl tracking-widest uppercase opacity-80 group-hover:opacity-100 transition-opacity whitespace-nowrap drop-shadow-lg"
-                                                style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+                                            {/* Right: Premium Glass Itinerary Panel */}
+                                            <motion.div 
+                                                initial={{ opacity: 0, scale: 0.95, y: 30 }}
+                                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                transition={{ delay: 0.5, type: "spring", stiffness: 100 }}
+                                                className="w-full xl:w-[380px] rounded-3xl p-7 relative overflow-hidden bg-white/10 backdrop-blur-2xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.4)] shrink-0 pointer-events-auto mt-6 xl:mt-0"
                                             >
-                                                {dest.title}
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
+                                                {/* Inner 3D Highlight */}
+                                                <div className="absolute inset-0 rounded-3xl ring-1 ring-inset ring-white/10 pointer-events-none" />
+                                                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-60" />
 
-                                {/* Expanded State UI */}
-                                <AnimatePresence>
-                                    {isActive && (
-                                        <motion.div 
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            transition={{ duration: 0.4, delay: 0.1 }}
-                                            className="absolute inset-0"
-                                            style={{ transform: "translateZ(30px)" }} // Pushes content out in 3D
-                                        >
-                                            {/* Gradient Overlay for Text Legibility */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a]/90 via-[#0a0a0a]/30 to-transparent pointer-events-none" />
-
-                                            <div className="absolute inset-0 p-8 flex flex-col justify-end pointer-events-none">
-                                                <div className="flex items-end justify-between w-full gap-8">
+                                                <div className="relative z-10">
+                                                    <div className="flex items-center gap-5 mb-6 pb-6 border-b border-white/10">
+                                                        <div className="w-14 h-14 rounded-[18px] bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-[0_0_25px_rgba(59,130,246,0.6)] border border-white/20">
+                                                            <Star className="w-6 h-6 text-white" fill="currentColor" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-black uppercase tracking-widest text-white drop-shadow-md mb-0.5">AI Curated Plan</p>
+                                                            <p className="text-[11px] font-medium text-white/70 uppercase tracking-wider">Perfected for you</p>
+                                                        </div>
+                                                    </div>
                                                     
-                                                    {/* Left: Title & Tags */}
-                                                    <div className="flex-1 pointer-events-auto">
-                                                        <div className="flex gap-2 mb-4">
-                                                            {dest.tags.map(tag => (
-                                                                <span key={tag} className="px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white bg-white/20 backdrop-blur-md rounded-full border border-white/30 shadow-sm">
-                                                                    {tag}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                        <h3 className="text-5xl md:text-[5rem] font-display font-black text-white tracking-tight mb-2 leading-none" style={{textShadow: "0 10px 30px rgba(0,0,0,0.6)"}}>
-                                                            {dest.title}
-                                                        </h3>
-                                                        <p className="text-lg md:text-xl font-medium text-white/90 drop-shadow-md">
-                                                            {dest.subtitle}
-                                                        </p>
-                                                    </div>
-
-                                                    {/* Right: Premium Glass Itinerary Panel */}
-                                                    <div className="hidden md:block w-[340px] rounded-3xl p-6 relative overflow-hidden bg-white/10 backdrop-blur-2xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] shrink-0">
-                                                        
-                                                        {/* Inner 3D Highlight */}
-                                                        <div className="absolute inset-0 rounded-3xl ring-1 ring-inset ring-white/10 pointer-events-none" />
-                                                        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-50" />
-
-                                                        <div className="relative z-10">
-                                                            <div className="flex items-center gap-4 mb-6 pb-5 border-b border-white/10">
-                                                                <div className="w-12 h-12 rounded-[16px] bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.5)] border border-white/20 relative overflow-hidden group-hover:scale-110 transition-transform duration-500">
-                                                                    <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                                                    <Star className="w-5 h-5 text-white relative z-10" fill="currentColor" />
+                                                    <div className="space-y-5 mb-8">
+                                                        {dest.plan.map((item, index) => (
+                                                            <div key={index} className="flex items-center gap-4">
+                                                                <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-xs font-bold text-white shadow-[inset_0_2px_5px_rgba(255,255,255,0.1)] backdrop-blur-md shrink-0">
+                                                                    {index + 1}
                                                                 </div>
-                                                                <div>
-                                                                    <p className="text-[14px] font-black uppercase tracking-widest text-white drop-shadow-md">AI Curated Plan</p>
-                                                                </div>
+                                                                <p className="text-sm font-medium text-white/95 drop-shadow-sm leading-snug">{item}</p>
                                                             </div>
-                                                            
-                                                            <div className="space-y-4 mb-6">
-                                                                {dest.plan.map((item, index) => (
-                                                                    <div key={index} className="flex items-center gap-4">
-                                                                        <div className="w-7 h-7 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-xs font-bold text-white shadow-inner backdrop-blur-sm shrink-0">
-                                                                            {index + 1}
-                                                                        </div>
-                                                                        <p className="text-sm font-medium text-white/95 drop-shadow-sm leading-snug">{item}</p>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                            
-                                                            <button className="w-full py-3.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(255,255,255,0.15)] relative overflow-hidden">
-                                                                <span className="relative z-10 flex items-center gap-2">View Full Itinerary <ArrowRight className="w-4 h-4" /></span>
-                                                            </button>
-                                                        </div>
+                                                        ))}
                                                     </div>
+                                                    
+                                                    <button className="w-full py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-bold uppercase tracking-widest rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_25px_rgba(255,255,255,0.15)] group/btn">
+                                                        View Full Itinerary <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                                                    </button>
                                                 </div>
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </motion.div>
-                        );
-                    })}
-                </motion.div>
+                                            </motion.div>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                    </div>
+
+                    {/* PREVIEW STACK (Right/Bottom) */}
+                    <div className="lg:col-span-1 h-[250px] lg:h-full w-full flex flex-row lg:flex-col gap-4 lg:gap-6 relative">
+                        {destinations.map(dest => {
+                            if (dest.id === activeId) return null;
+                            return (
+                                <motion.div
+                                    key={`preview-${dest.id}`}
+                                    layoutId={`card-${dest.id}`}
+                                    onClick={() => setActiveId(dest.id)}
+                                    className="flex-1 rounded-[2rem] overflow-hidden shadow-lg bg-slate-900 cursor-pointer group relative"
+                                    transition={{ type: "spring", damping: 30, stiffness: 150 }}
+                                >
+                                    <motion.img
+                                        layoutId={`img-${dest.id}`}
+                                        src={dest.image}
+                                        alt={dest.title}
+                                        className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700 ease-out"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent pointer-events-none opacity-80 group-hover:opacity-60 transition-opacity duration-500" />
+                                    
+                                    <div className="absolute inset-0 p-5 lg:p-6 flex flex-col justify-end pointer-events-none">
+                                        <h3 className="text-xl lg:text-2xl font-display font-black text-white tracking-wide leading-tight group-hover:-translate-y-1 transition-transform duration-500">{dest.title}</h3>
+                                        <p className="text-xs lg:text-sm font-medium text-white/70 group-hover:text-white/90 transition-colors duration-500 hidden lg:block">{dest.subtitle}</p>
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                    </div>
+                </div>
             </div>
         </section>
     );
