@@ -25,11 +25,11 @@ const SearchPill = () => {
                 return (
                     <React.Fragment key={field.id}>
                         <div 
-                            className={`flex-1 flex items-center gap-4 px-6 py-3.5 rounded-full cursor-pointer transition-all duration-300 relative ${isFocused ? 'bg-white shadow-[0_8px_30px_rgba(0,0,0,0.08)] ring-1 ring-slate-100 scale-[1.02] z-10' : 'hover:bg-slate-50'}`}
+                            className={`flex-1 flex items-center gap-4 px-6 py-3.5 rounded-full cursor-pointer transition-all duration-400 relative group ${isFocused ? 'bg-white shadow-[0_8px_30px_rgba(0,0,0,0.08)] ring-1 ring-slate-100 scale-[1.02] z-10' : 'hover:bg-slate-50 hover:shadow-sm'}`}
                             onClick={() => setFocusedField(field.id)}
                         >
-                            <div className={`p-2 rounded-full transition-colors duration-300 ${isFocused ? 'bg-blue-50' : 'bg-slate-100/50'}`}>
-                                <Icon className={`w-5 h-5 transition-colors ${isFocused ? 'text-blue-600' : 'text-slate-400'}`} />
+                            <div className={`p-2 rounded-full transition-all duration-400 ${isFocused ? 'bg-blue-50 scale-110' : 'bg-slate-100/50 group-hover:bg-blue-50/50 group-hover:scale-110'}`}>
+                                <Icon className={`w-5 h-5 transition-colors duration-400 ${isFocused ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`} />
                             </div>
                             <div className="flex flex-col text-left w-full">
                                 <span className="text-[11px] font-black text-slate-400 tracking-widest uppercase mb-0.5">{field.label}</span>
@@ -50,11 +50,11 @@ const SearchPill = () => {
             })}
             
             <motion.button 
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-105 transition-all duration-300"
+                whileHover={{ scale: 1.04, boxShadow: "0 20px 40px -10px rgba(59,130,246,0.6)" }}
+                whileTap={{ scale: 0.96 }}
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-blue-500/30 transition-colors duration-300 group"
             >
-                <Sparkles className="w-5 h-5" />
+                <Sparkles className="w-5 h-5 group-hover:animate-pulse" />
                 Start Planning
             </motion.button>
         </motion.div>
@@ -106,12 +106,12 @@ const HeroSection = () => {
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 1.2, delay: 0.1, ease: "easeOut" }}
-                        className="text-[100px] md:text-[140px] lg:text-[180px] leading-[0.85] tracking-tighter text-white mb-6 flex flex-col items-center justify-center drop-shadow-2xl"
+                        className="text-[100px] md:text-[140px] lg:text-[180px] leading-[0.85] tracking-tighter text-white mb-6 flex flex-col items-center justify-center drop-shadow-2xl group cursor-default"
                     >
-                        <span className="font-display font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70">
+                        <span className="font-display font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70 group-hover:to-white transition-all duration-700">
                             Travel without
                         </span>
-                        <span className="font-serif font-light italic text-[90px] md:text-[130px] lg:text-[160px] -mt-4 md:-mt-8 text-white/90">
+                        <span className="font-serif font-light italic text-[90px] md:text-[130px] lg:text-[160px] -mt-4 md:-mt-8 text-white/90 group-hover:text-white transition-all duration-700 group-hover:scale-105 transform origin-center">
                             stress.
                         </span>
                     </motion.h1>
