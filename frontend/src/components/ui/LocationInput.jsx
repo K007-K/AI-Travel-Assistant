@@ -11,7 +11,7 @@ const LocationInput = ({
     // eslint-disable-next-line no-unused-vars
     icon: Icon = MapPin,
     className = "",
-    variant = "default" // "default" | "glass"
+    variant = "default" // "default" | "glass" | "minimalist"
 }) => {
     const [suggestions, setSuggestions] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
@@ -96,7 +96,7 @@ const LocationInput = ({
                 </label>
             )}
             <div className="relative">
-                <div className={`absolute left-0 top-0 bottom-0 flex items-center justify-center ${variant === 'glass' ? 'w-14' : 'w-12'}`}>
+                <div className={`absolute left-0 top-0 bottom-0 flex items-center justify-center ${variant === 'glass' ? 'w-14' : variant === 'minimalist' ? 'w-12' : 'w-12'}`}>
                     <Icon className="w-5 h-5 text-slate-400" />
                 </div>
                 <input
@@ -107,6 +107,8 @@ const LocationInput = ({
                     className={`w-full outline-none transition-all ${
                         variant === 'glass' 
                         ? "bg-white/40 dark:bg-black/40 border border-white/40 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-600 dark:placeholder-white/70 backdrop-blur-2xl rounded-[2.5rem] focus:bg-white/60 dark:focus:bg-black/60 shadow-[0_8px_32px_rgba(0,0,0,0.05)] py-5 pl-14 pr-10 text-lg"
+                        : variant === 'minimalist'
+                        ? "pl-12 pr-10 py-4 bg-transparent border border-slate-200 dark:border-slate-800 rounded-full focus:ring-1 focus:ring-slate-900 dark:focus:ring-white focus:border-slate-900 dark:focus:border-white text-slate-900 dark:text-slate-100 placeholder-slate-400 hover:shadow-sm focus:shadow-md transition-shadow"
                         : "pl-10 pr-10 py-3.5 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent text-slate-900 dark:text-slate-100 placeholder-slate-400"
                     }`}
                 />
@@ -126,6 +128,8 @@ const LocationInput = ({
                         className={`absolute z-50 left-0 right-0 mt-2 rounded-xl shadow-xl border max-h-60 overflow-y-auto scrollbar-thin ${
                             variant === 'glass'
                             ? "bg-white/95 dark:bg-[#141414]/95 backdrop-blur-xl border-white/20 dark:border-white/10"
+                            : variant === 'minimalist'
+                            ? "bg-white dark:bg-[#0a0a0a] border-slate-100 dark:border-slate-800 rounded-2xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)]"
                             : "bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700"
                         }`}
                     >
