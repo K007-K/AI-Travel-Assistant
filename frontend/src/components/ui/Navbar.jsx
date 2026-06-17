@@ -82,7 +82,7 @@ const Navbar = () => {
     // Outer container (controls detachment from top)
     const navContainerClass = scrolled 
         ? 'py-4' // Scrolled: Detached
-        : 'py-0 bg-transparent'; // Top: Attached edge-to-edge
+        : 'py-0'; // Top: Attached edge-to-edge
 
     const NavContainer = ({ children }) => {
         return (
@@ -90,7 +90,7 @@ const Navbar = () => {
                 className={`flex items-center justify-between w-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                     scrolled 
                         ? `h-[4.5rem] px-4 md:px-6 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_32px_rgba(0,0,0,0.06)] rounded-full border ${isDarkBg ? 'bg-[#030712]/60 border-white/10' : 'bg-white/60 border-white/50'}` 
-                        : 'h-24 bg-transparent border border-transparent rounded-[2rem] shadow-none backdrop-blur-none'
+                        : `h-24 border border-transparent rounded-[2rem] shadow-none backdrop-blur-0 backdrop-saturate-100 ${isDarkBg ? 'bg-[#030712]/0' : 'bg-white/0'}`
                 }`}
             >
                 {children}
