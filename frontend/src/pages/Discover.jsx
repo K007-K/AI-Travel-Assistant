@@ -1,114 +1,17 @@
-import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Search, MapPin, Star, Heart, Navigation } from 'lucide-react';
+// Discover page — Apple-minimal light theme with vertical scroll layout
+import { useState, useEffect, useMemo } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { Search, Star, Heart, ArrowRight } from 'lucide-react';
 import { searchDestinations, getCuratedDestinations } from '../api/places';
 import { Link } from 'react-router-dom';
-import BudgetSelectionModal from '../components/ui/BudgetSelectionModal';
 import LocationInput from '../components/ui/LocationInput';
 import { loadDestinationImage, getFallbackImage } from '../utils/destinationImages';
 import useFavourites from '../hooks/useFavourites';
 
-// Premium Discover Page CSS injected dynamically for modern APIs
-const discoverStyles = `
-.discover-carousel {
-  display: flex;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  padding: 0 50vw; /* Add padding to allow snapping first/last items to center */
-}
-.discover-carousel::-webkit-scrollbar {
-  display: none;
-}
-
-/* Offset padding adjustment so the first card snaps perfectly to center */
-.discover-carousel::before,
-.discover-carousel::after {
-  content: '';
-  flex: 0 0 calc(50vw - 250px); /* Assuming card width is ~500px, half is 250px */
-}
-
-@media (max-width: 768px) {
-  .discover-carousel::before,
-  .discover-carousel::after {
-    flex: 0 0 calc(50vw - 160px); /* Mobile card width ~320px */
-  }
-}
-
-.discover-carousel-item {
-  scroll-snap-align: center;
-  container-type: scroll-state;
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.discover-card {
-  transition: 
-    transform 0.8s cubic-bezier(0.22, 1, 0.36, 1),
-    filter 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-  filter: brightness(0.5) saturate(0.6);
-  transform: scale(0.85);
-  will-change: transform, filter;
-}
-
-.discover-card-info {
-  transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  @container scroll-state(snapped: x) {
-    .discover-card {
-      filter: brightness(1) saturate(1.1);
-      transform: scale(1.05);
-      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
-      z-index: 10;
-    }
-    .discover-card-info {
-      opacity: 1 !important;
-      transform: translateY(0) !important;
-    }
-  }
-}
-
-/* JS Fallback for unsupported browsers */
-.discover-carousel-item.is-snapped .discover-card {
-  filter: brightness(1) saturate(1.1);
-  transform: scale(1.05);
-  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
-  z-index: 10;
-}
-.discover-carousel-item.is-snapped .discover-card-info {
-  opacity: 1 !important;
-  transform: translateY(0) !important;
-}
-
-/* Scroll-driven Parallax (Native if supported) */
-@supports (animation-timeline: view(inline)) {
-  .parallax-bg {
-    animation: parallax linear;
-    animation-timeline: view(inline);
-  }
-  @keyframes parallax {
-    0% { transform: translateX(-15%) scale(1.1); }
-    100% { transform: translateX(15%) scale(1.1); }
-  }
-}
-@supports not (animation-timeline: view(inline)) {
-  .parallax-bg {
-    transform: scale(1.1);
-  }
-}
-`;
-
-const DestinationCard = ({ dest, isFav, onToggleFav }) => {
+/* ─── Destination Card (grid item) ──────────────────────────────── */
+const DestinationCard = ({ dest, isFav, onToggleFav, index }) => {
     const [imgUrl, setImgUrl] = useState(dest.image || null);
+    const shouldReduceMotion = useReducedMotion();
 
     useEffect(() => {
         if (!dest.image) {
@@ -119,108 +22,147 @@ const DestinationCard = ({ dest, isFav, onToggleFav }) => {
     const fallback = getFallbackImage(dest.name);
 
     return (
-        <div className="discover-carousel-item px-4 w-[320px] md:w-[500px] h-[500px] md:h-[700px]">
-            <Link to={`/destination/${dest.id}`} className="block relative w-full h-full rounded-3xl overflow-hidden bg-zinc-900 discover-card group">
-                
-                {/* Parallax Image Container */}
-                <div className="absolute inset-0 overflow-hidden bg-black">
+        <motion.div
+            initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.5, delay: index * 0.06, ease: [0.25, 0.1, 0.25, 1] }}
+        >
+            <Link
+                to={`/destination/${dest.id}`}
+                className="group block"
+                id={`discover-card-${dest.id}`}
+            >
+                {/* Image */}
+                <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-[#F5F5F7] mb-4">
                     <img
                         src={imgUrl || fallback}
                         alt={dest.name}
-                        className="parallax-bg absolute inset-0 w-[130%] h-full object-cover origin-center max-w-none left-[-15%]"
+                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                        loading="lazy"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/90"></div>
-                </div>
-                
-                {/* Minimalist Top Actions */}
-                <div className="absolute top-6 right-6 z-20 flex flex-col gap-3">
+                    {/* Favourite button */}
                     <button
-                        onClick={(e) => { e.preventDefault(); onToggleFav(dest); }}
-                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 backdrop-blur-xl ${
-                            isFav 
-                            ? 'bg-red-500/90 text-white shadow-lg shadow-red-500/20' 
-                            : 'bg-white/10 text-white border border-white/20 hover:bg-white hover:text-black hover:scale-105'
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleFav(dest); }}
+                        className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 ${
+                            isFav
+                            ? 'bg-[#FF3B30] text-white shadow-md'
+                            : 'bg-white/80 backdrop-blur-sm text-slate-400 hover:text-[#FF3B30] hover:bg-white shadow-sm'
                         }`}
+                        aria-label={isFav ? 'Remove from favourites' : 'Add to favourites'}
+                    >
+                        <Heart className={`w-4 h-4 ${isFav ? 'fill-current' : ''}`} />
+                    </button>
+                </div>
+
+                {/* Text below image */}
+                <div className="px-1">
+                    <h3 className="text-lg font-semibold text-[#1D1D1F] tracking-tight group-hover:text-[#0071E3] transition-colors duration-200">
+                        {dest.name}
+                    </h3>
+                    <div className="flex items-center justify-between mt-1">
+                        <span className="text-sm text-[#86868B]">
+                            {dest.country}
+                        </span>
+                        <span className="flex items-center gap-1 text-sm text-[#86868B]">
+                            <Star className="w-3.5 h-3.5 fill-[#FF9500] text-[#FF9500]" />
+                            {dest.rating}
+                        </span>
+                    </div>
+                </div>
+            </Link>
+        </motion.div>
+    );
+};
+
+/* ─── Featured Destination Card (hero-size) ──────────────────────── */
+const FeaturedCard = ({ dest, isFav, onToggleFav }) => {
+    const [imgUrl, setImgUrl] = useState(dest.image || null);
+    const shouldReduceMotion = useReducedMotion();
+
+    useEffect(() => {
+        if (!dest.image) {
+            loadDestinationImage(dest.name, setImgUrl);
+        }
+    }, [dest.name, dest.image]);
+
+    const fallback = getFallbackImage(dest.name);
+
+    return (
+        <motion.div
+            initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+        >
+            <Link
+                to={`/destination/${dest.id}`}
+                className="group block"
+                id="discover-featured-card"
+            >
+                {/* Large image */}
+                <div className="relative aspect-[16/9] rounded-3xl overflow-hidden bg-[#F5F5F7] shadow-[0_2px_20px_rgba(0,0,0,0.08)] group-hover:shadow-[0_12px_40px_rgba(0,0,0,0.15)] transition-shadow duration-500">
+                    <img
+                        src={imgUrl || fallback}
+                        alt={dest.name}
+                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+                    />
+                    {/* Favourite */}
+                    <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleFav(dest); }}
+                        className={`absolute top-5 right-5 w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 ${
+                            isFav
+                            ? 'bg-[#FF3B30] text-white shadow-lg'
+                            : 'bg-white/90 backdrop-blur-sm text-slate-400 hover:text-[#FF3B30] shadow-md'
+                        }`}
+                        aria-label={isFav ? 'Remove from favourites' : 'Add to favourites'}
                     >
                         <Heart className={`w-5 h-5 ${isFav ? 'fill-current' : ''}`} />
                     </button>
                 </div>
 
-                <div className="absolute top-6 left-6 z-20 pointer-events-none">
-                    <div className="px-4 py-2 rounded-full bg-white/10 backdrop-blur-xl text-white text-sm font-bold flex items-center gap-1.5 border border-white/20">
-                        <Star className="w-4 h-4 fill-current text-yellow-400" />
-                        {dest.rating || 'New'}
-                    </div>
-                </div>
-
-                {/* Cinematic Content Reveal */}
-                <div className="absolute bottom-0 left-0 right-0 p-8 z-20 discover-card-info pointer-events-none">
-                    <div className="flex items-center text-white/80 text-sm font-bold mb-3 tracking-widest uppercase">
-                        <MapPin className="w-4 h-4 mr-1.5 text-blue-400" />
-                        <span>{dest.location || dest.country}</span>
-                    </div>
-                    <h3 className="text-4xl md:text-5xl font-display font-black text-white mb-4 tracking-tight drop-shadow-lg leading-tight">
-                        {dest.name}
-                    </h3>
-                    
-                    <div className="flex flex-wrap items-center gap-2 mb-6">
-                        {dest.tags?.slice(0, 3).map(tag => (
-                            <span key={tag} className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold text-white uppercase tracking-wider border border-white/10">
-                                {tag}
+                {/* Text below image */}
+                <div className="mt-5 flex items-start justify-between px-1">
+                    <div>
+                        <h2 className="text-3xl md:text-4xl font-display font-bold text-[#1D1D1F] tracking-tight group-hover:text-[#0071E3] transition-colors duration-200">
+                            {dest.name}
+                        </h2>
+                        <div className="flex items-center gap-3 mt-2">
+                            <span className="text-[#86868B] text-base">{dest.country}</span>
+                            <span className="w-1 h-1 rounded-full bg-[#D1D1D6]" />
+                            <span className="flex items-center gap-1 text-[#86868B] text-base">
+                                <Star className="w-4 h-4 fill-[#FF9500] text-[#FF9500]" />
+                                {dest.rating}
                             </span>
-                        ))}
+                            {dest.tags?.slice(0, 2).map(tag => (
+                                <span key={tag} className="text-xs text-[#86868B] uppercase tracking-wider">
+                                    {tag}
+                                </span>
+                            ))}
+                        </div>
                     </div>
-
-                    <div className="flex items-center text-white/90 font-semibold group-hover:text-blue-400 transition-colors">
-                        <span>Explore destination</span>
-                        <Navigation className="w-4 h-4 ml-2 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                    <div className="hidden md:flex items-center gap-2 text-[#0071E3] font-medium text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-2">
+                        Explore <ArrowRight className="w-4 h-4" />
                     </div>
                 </div>
             </Link>
-        </div>
+        </motion.div>
     );
 };
 
+/* ═══════════════════════════════════════════════════════════════════
+   MAIN DISCOVER PAGE
+   ═══════════════════════════════════════════════════════════════════ */
 const Discover = () => {
     const [query, setQuery] = useState('');
     const [destinations, setDestinations] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [filter, setFilter] = useState('All');
-    const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
-    const [selectedDestination, _setSelectedDestination] = useState(null);
     const { isFavourite, toggleFavourite } = useFavourites();
-    const carouselRef = useRef(null);
+    const shouldReduceMotion = useReducedMotion();
 
     useEffect(() => {
         setDestinations(getCuratedDestinations());
     }, []);
-
-    // Set up JS fallback for scroll-state highlighting
-    useEffect(() => {
-        if (!carouselRef.current) return;
-        
-        // Detect if native scroll-state is supported (very naive check, using CSS.supports is safer)
-        const supportsScrollState = CSS.supports('container-type', 'scroll-state');
-        
-        if (!supportsScrollState) {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    entry.target.classList.toggle('is-snapped', entry.isIntersecting);
-                });
-            }, {
-                root: carouselRef.current,
-                // Intersects when element is within the center 10% of the carousel
-                rootMargin: "0px -45%"
-            });
-
-            const items = carouselRef.current.querySelectorAll('.discover-carousel-item');
-            items.forEach(item => observer.observe(item));
-
-            return () => {
-                items.forEach(item => observer.unobserve(item));
-            };
-        }
-    }, [destinations, filter]); // Re-run when destinations change
 
     const handleSearch = async (e) => {
         e.preventDefault();
@@ -236,13 +178,8 @@ const Discover = () => {
                 try { sessionStorage.setItem(`dest_${d.id}`, JSON.stringify(d)); } catch { /* ignore quota errors */ }
             });
             setDestinations(results.length > 0 ? results : []);
-            
-            // Scroll to start of carousel on search
-            if (carouselRef.current) {
-                carouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
-            }
         } catch (err) {
-            console.error(err);
+            console.error('[Discover] Search failed:', err);
         } finally {
             setIsLoading(false);
         }
@@ -254,114 +191,165 @@ const Discover = () => {
         ? destinations
         : destinations.filter(d => d.tags?.includes(filter) || d.type?.includes(filter.toLowerCase()));
 
+    // Pick a random featured destination (stable per render via useMemo)
+    const featuredDest = useMemo(() => {
+        if (filteredDestinations.length === 0) return null;
+        const randomIndex = Math.floor(Math.random() * filteredDestinations.length);
+        return filteredDestinations[randomIndex];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filteredDestinations.length, filter]);
+
+    // Remaining destinations (exclude featured)
+    const gridDestinations = filteredDestinations.filter(d => d.id !== featuredDest?.id);
+
     return (
-        <div className="min-h-screen bg-[#030712] transition-colors duration-500 overflow-hidden font-sans relative selection:bg-blue-500/30 flex flex-col">
-            <style dangerouslySetInnerHTML={{ __html: discoverStyles }} />
-            
-            {/* Ambient Background Glows */}
-            <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px] pointer-events-none opacity-50 mix-blend-screen animate-pulse duration-10000" />
-            <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[150px] pointer-events-none opacity-50 mix-blend-screen" />
+        <section className="min-h-screen bg-white font-sans selection:bg-[#0071E3]/10" id="discover-page">
 
-            {/* Cinematic Hero Overlay */}
-            <div className="pt-48 md:pt-56 z-30 pointer-events-none flex flex-col items-center relative flex-shrink-0">
-                <motion.div 
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-                    className="text-center px-4"
-                >
-                    <h1 className="text-5xl md:text-7xl lg:text-[5.5rem] font-display font-black text-white tracking-tighter mb-4 leading-none">
-                        The world is <br className="hidden md:block"/>yours to explore.
-                    </h1>
-                    <p className="text-lg md:text-xl text-white/60 font-medium max-w-2xl mx-auto mb-10 tracking-wide">
-                        Curated experiences tailored to your personal aesthetic.
-                    </p>
-                </motion.div>
-
-                {/* Glassmorphic Search & Filters (Pointer events enabled here) */}
-                <div className="pointer-events-auto w-full max-w-3xl px-6 flex flex-col items-center gap-8">
-                    <motion.form 
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.3, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-                        onSubmit={handleSearch} 
-                        className="w-full relative group"
+            {/* ── HERO ────────────────────────────────────────────── */}
+            <div className="pt-36 md:pt-44 pb-12 px-6">
+                <div className="max-w-6xl mx-auto text-center">
+                    <motion.h1
+                        initial={shouldReduceMotion ? {} : { opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
+                        className="text-6xl md:text-8xl lg:text-[7rem] font-display font-black text-[#1D1D1F] tracking-tight leading-none"
                     >
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100" />
+                        Discover
+                    </motion.h1>
+
+                    <motion.p
+                        initial={shouldReduceMotion ? {} : { opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.6, delay: 0.15 }}
+                        className="mt-4 text-lg md:text-xl text-[#86868B] max-w-xl mx-auto"
+                    >
+                        Curated destinations for the curious traveler.
+                    </motion.p>
+
+                    {/* Search */}
+                    <motion.form
+                        initial={shouldReduceMotion ? {} : { opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.25 }}
+                        onSubmit={handleSearch}
+                        className="mt-10 max-w-lg mx-auto"
+                    >
                         <LocationInput
                             value={query}
                             onChange={(val) => setQuery(val)}
-                            placeholder="Where to next?"
+                            placeholder="Search destinations..."
                             icon={Search}
-                            variant="glass"
-                            className="bg-white/10 backdrop-blur-xl border-white/20 text-white placeholder:text-white/50 h-16 text-lg rounded-full shadow-2xl"
+                            variant="minimalist"
                         />
                         <button type="submit" className="hidden" />
                     </motion.form>
 
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.5, duration: 0.8 }}
-                        className="flex items-center gap-3 overflow-x-auto no-scrollbar w-full justify-start md:justify-center px-4 pb-4"
+                    {/* Category Tabs */}
+                    <motion.div
+                        initial={shouldReduceMotion ? {} : { opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.5, delay: 0.35 }}
+                        className="mt-8 flex items-center justify-center gap-8 overflow-x-auto no-scrollbar"
                     >
                         {categories.map(cat => (
                             <button
                                 key={cat}
                                 onClick={() => setFilter(cat)}
-                                className={`px-6 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all duration-300 backdrop-blur-md border ${
-                                    filter === cat 
-                                    ? 'bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-105' 
-                                    : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white'
+                                className={`relative pb-2 text-sm font-medium transition-colors duration-200 whitespace-nowrap ${
+                                    filter === cat
+                                    ? 'text-[#1D1D1F]'
+                                    : 'text-[#AEAEB2] hover:text-[#86868B]'
                                 }`}
                             >
                                 {cat}
+                                {filter === cat && (
+                                    <motion.div
+                                        layoutId="category-underline"
+                                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1D1D1F] rounded-full"
+                                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                                    />
+                                )}
                             </button>
                         ))}
                     </motion.div>
                 </div>
             </div>
 
-            {/* Full-Bleed Horizontal Gallery */}
-            <div className="flex-grow relative flex items-center pt-10 md:pt-16 pb-20 w-full overflow-hidden">
-                <div 
-                    ref={carouselRef}
-                    className="discover-carousel w-full items-center pb-12"
-                >
-                    <AnimatePresence mode="wait">
-                        {isLoading ? (
-                            <motion.div 
-                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                className="discover-carousel-item px-4 w-[320px] md:w-[500px] h-[500px] md:h-[700px] flex items-center justify-center"
-                            >
-                                <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin" />
-                            </motion.div>
-                        ) : filteredDestinations.length > 0 ? (
-                            filteredDestinations.map((dest, index) => (
-                                <DestinationCard key={dest.id || index} dest={dest} index={index} isFav={isFavourite(dest.id)} onToggleFav={toggleFavourite} />
-                            ))
-                        ) : (
-                            <motion.div 
-                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                className="discover-carousel-item px-4 w-full max-w-lg flex flex-col items-center justify-center text-center"
-                            >
-                                <div className="w-24 h-24 bg-white/5 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center mb-6">
-                                    <Search className="w-10 h-10 text-white/40" />
+            {/* ── CONTENT ─────────────────────────────────────────── */}
+            <div className="px-6 pb-24">
+                <div className="max-w-6xl mx-auto">
+
+                    {isLoading ? (
+                        /* Loading State */
+                        <div className="flex items-center justify-center py-32">
+                            <div className="w-8 h-8 border-[3px] border-[#E5E5EA] border-t-[#1D1D1F] rounded-full animate-spin" />
+                        </div>
+
+                    ) : filteredDestinations.length > 0 ? (
+                        <>
+                            {/* Featured Card */}
+                            {featuredDest && (
+                                <div className="mb-16">
+                                    <FeaturedCard
+                                        dest={featuredDest}
+                                        isFav={isFavourite(featuredDest.id)}
+                                        onToggleFav={toggleFavourite}
+                                    />
                                 </div>
-                                <h3 className="text-3xl font-display font-bold text-white mb-3">No gems found</h3>
-                                <p className="text-white/50 text-lg">Adjust your search or explore our curated collections.</p>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                            )}
+
+                            {/* Section label */}
+                            {gridDestinations.length > 0 && (
+                                <motion.div
+                                    initial={shouldReduceMotion ? {} : { opacity: 0 }}
+                                    whileInView={{ opacity: 1 }}
+                                    viewport={{ once: true }}
+                                    className="mb-8"
+                                >
+                                    <h2 className="text-2xl font-display font-bold text-[#1D1D1F] tracking-tight">
+                                        All destinations
+                                    </h2>
+                                    <p className="text-sm text-[#86868B] mt-1">
+                                        {gridDestinations.length} places to explore
+                                    </p>
+                                </motion.div>
+                            )}
+
+                            {/* Grid */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
+                                {gridDestinations.map((dest, index) => (
+                                    <DestinationCard
+                                        key={dest.id || index}
+                                        dest={dest}
+                                        index={index}
+                                        isFav={isFavourite(dest.id)}
+                                        onToggleFav={toggleFavourite}
+                                    />
+                                ))}
+                            </div>
+                        </>
+
+                    ) : (
+                        /* Empty State */
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="flex flex-col items-center justify-center py-32 text-center"
+                        >
+                            <div className="w-16 h-16 rounded-full bg-[#F5F5F7] flex items-center justify-center mb-5">
+                                <Search className="w-7 h-7 text-[#AEAEB2]" />
+                            </div>
+                            <h3 className="text-xl font-semibold text-[#1D1D1F] mb-2">
+                                No destinations found
+                            </h3>
+                            <p className="text-[#86868B] text-base max-w-sm">
+                                Try a different search term or browse our curated collections above.
+                            </p>
+                        </motion.div>
+                    )}
                 </div>
             </div>
-
-            <BudgetSelectionModal
-                isOpen={isBudgetModalOpen}
-                onClose={() => setIsBudgetModalOpen(false)}
-                destination={selectedDestination}
-            />
-        </div>
+        </section>
     );
 };
 
