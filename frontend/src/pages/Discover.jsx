@@ -107,7 +107,7 @@ const discoverStyles = `
 }
 `;
 
-const DestinationCard = ({ dest, index, isFav, onToggleFav }) => {
+const DestinationCard = ({ dest, isFav, onToggleFav }) => {
     const [imgUrl, setImgUrl] = useState(dest.image || null);
 
     useEffect(() => {
