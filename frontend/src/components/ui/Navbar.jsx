@@ -86,9 +86,9 @@ const Navbar = () => {
     const NavContainer = ({ children }) => {
         if (scrolled) {
             return (
-                <LiquidContainer className="w-full h-[4.5rem] px-4 md:px-6 transition-all duration-500">
+                <div className={`flex items-center justify-between w-full h-[4.5rem] px-4 md:px-6 transition-all duration-500 backdrop-blur-2xl shadow-2xl rounded-full border ${isDarkBg ? 'bg-[#030712]/60 border-white/10' : 'bg-white/60 border-slate-200/50'}`}>
                     {children}
-                </LiquidContainer>
+                </div>
             );
         }
         return (

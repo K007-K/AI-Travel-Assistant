@@ -263,7 +263,7 @@ const Discover = () => {
             <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[150px] pointer-events-none opacity-50 mix-blend-screen" />
 
             {/* Cinematic Hero Overlay */}
-            <div className="pt-32 md:pt-40 z-30 pointer-events-none flex flex-col items-center relative flex-shrink-0">
+            <div className="pt-48 md:pt-56 z-30 pointer-events-none flex flex-col items-center relative flex-shrink-0">
                 <motion.div 
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
