@@ -84,19 +84,11 @@ const Navbar = () => {
         ? 'py-4' // Scrolled: Detached
         : 'py-0'; // Top: Attached edge-to-edge
 
-    const NavContainer = ({ children }) => {
-        return (
-            <div 
-                className={`flex items-center justify-between w-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                    scrolled 
-                        ? `h-[4.5rem] px-4 md:px-6 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_32px_rgba(0,0,0,0.06)] rounded-full border ${isDarkBg ? 'bg-[#030712]/60 border-white/10' : 'bg-white/60 border-white/50'}` 
-                        : `h-24 border border-transparent rounded-[2rem] shadow-none backdrop-blur-0 backdrop-saturate-100 ${isDarkBg ? 'bg-[#030712]/0' : 'bg-white/0'}`
-                }`}
-            >
-                {children}
-            </div>
-        );
-    };
+    const navContainerInnerClass = `flex items-center justify-between w-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        scrolled 
+            ? `h-[4.5rem] px-4 md:px-6 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_32px_rgba(0,0,0,0.06)] rounded-full border ${isDarkBg ? 'bg-[#030712]/60 border-white/10' : 'bg-white/60 border-white/50'}` 
+            : `h-24 border border-transparent rounded-[2rem] shadow-none backdrop-blur-0 backdrop-saturate-100 ${isDarkBg ? 'bg-[#030712]/0' : 'bg-white/0'}`
+    }`;
 
     // Colors transition based on scroll and background
     const baseTextColor = isDarkBg ? 'text-white' : 'text-slate-900';
@@ -148,7 +140,7 @@ const Navbar = () => {
                 animate={{ y: 0 }}
             >
                 <div className={`mx-auto transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${scrolled ? 'max-w-6xl px-4 md:px-6' : 'w-full max-w-7xl px-6'}`}>
-                    <NavContainer>
+                    <div className={navContainerInnerClass}>
                         
                         <div className="flex items-center relative z-10">
                             <Link 
@@ -226,7 +218,7 @@ const Navbar = () => {
                         >
                             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                         </button>
-                    </NavContainer>
+                    </div>
 
                     {/* Mobile Menu */}
                     <AnimatePresence>
@@ -275,7 +267,7 @@ const Navbar = () => {
             animate={{ y: 0 }}
         >
             <div className={`mx-auto transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${scrolled ? 'max-w-6xl px-4 md:px-6' : 'w-full max-w-7xl px-6'}`}>
-                <NavContainer>
+                <div className={navContainerInnerClass}>
                     
                     {/* Logo Area */}
                     <div className="flex items-center relative z-10">
@@ -358,7 +350,7 @@ const Navbar = () => {
                             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                         </button>
                     </div>
-                </NavContainer>
+                </div>
 
                 {/* Mobile Menu for Authenticated State */}
                 <AnimatePresence>
