@@ -85,7 +85,7 @@ const LocationInput = ({
     const handleSelect = (loc) => {
         const placeName = loc.displayName.split(',')[0].trim();
         onChange(placeName);
-        if (onSelect) onSelect(loc);
+        if (onSelect) onSelect(placeName);
         setIsOpen(false);
     };
 

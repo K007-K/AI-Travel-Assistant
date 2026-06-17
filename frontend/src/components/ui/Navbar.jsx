@@ -57,9 +57,10 @@ const Navbar = () => {
         };
 
         window.addEventListener('scroll', checkSectionTheme, { passive: true });
+        // Run on mount and location change
         checkSectionTheme();
         return () => window.removeEventListener('scroll', checkSectionTheme);
-    }, []);
+    }, [location.pathname]); // Added location.pathname to dependency array
 
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -109,7 +110,7 @@ const Navbar = () => {
     const loginClass = scrolled ? `${baseTextColor} font-bold hover:text-blue-600 transition-colors duration-300` : 'text-white font-bold drop-shadow-md hover:text-white/90 transition-colors duration-300';
     const getStartedClass = scrolled 
         ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-[0_4px_14px_rgba(37,99,235,0.3)] hover:-translate-y-0.5'
-        : 'bg-white text-blue-600 font-bold hover:bg-slate-50 shadow-lg hover:-translate-y-0.5';
+        : ''; // Will be wrapped in LiquidContainer
 
     const logoIconBg = scrolled ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'bg-white text-blue-600 shadow-md shadow-white/20';
 
@@ -208,9 +209,15 @@ const Navbar = () => {
                                 Log In
                             </button>
                             
-                            <button onClick={() => navigate('/signup')} className={`px-6 py-3 rounded-full text-sm font-bold transition-all duration-300 ${getStartedClass}`}>
-                                Get Started
-                            </button>
+                            {scrolled ? (
+                                <button onClick={() => navigate('/signup')} className={`px-6 py-3 rounded-full text-sm font-bold transition-all duration-300 ${getStartedClass}`}>
+                                    Get Started
+                                </button>
+                            ) : (
+                                <LiquidContainer onClick={() => navigate('/signup')} className="px-6 py-2.5 rounded-full text-sm font-bold text-white shadow-lg bg-white/20 backdrop-blur-md border border-white/30 hover:bg-white/30 transition-all duration-300">
+                                    Get Started
+                                </LiquidContainer>
+                            )}
                         </div>
 
                         {/* Mobile Menu Button */}
