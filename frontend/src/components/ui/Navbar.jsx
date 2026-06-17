@@ -85,15 +85,14 @@ const Navbar = () => {
         : 'py-0 bg-transparent'; // Top: Attached edge-to-edge
 
     const NavContainer = ({ children }) => {
-        if (scrolled) {
-            return (
-                <div className={`flex items-center justify-between w-full h-[4.5rem] px-4 md:px-6 transition-all duration-500 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.06)] rounded-full border ${isDarkBg ? 'bg-[#030712]/60 border-white/10' : 'bg-white/70 border-slate-200/50'}`}>
-                    {children}
-                </div>
-            );
-        }
         return (
-            <div className="flex items-center justify-between w-full max-w-7xl px-6 h-24 transition-all duration-500">
+            <div 
+                className={`flex items-center justify-between w-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                    scrolled 
+                        ? `h-[4.5rem] px-4 md:px-6 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_32px_rgba(0,0,0,0.06)] rounded-full border ${isDarkBg ? 'bg-[#030712]/60 border-white/10' : 'bg-white/60 border-white/50'}` 
+                        : 'h-24 bg-transparent border border-transparent rounded-[2rem] shadow-none backdrop-blur-none'
+                }`}
+            >
                 {children}
             </div>
         );
