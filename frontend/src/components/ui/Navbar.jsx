@@ -32,9 +32,11 @@ const Navbar = () => {
     });
 
     React.useEffect(() => {
+        let ticking = false;
+
         const checkSectionTheme = () => {
             const sections = document.querySelectorAll('section');
-            const navCenterY = 50; // approximate vertical center of the navbar
+            const navCenterY = 50; 
             
             let currentSection = null;
             for (const section of sections) {
@@ -50,17 +52,25 @@ const Navbar = () => {
                                currentSection.classList.contains('bg-[#030712]');
                 setIsDarkBg(isDark);
             } else {
-                // Fallback to document level theme if no section intersects
                 const isDocumentDark = document.documentElement.classList.contains('dark');
                 setIsDarkBg(isDocumentDark);
             }
         };
 
-        window.addEventListener('scroll', checkSectionTheme, { passive: true });
-        // Run on mount and location change
+        const onScroll = () => {
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    checkSectionTheme();
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        };
+
+        window.addEventListener('scroll', onScroll, { passive: true });
         checkSectionTheme();
-        return () => window.removeEventListener('scroll', checkSectionTheme);
-    }, [location.pathname]); // Added location.pathname to dependency array
+        return () => window.removeEventListener('scroll', onScroll);
+    }, [location.pathname]);
 
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -86,7 +96,7 @@ const Navbar = () => {
 
     const navContainerInnerClass = `flex items-center justify-between w-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
         scrolled 
-            ? `h-[4.5rem] px-4 md:px-6 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_32px_rgba(0,0,0,0.06)] rounded-full border ${isDarkBg ? 'bg-[#030712]/60 border-white/10' : 'bg-white/60 border-white/50'}` 
+            ? `h-[4.5rem] px-4 md:px-6 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_32px_rgba(0,0,0,0.08)] rounded-full border ${isDarkBg ? 'bg-[#030712]/60 border-white/10' : 'bg-white/70 border-black/5'}` 
             : `h-24 border border-transparent rounded-[2rem] shadow-none backdrop-blur-0 backdrop-saturate-100 ${isDarkBg ? 'bg-[#030712]/0' : 'bg-white/0'}`
     }`;
 
