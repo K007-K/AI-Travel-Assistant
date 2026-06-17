@@ -49,6 +49,10 @@ const Navbar = () => {
                 const isDark = currentSection.classList.contains('bg-black') || 
                                currentSection.classList.contains('bg-[#030712]');
                 setIsDarkBg(isDark);
+            } else {
+                // Fallback to document level theme if no section intersects
+                const isDocumentDark = document.documentElement.classList.contains('dark');
+                setIsDarkBg(isDocumentDark);
             }
         };
 
