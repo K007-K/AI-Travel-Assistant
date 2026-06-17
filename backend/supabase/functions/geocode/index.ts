@@ -34,6 +34,7 @@ serve(async (req: Request) => {
             limit: String(limit),
             addressdetails: '1',
             extratags: '1',
+            'accept-language': 'en', // Force English results
         })
 
         const nominatimRes = await fetch(
