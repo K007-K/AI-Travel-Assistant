@@ -7,6 +7,7 @@ const LocationInput = ({
     label,
     value,
     onChange,
+    onSelect, // <-- Added onSelect
     placeholder = "City or Airport",
     // eslint-disable-next-line no-unused-vars
     icon: Icon = MapPin,
@@ -81,10 +82,10 @@ const LocationInput = ({
         }
     };
 
-    const handleSelect = (location) => {
-        // Just use the main city/name for the input value to keep it clean
-        // But we could pass the full object if onChange supported it
-        onChange(location.displayName.split(',')[0]);
+    const handleSelect = (loc) => {
+        const placeName = loc.displayName.split(',')[0].trim();
+        onChange(placeName);
+        if (onSelect) onSelect(loc);
         setIsOpen(false);
     };
 

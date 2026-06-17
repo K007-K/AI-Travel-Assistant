@@ -14,6 +14,7 @@ const DestinationCard = ({ dest, isFav, onToggleFav, index }) => {
     const shouldReduceMotion = useReducedMotion();
 
     useEffect(() => {
+        setImgUrl(dest.image || null);
         if (!dest.image) {
             loadDestinationImage(dest.name, setImgUrl);
         }
@@ -81,6 +82,7 @@ const FeaturedCard = ({ dest, isFav, onToggleFav }) => {
     const shouldReduceMotion = useReducedMotion();
 
     useEffect(() => {
+        setImgUrl(dest.image || null);
         if (!dest.image) {
             loadDestinationImage(dest.name, setImgUrl);
         }
@@ -164,16 +166,18 @@ const Discover = () => {
         setDestinations(getCuratedDestinations());
     }, []);
 
-    const handleSearch = async (e) => {
-        e.preventDefault();
-        if (!query.trim()) {
+    // Trigger search — called on form submit AND when user selects a suggestion
+    const runSearch = async (searchQuery) => {
+        const q = searchQuery || query;
+        if (!q.trim()) {
             setDestinations(getCuratedDestinations());
             return;
         }
 
+        setFilter('All'); // Reset filter so results aren't hidden
         setIsLoading(true);
         try {
-            const results = await searchDestinations(query);
+            const results = await searchDestinations(q);
             results.forEach(d => {
                 try { sessionStorage.setItem(`dest_${d.id}`, JSON.stringify(d)); } catch { /* ignore quota errors */ }
             });
@@ -183,6 +187,16 @@ const Discover = () => {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleSearch = async (e) => {
+        e.preventDefault();
+        await runSearch();
+    };
+
+    const handleLocationSelect = (val) => {
+        setQuery(val);
+        runSearch(val);
     };
 
     const categories = ['All', 'Nature', 'Culture', 'Beach', 'Adventure', 'City'];
@@ -237,6 +251,7 @@ const Discover = () => {
                         <LocationInput
                             value={query}
                             onChange={(val) => setQuery(val)}
+                            onSelect={handleLocationSelect}
                             placeholder="Search destinations..."
                             icon={Search}
                             variant="minimalist"
@@ -289,8 +304,9 @@ const Discover = () => {
                         <>
                             {/* Featured Card */}
                             {featuredDest && (
-                                <div className="mb-16">
+                                <div className="mb-16" key={`featured-${featuredDest.id}`}>
                                     <FeaturedCard
+                                        key={featuredDest.id}
                                         dest={featuredDest}
                                         isFav={isFavourite(featuredDest.id)}
                                         onToggleFav={toggleFavourite}
