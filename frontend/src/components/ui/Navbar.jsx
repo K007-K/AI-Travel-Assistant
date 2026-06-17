@@ -92,28 +92,37 @@ const Navbar = () => {
     // Outer container (controls detachment from top)
     const navContainerClass = scrolled 
         ? 'py-4' // Scrolled: Detached
-        : 'py-0'; // Top: Attached edge-to-edge
+        : 'py-0 bg-transparent'; // Top: Attached edge-to-edge
 
-    const navContainerInnerClass = `flex items-center justify-between w-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-        scrolled 
-            ? `h-[4.5rem] px-4 md:px-6 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_32px_rgba(0,0,0,0.08)] rounded-full border ${isDarkBg ? 'bg-[#030712]/60 border-white/10' : 'bg-white/70 border-black/5'}` 
-            : `h-24 border border-transparent rounded-[2rem] shadow-none backdrop-blur-0 backdrop-saturate-100 ${isDarkBg ? 'bg-[#030712]/0' : 'bg-white/0'}`
-    }`;
+    const NavContainer = ({ children }) => {
+        if (scrolled) {
+            return (
+                <div className={`flex items-center justify-between w-full h-[4.5rem] px-4 md:px-6 transition-all duration-500 backdrop-blur-2xl shadow-2xl rounded-full border ${isDarkBg ? 'bg-[#030712]/60 border-white/10' : 'bg-white/60 border-slate-200/50'}`}>
+                    {children}
+                </div>
+            );
+        }
+        return (
+            <div className="flex items-center justify-between w-full max-w-7xl px-6 h-24 transition-all duration-500">
+                {children}
+            </div>
+        );
+    };
 
     // Colors transition based on scroll and background
     const baseTextColor = isDarkBg ? 'text-white' : 'text-slate-900';
     const mutedTextColor = isDarkBg ? 'text-white/80' : 'text-slate-600';
 
-    const logoTextClass = scrolled ? `${baseTextColor} drop-shadow-sm transition-colors duration-300` : `${baseTextColor} drop-shadow-sm transition-colors duration-300`;
-    const linkTextClass = scrolled ? `${mutedTextColor} hover:text-blue-600 transition-colors duration-300` : `${mutedTextColor} hover:${baseTextColor} drop-shadow-sm transition-colors duration-300`;
-    const activeLinkClass = scrolled ? `${baseTextColor} font-bold hover:text-blue-600 transition-colors duration-300` : `${baseTextColor} font-bold drop-shadow-sm transition-colors duration-300`;
+    const logoTextClass = scrolled ? `${baseTextColor} drop-shadow-sm transition-colors duration-300` : 'text-white drop-shadow-md';
+    const linkTextClass = scrolled ? `${mutedTextColor} hover:text-blue-600 transition-colors duration-300` : 'text-white/90 hover:text-white drop-shadow-sm transition-colors duration-300';
+    const activeLinkClass = scrolled ? `${baseTextColor} font-bold hover:text-blue-600 transition-colors duration-300` : 'text-white font-bold drop-shadow-md transition-colors duration-300';
     
-    const loginClass = scrolled ? `${baseTextColor} font-bold hover:text-blue-600 transition-colors duration-300` : `${baseTextColor} font-bold drop-shadow-sm hover:${mutedTextColor} transition-colors duration-300`;
+    const loginClass = scrolled ? `${baseTextColor} font-bold hover:text-blue-600 transition-colors duration-300` : 'text-white font-bold drop-shadow-md hover:text-white/90 transition-colors duration-300';
     const getStartedClass = scrolled 
         ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-[0_4px_14px_rgba(37,99,235,0.3)] hover:-translate-y-0.5'
-        : ''; // Will be wrapped in LiquidContainer
+        : 'bg-white text-blue-600 font-bold hover:bg-slate-50 shadow-lg hover:-translate-y-0.5';
 
-    const logoIconBg = scrolled ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : (isDarkBg ? 'bg-white text-blue-600 shadow-md shadow-white/20' : 'bg-blue-600 text-white shadow-md shadow-blue-500/20');
+    const logoIconBg = scrolled ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'bg-white text-blue-600 shadow-md shadow-white/20';
 
     const handleNavClick = (path) => {
         setMobileMenuOpen(false);
@@ -150,7 +159,7 @@ const Navbar = () => {
                 animate={{ y: 0 }}
             >
                 <div className={`mx-auto transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${scrolled ? 'max-w-6xl px-4 md:px-6' : 'w-full max-w-7xl px-6'}`}>
-                    <div className={navContainerInnerClass}>
+                    <NavContainer>
                         
                         <div className="flex items-center relative z-10">
                             <Link 
@@ -224,11 +233,11 @@ const Navbar = () => {
                         {/* Mobile Menu Button */}
                         <button
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                            className={`lg:hidden p-2 rounded-xl transition-colors z-10 ${scrolled ? 'bg-slate-100 text-slate-600' : (isDarkBg ? 'bg-white/20 text-white backdrop-blur-md border border-white/30' : 'bg-slate-100 text-slate-600')}`}
+                            className={`lg:hidden p-2 rounded-xl transition-colors z-10 ${scrolled ? 'bg-slate-100 text-slate-600' : 'bg-white/20 text-white backdrop-blur-md border border-white/30'}`}
                         >
                             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                         </button>
-                    </div>
+                    </NavContainer>
 
                     {/* Mobile Menu */}
                     <AnimatePresence>
@@ -277,7 +286,7 @@ const Navbar = () => {
             animate={{ y: 0 }}
         >
             <div className={`mx-auto transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${scrolled ? 'max-w-6xl px-4 md:px-6' : 'w-full max-w-7xl px-6'}`}>
-                <div className={navContainerInnerClass}>
+                <NavContainer>
                     
                     {/* Logo Area */}
                     <div className="flex items-center relative z-10">
@@ -300,11 +309,11 @@ const Navbar = () => {
                     {/* Main Navigation */}
                     <div className="hidden lg:flex items-center absolute left-1/2 -translate-x-1/2">
                         <div className="flex items-center gap-2 p-1.5 rounded-full transition-colors duration-300">
-                            <NavLink to="/" icon={<Globe className="w-4 h-4" />} label="Home" active={isActive('/')} scrolled={scrolled} isDarkBg={isDarkBg} />
-                            <NavLink to="/ai" icon={<Sparkles className="w-4 h-4" />} label="AI Core" active={isActive('/ai') || isActive('/chat')} scrolled={scrolled} isDarkBg={isDarkBg} />
-                            <NavLink to="/my-trips" icon={<Map className="w-4 h-4" />} label="Trips" active={isActive('/trips') || isActive('/my-trips')} scrolled={scrolled} isDarkBg={isDarkBg} />
-                            <NavLink to="/bookings" icon={<CreditCard className="w-4 h-4" />} label="Bookings" active={isActive('/bookings')} scrolled={scrolled} isDarkBg={isDarkBg} />
-                            <NavLink to="/favourites" icon={<Heart className="w-4 h-4" />} label="Saved" active={isActive('/favourites')} scrolled={scrolled} isDarkBg={isDarkBg} />
+                            <NavLink to="/" icon={<Globe className="w-4 h-4" />} label="Home" active={isActive('/')} scrolled={scrolled} />
+                            <NavLink to="/ai" icon={<Sparkles className="w-4 h-4" />} label="AI Core" active={isActive('/ai') || isActive('/chat')} scrolled={scrolled} />
+                            <NavLink to="/my-trips" icon={<Map className="w-4 h-4" />} label="Trips" active={isActive('/trips') || isActive('/my-trips')} scrolled={scrolled} />
+                            <NavLink to="/bookings" icon={<CreditCard className="w-4 h-4" />} label="Bookings" active={isActive('/bookings')} scrolled={scrolled} />
+                            <NavLink to="/favourites" icon={<Heart className="w-4 h-4" />} label="Saved" active={isActive('/favourites')} scrolled={scrolled} />
                         </div>
                     </div>
 
@@ -315,12 +324,12 @@ const Navbar = () => {
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                                className={`flex items-center gap-2 p-1 pr-3 rounded-full border transition-all duration-300 ${scrolled ? 'bg-slate-100 border-slate-200 hover:bg-slate-200' : (isDarkBg ? 'bg-white/20 backdrop-blur-md border-white/30 hover:bg-white/30 text-white' : 'bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-800')}`}
+                                className={`flex items-center gap-2 p-1 pr-3 rounded-full border transition-all duration-300 ${scrolled ? 'bg-slate-100 border-slate-200 hover:bg-slate-200' : 'bg-white/20 backdrop-blur-md border-white/30 hover:bg-white/30 text-white'}`}
                             >
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-sm ${scrolled ? 'bg-white text-blue-600' : (isDarkBg ? 'bg-white text-blue-600' : 'bg-white text-blue-600 border border-slate-200')}`}>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-sm ${scrolled ? 'bg-white text-blue-600' : 'bg-white text-blue-600 border border-slate-200'}`}>
                                     {displayName.charAt(0).toUpperCase()}
                                 </div>
-                                <span className={`text-sm font-bold max-w-[100px] truncate ${scrolled ? 'text-slate-700' : (isDarkBg ? 'text-white' : 'text-slate-700')}`}>
+                                <span className={`text-sm font-bold max-w-[100px] truncate ${scrolled ? 'text-slate-700' : 'text-white'}`}>
                                     {displayName}
                                 </span>
                             </motion.button>
@@ -355,12 +364,12 @@ const Navbar = () => {
                         {/* Mobile Menu Button for Authenticated State */}
                         <button
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                            className={`lg:hidden p-2 ml-2 rounded-xl transition-colors ${scrolled ? 'bg-slate-100 text-slate-600' : (isDarkBg ? 'bg-white/20 text-white backdrop-blur-md border border-white/30' : 'bg-slate-100 text-slate-600')}`}
+                            className={`lg:hidden p-2 ml-2 rounded-xl transition-colors ${scrolled ? 'bg-slate-100 text-slate-600' : 'bg-white/20 text-white backdrop-blur-md border border-white/30'}`}
                         >
                             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                         </button>
                     </div>
-                </div>
+                </NavContainer>
 
                 {/* Mobile Menu for Authenticated State */}
                 <AnimatePresence>
@@ -386,12 +395,9 @@ const Navbar = () => {
     );
 };
 
-const NavLink = ({ to, icon, label, active, scrolled, isDarkBg }) => {
-    const baseTextColor = isDarkBg ? 'text-white' : 'text-slate-900';
-    const mutedTextColor = isDarkBg ? 'text-white/80' : 'text-slate-500';
-
-    const linkTextClass = scrolled ? 'text-slate-600 hover:text-slate-900' : `${mutedTextColor} hover:${baseTextColor} drop-shadow-sm`;
-    const activeLinkClass = scrolled ? 'text-blue-600 font-bold' : `${baseTextColor} font-bold drop-shadow-sm`;
+const NavLink = ({ to, icon, label, active, scrolled }) => {
+    const linkTextClass = scrolled ? 'text-slate-600 hover:text-slate-900' : 'text-white/90 hover:text-white drop-shadow-sm';
+    const activeLinkClass = scrolled ? 'text-blue-600 font-bold' : 'text-white font-bold drop-shadow-md';
 
     return (
         <Link
