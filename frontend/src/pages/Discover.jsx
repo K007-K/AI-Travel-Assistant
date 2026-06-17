@@ -255,7 +255,7 @@ const Discover = () => {
         : destinations.filter(d => d.tags?.includes(filter) || d.type?.includes(filter.toLowerCase()));
 
     return (
-        <div className="min-h-screen bg-[#030712] transition-colors duration-500 overflow-hidden font-sans relative selection:bg-blue-500/30">
+        <div className="min-h-screen bg-[#030712] transition-colors duration-500 overflow-hidden font-sans relative selection:bg-blue-500/30 flex flex-col">
             <style dangerouslySetInnerHTML={{ __html: discoverStyles }} />
             
             {/* Ambient Background Glows */}
@@ -263,7 +263,7 @@ const Discover = () => {
             <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[150px] pointer-events-none opacity-50 mix-blend-screen" />
 
             {/* Cinematic Hero Overlay */}
-            <div className="absolute top-0 left-0 right-0 pt-32 md:pt-40 z-30 pointer-events-none flex flex-col items-center">
+            <div className="pt-32 md:pt-40 z-30 pointer-events-none flex flex-col items-center relative flex-shrink-0">
                 <motion.div 
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -323,10 +323,10 @@ const Discover = () => {
             </div>
 
             {/* Full-Bleed Horizontal Gallery */}
-            <div className="absolute inset-0 top-0 pt-[45vh] md:pt-[50vh] pb-20">
+            <div className="flex-grow relative flex items-center pt-10 md:pt-16 pb-20 w-full overflow-hidden">
                 <div 
                     ref={carouselRef}
-                    className="discover-carousel w-full h-full items-end pb-12"
+                    className="discover-carousel w-full items-center pb-12"
                 >
                     <AnimatePresence mode="wait">
                         {isLoading ? (
