@@ -40,10 +40,10 @@ const BudgetTab = ({
     // Risk level (deterministic)
     const riskLevel = forecastPercent >= 100 ? 'CRITICAL' : forecastPercent >= 80 ? 'HIGH' : forecastPercent >= 60 ? 'MODERATE' : 'LOW';
     const riskConfig = {
-        LOW: { color: 'text-emerald-600 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800', icon: <ShieldCheck className="w-5 h-5" />, label: 'Low Risk' },
-        MODERATE: { color: 'text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800', icon: <AlertCircle className="w-5 h-5" />, label: 'Moderate Risk' },
-        HIGH: { color: 'text-orange-600 bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-800', icon: <AlertTriangle className="w-5 h-5" />, label: 'High Risk' },
-        CRITICAL: { color: 'text-red-600 bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800', icon: <AlertTriangle className="w-5 h-5" />, label: 'Critical' },
+        LOW: { color: 'text-emerald-700 dark:text-emerald-400 bg-emerald-500/5 border-emerald-500/20', icon: <ShieldCheck className="w-5 h-5" />, label: 'Low Risk' },
+        MODERATE: { color: 'text-amber-700 dark:text-amber-400 bg-amber-500/5 border-amber-500/20', icon: <AlertCircle className="w-5 h-5" />, label: 'Moderate Risk' },
+        HIGH: { color: 'text-orange-700 dark:text-orange-400 bg-orange-500/5 border-orange-500/20', icon: <AlertTriangle className="w-5 h-5" />, label: 'High Risk' },
+        CRITICAL: { color: 'text-destructive dark:text-red-400 bg-destructive/5 border-destructive/20', icon: <AlertTriangle className="w-5 h-5" />, label: 'Critical' },
     };
     const risk = riskConfig[riskLevel];
     const hasData = totalBudget > 0;
@@ -231,10 +231,10 @@ const BudgetTab = ({
                                                     <span className="text-sm font-medium text-foreground capitalize">{cat.category}</span>
                                                     <span className="text-sm text-muted-foreground">{cur} {catTotal.toLocaleString()} <span className="text-xs">({catPercent}%)</span></span>
                                                 </div>
-                                                <div className="w-full bg-muted rounded-full h-3 overflow-hidden flex">
-                                                    {manual > 0 && <motion.div initial={{ width: 0 }} animate={{ width: `${manualPct}%` }} transition={{ duration: 0.8, delay: 0.6 + i * 0.08 }} className="h-full bg-blue-500" title={`Manual: ${cur} ${manual.toLocaleString()}`} />}
-                                                    {booking > 0 && <motion.div initial={{ width: 0 }} animate={{ width: `${bookingPct}%` }} transition={{ duration: 0.8, delay: 0.7 + i * 0.08 }} className="h-full bg-violet-500" title={`Booking: ${cur} ${booking.toLocaleString()}`} />}
-                                                    {aiEst > 0 && <motion.div initial={{ width: 0 }} animate={{ width: `${aiPct}%` }} transition={{ duration: 0.8, delay: 0.8 + i * 0.08 }} className="h-full bg-cyan-400" title={`AI Estimate: ${cur} ${aiEst.toLocaleString()}`} />}
+                                                <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden flex">
+                                                    {manual > 0 && <motion.div initial={{ width: 0 }} animate={{ width: `${manualPct}%` }} transition={{ duration: 0.8, delay: 0.6 + i * 0.08 }} className="h-full bg-blue-500/80" title={`Manual: ${cur} ${manual.toLocaleString()}`} />}
+                                                    {booking > 0 && <motion.div initial={{ width: 0 }} animate={{ width: `${bookingPct}%` }} transition={{ duration: 0.8, delay: 0.7 + i * 0.08 }} className="h-full bg-violet-500/80" title={`Booking: ${cur} ${booking.toLocaleString()}`} />}
+                                                    {aiEst > 0 && <motion.div initial={{ width: 0 }} animate={{ width: `${aiPct}%` }} transition={{ duration: 0.8, delay: 0.8 + i * 0.08 }} className="h-full bg-cyan-500/80" title={`AI Estimate: ${cur} ${aiEst.toLocaleString()}`} />}
                                                 </div>
                                             </motion.div>
                                         );

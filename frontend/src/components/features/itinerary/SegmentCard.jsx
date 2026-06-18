@@ -28,14 +28,12 @@ const SegmentCard = ({
     const Icon = typeInfo.icon;
 
     return (
-        <Reorder.Item value={activity} className="relative pl-6 sm:pl-10 py-2 group/item" dragListener={!isLogistics}>
+        <Reorder.Item value={activity} className="relative pl-8 sm:pl-12 pb-6 group/item" dragListener={!isLogistics}>
             {/* Timeline Vertical Line */}
-            <div className="absolute left-[11px] top-0 bottom-0 w-px bg-border group-last/item:bottom-auto group-last/item:h-full" />
+            <div className="absolute left-[19px] top-4 bottom-[-1rem] w-px bg-border group-last/item:bottom-auto group-last/item:h-[calc(100%-1.5rem)]" />
             
             {/* Timeline Node */}
-            <div className={`absolute left-[-1px] top-8 w-6 h-6 rounded-full flex items-center justify-center bg-background border ring-4 ring-background z-10 transition-colors ${activity.isCompleted ? 'border-primary text-primary' : 'border-border text-muted-foreground/40'}`}>
-                {activity.isCompleted ? <CheckCircle2 className="w-4 h-4" /> : <div className="w-2 h-2 rounded-full bg-border" />}
-            </div>
+            <div className={`absolute left-[15px] top-8 w-[9px] h-[9px] rounded-full z-10 transition-colors ${activity.isCompleted ? 'bg-primary ring-4 ring-primary/20' : 'bg-muted-foreground/30 ring-4 ring-background'}`} />
 
             <div 
                 className={`group/card flex items-start gap-4 p-4 rounded-2xl transition-all cursor-pointer border border-transparent hover:bg-muted/40 hover:border-border/50 ${isFocused ? 'bg-muted/40 border-border/80 shadow-sm' : ''} ${activity.safety_warning ? 'bg-red-50/50 dark:bg-red-900/10' : ''} ${isLogistics ? 'bg-teal-50/20 dark:bg-teal-900/10' : ''}`}

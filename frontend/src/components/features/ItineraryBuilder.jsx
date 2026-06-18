@@ -536,27 +536,27 @@ const ItineraryBuilder = () => {
             </AnimatePresence>
 
             {/* FIXED TABS HEADER */}
-            <header className="flex-none absolute top-0 w-full bg-transparent z-50 h-16 flex items-center justify-between px-4">
-                <Button variant="ghost" size="sm" onClick={handleBack} className="gap-2 bg-black/10 hover:bg-black/20 text-white border-0 backdrop-blur-md rounded-full px-4">
+            <header className="flex-none absolute top-0 left-0 right-0 z-50 h-16 flex items-center justify-between px-4 bg-background/70 backdrop-blur-xl border-b border-border/40 shadow-sm">
+                <Button variant="ghost" size="sm" onClick={handleBack} className="gap-2 rounded-full hover:bg-muted">
                     <ArrowLeft className="w-4 h-4" />
                     <span className="hidden sm:inline">Back</span>
                 </Button>
 
                 {/* Center: Tabs Switcher */}
-                <div className="flex bg-black/10 backdrop-blur-md p-1 rounded-full border border-white/10 relative">
+                <div className="flex bg-muted/80 p-1 rounded-full border border-border/50 relative">
                     {/* Animated Background for Tab */}
                     <div className="relative flex">
                         {['itinerary', 'budget'].map((tab) => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`relative px-6 py-1.5 rounded-full text-sm font-semibold transition-colors z-10 flex items-center gap-2 ${activeTab === tab ? 'text-black dark:text-white' : 'text-white/80 hover:text-white'
+                                className={`relative px-6 py-1.5 rounded-full text-sm font-semibold transition-colors z-10 flex items-center gap-2 ${activeTab === tab ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
                                     }`}
                             >
                                 {activeTab === tab && (
                                     <motion.div
                                         layoutId="activeTab"
-                                        className="absolute inset-0 bg-white dark:bg-white/20 shadow-sm rounded-full -z-10"
+                                        className="absolute inset-0 bg-background shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-border/50 rounded-full -z-10"
                                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
                                     />
                                 )}
@@ -573,7 +573,7 @@ const ItineraryBuilder = () => {
             {/* Main Content Area - Scrollable */}
             <div className="flex-grow overflow-x-hidden overflow-y-auto relative custom-scrollbar">
                 <HeroImage destination={trip.destination} />
-                <div className="relative z-10 p-6 pt-[30vh]">
+                <div className="relative z-10 p-6 pt-[45vh]">
                     <div className="container-custom max-w-5xl mx-auto pb-20">
 
                         {/* 1. ITINERARY TAB */}
@@ -750,7 +750,7 @@ const ItineraryBuilder = () => {
                                                     </div>
                                                 </Card>
                                             )}
-                                            <Reorder.Group axis="y" values={activeDay?.activities || []} onReorder={(newOrder) => { reorderActivities(trip.id, activeDay.id, newOrder); setIsDirty(true); }} className="space-y-4">
+                                            <Reorder.Group axis="y" values={activeDay?.activities || []} onReorder={(newOrder) => { reorderActivities(trip.id, activeDay.id, newOrder); setIsDirty(true); }} className="flex flex-col relative pb-6">
                                                 {activeDay?.activities.map((activity) => {
                                                     let typeInfo = ACTIVITY_TYPES.find(t => t.value === activity.type) || ACTIVITY_TYPES[0];
                                                     // Override icon for transport segments based on actual mode
@@ -786,10 +786,10 @@ const ItineraryBuilder = () => {
 
                                 {/* Sidebar */}
                                 <div className="lg:col-span-1">
-                                    <div className="sticky top-6 space-y-6">
-                                        <Card className="rounded-3xl overflow-visible h-96 border-border">
+                                    <div className="sticky top-[5.5rem] space-y-8">
+                                        <div className="rounded-[2rem] overflow-hidden h-96 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] bg-muted/30 border border-border/40">
                                             <MapContainer trip={trip} destination={trip.destination} focusedActivityId={focusedActivityId} onPinClick={(id) => setFocusedActivityId(id)} />
-                                        </Card>
+                                        </div>
 
                                         <AllocationBreakdown
                                             storeAllocation={storeAllocation}
