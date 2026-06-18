@@ -28,7 +28,7 @@ export default function MapContainer({ trip, destination, onMapReady, highlighte
                 sources: {
                     'osm-tiles': {
                         type: 'raster',
-                        tiles: ['https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png'],
+                        tiles: ['https://cartodb-basemaps-a.global.ssl.fastly.net/rastertiles/voyager/{z}/{x}/{y}.png'],
                         tileSize: 256,
                         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
                     },

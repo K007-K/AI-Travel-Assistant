@@ -39,7 +39,7 @@ const HiddenGemsPanel = ({
                                 initial={{ opacity: 1, height: 'auto' }}
                                 exit={{ opacity: 0, height: 0, marginBottom: 0, padding: 0, overflow: 'hidden' }}
                                 transition={{ duration: 0.4, ease: 'easeInOut' }}
-                                className="p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors shrink-0"
+                                className="p-4 bg-card border border-slate-200 dark:border-slate-800 rounded-xl hover:shadow-md transition-all shrink-0"
                             >
                                 <div className="flex items-start justify-between gap-2">
                                     <h4 className="text-sm font-medium text-foreground mb-1.5">{gem.title}</h4>
