@@ -786,8 +786,8 @@ const ItineraryBuilder = () => {
 
                                 {/* Sidebar */}
                                 <div className="lg:col-span-1">
-                                    <div className="sticky top-[5.5rem] space-y-8">
-                                        <div className="rounded-[2rem] overflow-hidden h-96 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] bg-muted/30 border border-border/40">
+                                    <div className="sticky top-[5.5rem] space-y-8 max-h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar pb-6 pr-2 -mr-2">
+                                        <div className="rounded-[2rem] overflow-hidden h-80 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] bg-muted/30 border border-border/40 shrink-0">
                                             <MapContainer trip={trip} destination={trip.destination} focusedActivityId={focusedActivityId} onPinClick={(id) => setFocusedActivityId(id)} />
                                         </div>
 
