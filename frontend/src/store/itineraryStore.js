@@ -166,7 +166,7 @@ const useItineraryStore = create((set, _get) => ({
             return [];
         }
 
-        const gems = (data || []).map(seg => ({
+        let gems = (data || []).map(seg => ({
             title: seg.title,
             location: seg.location,
             estimated_cost: seg.estimated_cost || 0,
@@ -175,6 +175,49 @@ const useItineraryStore = create((set, _get) => ({
             safety_note: seg.metadata?.safety_note || null,
             category: seg.metadata?.category || 'hidden_gem',
         }));
+
+        // AI Fallback if DB is empty (e.g. legacy trips or failed orchestration)
+        if (gems.length === 0) {
+            console.log('[HiddenGems] No gems found in DB. Falling back to AI generation...');
+            const tripStore = useTripStore.getState();
+            const trip = tripStore.trips.find(t => t.id === tripId);
+            
+            if (trip && trip.destination) {
+                try {
+                    const aiGems = await getHiddenGems(trip.destination);
+                    if (aiGems && aiGems.length > 0) {
+                        const gemSegments = aiGems.map((gem, idx) => ({
+                            trip_id: tripId,
+                            type: 'hidden_gem',
+                            title: gem.title || gem.name || 'Hidden Gem',
+                            day_number: 0,
+                            location: gem.location || trip.destination,
+                            estimated_cost: gem.estimated_cost || 0,
+                            order_index: idx,
+                            metadata: {
+                                description: gem.description || '',
+                                why: gem.why || gem.reason || '',
+                                safety_note: gem.safety_note || gem.safety_warning || null,
+                                category: gem.category || 'hidden_gem',
+                            },
+                        }));
+                        await supabase.from('trip_segments').insert(gemSegments);
+                        
+                        gems = aiGems.map(gem => ({
+                            title: gem.title || gem.name,
+                            location: gem.location || trip.destination,
+                            estimated_cost: gem.estimated_cost || 0,
+                            description: gem.description || '',
+                            why: gem.why || gem.reason || '',
+                            safety_note: gem.safety_note || gem.safety_warning || null,
+                            category: gem.category || 'hidden_gem',
+                        }));
+                    }
+                } catch (aiError) {
+                    console.error('[HiddenGems] AI generation fallback failed:', aiError);
+                }
+            }
+        }
 
         set({ hiddenGems: gems });
         return gems;

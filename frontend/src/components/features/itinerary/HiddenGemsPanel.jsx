@@ -27,6 +27,9 @@ const HiddenGemsPanel = ({
                 {isLoadingGems && (
                     <div className="text-center py-4 text-muted-foreground text-sm">Loading gems…</div>
                 )}
+                {!isLoadingGems && storeHiddenGems.filter(gem => !addedGemTitles.has(gem.title)).length === 0 && (
+                    <div className="text-center py-4 text-muted-foreground text-sm">No new hidden gems left to discover.</div>
+                )}
                 <AnimatePresence>
                     {storeHiddenGems
                         .filter(gem => !addedGemTitles.has(gem.title))
