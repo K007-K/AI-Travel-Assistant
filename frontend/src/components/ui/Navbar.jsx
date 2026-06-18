@@ -11,7 +11,8 @@ import {
     Settings,
     Menu,
     X,
-    LayoutDashboard
+    LayoutDashboard,
+    Wallet
 } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
 import useAuthStore from '../../store/authStore';
@@ -317,6 +318,7 @@ const Navbar = () => {
                             <NavLink to="/ai" icon={<Sparkles className="w-4 h-4" />} label="AI Core" active={isActive('/ai') || isActive('/chat')} scrolled={scrolled} isDarkBg={isDarkBg} />
                             <NavLink to="/my-trips" icon={<Map className="w-4 h-4" />} label="Trips" active={isActive('/trips') || isActive('/my-trips')} scrolled={scrolled} isDarkBg={isDarkBg} />
                             <NavLink to="/bookings" icon={<CreditCard className="w-4 h-4" />} label="Bookings" active={isActive('/bookings')} scrolled={scrolled} isDarkBg={isDarkBg} />
+                            <NavLink to="/budget" icon={<Wallet className="w-4 h-4" />} label="Budget" active={isActive('/budget')} scrolled={scrolled} isDarkBg={isDarkBg} />
                             <NavLink to="/favourites" icon={<Heart className="w-4 h-4" />} label="Saved" active={isActive('/favourites')} scrolled={scrolled} isDarkBg={isDarkBg} />
                         </div>
                     </div>

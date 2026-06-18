@@ -14,7 +14,6 @@ import {
 import { motion } from 'framer-motion';
 import useAuthStore from '../../store/authStore';
 import { Button } from '../ui/Button';
-import Navbar from '../ui/Navbar';
 
 const UserDashboard = () => {
     const { user, profile } = useAuthStore();
@@ -41,8 +40,6 @@ const UserDashboard = () => {
 
     return (
         <div className="min-h-screen bg-slate-50/50 dark:bg-[#0a0a0a] font-sans selection:bg-blue-100 dark:selection:bg-blue-900/40 transition-colors duration-300">
-            <Navbar />
-
             <main className="pt-28 pb-20 px-6">
                 <div className="max-w-7xl mx-auto">
                     {/* Greeting Header */}
