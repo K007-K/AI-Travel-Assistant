@@ -19,7 +19,7 @@ import useAuthStore from '../../store/authStore';
 import { LiquidContainer } from './liquid-glass-button';
 
 const Navbar = () => {
-    const { user, profile, logout } = useAuthStore();
+    const { user, profile, logout, isLoading } = useAuthStore();
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -152,6 +152,11 @@ const Navbar = () => {
         { name: 'Showcase', path: '/#showcase' },
         { name: 'Join Free', path: '/#join' },
     ];
+
+    // Hide navbar while auth is loading to prevent flashing the wrong state
+    if (isLoading) {
+        return null;
+    }
 
     // -------------------------------------------------------------------------
     // RENDER: LANDING PAGE NAVBAR (Unauthenticated)
