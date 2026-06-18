@@ -14,6 +14,7 @@ import useItineraryStore from '../../store/itineraryStore';
 import useBudgetStore from '../../store/budgetStore';
 import BudgetHealthBadge from '../ui/BudgetHealthBadge';
 import { getCurrencyForDestination, getCurrencySymbol } from '../../utils/currencyMap';
+import { getFallbackImage, loadDestinationImage } from '../../utils/destinationImages';
 import MapContainer from '../map/MapContainer';
 import { Button } from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
@@ -45,6 +46,17 @@ function getTransportIcon(mode) {
     if (!mode) return Plane;
     return TRANSPORT_ICONS[mode.toLowerCase()] || Plane;
 }
+
+const HeroImage = ({ destination }) => {
+    const [imgUrl, setImgUrl] = useState(() => getFallbackImage(destination));
+    useEffect(() => { loadDestinationImage(destination, setImgUrl); }, [destination]);
+    return (
+        <div className="absolute top-0 left-0 w-full h-[45vh] z-0 pointer-events-none select-none">
+            <img src={imgUrl} alt={destination} className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-background/40 to-background" />
+        </div>
+    );
+};
 
 const ItineraryBuilder = () => {
     const { id } = useParams();
@@ -524,27 +536,27 @@ const ItineraryBuilder = () => {
             </AnimatePresence>
 
             {/* FIXED TABS HEADER */}
-            <header className="flex-none bg-background/80 glass border-b border-border z-50 h-16 flex items-center justify-between px-4">
-                <Button variant="ghost" size="sm" onClick={handleBack} className="gap-2">
+            <header className="flex-none absolute top-0 w-full bg-transparent z-50 h-16 flex items-center justify-between px-4">
+                <Button variant="ghost" size="sm" onClick={handleBack} className="gap-2 bg-black/10 hover:bg-black/20 text-white border-0 backdrop-blur-md rounded-full px-4">
                     <ArrowLeft className="w-4 h-4" />
                     <span className="hidden sm:inline">Back</span>
                 </Button>
 
                 {/* Center: Tabs Switcher */}
-                <div className="flex bg-muted p-1 rounded-xl relative">
+                <div className="flex bg-black/10 backdrop-blur-md p-1 rounded-full border border-white/10 relative">
                     {/* Animated Background for Tab */}
                     <div className="relative flex">
                         {['itinerary', 'budget'].map((tab) => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`relative px-6 py-1.5 rounded-lg text-sm font-bold transition-colors z-10 flex items-center gap-2 ${activeTab === tab ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                                className={`relative px-6 py-1.5 rounded-full text-sm font-semibold transition-colors z-10 flex items-center gap-2 ${activeTab === tab ? 'text-black dark:text-white' : 'text-white/80 hover:text-white'
                                     }`}
                             >
                                 {activeTab === tab && (
                                     <motion.div
                                         layoutId="activeTab"
-                                        className="absolute inset-0 bg-background shadow-sm rounded-lg -z-10"
+                                        className="absolute inset-0 bg-white dark:bg-white/20 shadow-sm rounded-full -z-10"
                                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
                                     />
                                 )}
@@ -559,39 +571,42 @@ const ItineraryBuilder = () => {
             </header>
 
             {/* Main Content Area - Scrollable */}
-            <div className="flex-grow overflow-hidden relative">
-                <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-6">
-                    <div className="container-custom max-w-7xl mx-auto pb-20">
+            <div className="flex-grow overflow-x-hidden overflow-y-auto relative custom-scrollbar">
+                <HeroImage destination={trip.destination} />
+                <div className="relative z-10 p-6 pt-[30vh]">
+                    <div className="container-custom max-w-5xl mx-auto pb-20">
 
                         {/* 1. ITINERARY TAB */}
                         <div className={`transition-opacity duration-300 ${activeTab === 'itinerary' ? 'block' : 'hidden'}`}>
                             {/* Trip Header */}
-                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
+                            <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6 mb-12">
                                 <div>
-                                    <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-2">{trip.title}</h1>
-                                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                        <span className="flex items-center gap-1 bg-card px-3 py-1 rounded-full border border-border shadow-sm"><MapPin className="w-3 h-3" /> {trip.destination}</span>
-                                        <span className="flex items-center gap-1 bg-card px-3 py-1 rounded-full border border-border shadow-sm"><Calendar className="w-3 h-3" /> {new Date(trip.start_date || trip.startDate).toLocaleDateString()}</span>
-                                        <span className="flex items-center gap-1 bg-card px-3 py-1 rounded-full border border-border shadow-sm font-medium text-foreground">
-                                            <Wallet className="w-3 h-3" />
+                                    <h1 className="text-4xl md:text-6xl font-bold text-foreground tracking-tight mb-4">{trip.title}</h1>
+                                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                                        <span className="flex items-center gap-1.5 bg-muted/50 px-3 py-1.5 rounded-lg text-foreground font-medium"><MapPin className="w-4 h-4" /> {trip.destination}</span>
+                                        <span className="flex items-center gap-1.5 bg-muted/50 px-3 py-1.5 rounded-lg text-foreground font-medium"><Calendar className="w-4 h-4" /> {new Date(trip.start_date || trip.startDate).toLocaleDateString()}</span>
+                                        <span className="flex items-center gap-1.5 bg-muted/50 px-3 py-1.5 rounded-lg font-semibold text-foreground">
+                                            <Wallet className="w-4 h-4" />
                                             {activeCurrencySymbol}{(trip.budget || 0).toLocaleString()}
-                                            <span className="text-muted-foreground text-xs">/person</span>
+                                            <span className="text-muted-foreground font-normal">/pp</span>
                                         </span>
                                         {budgetSummary && (
-                                            <BudgetHealthBadge
-                                                percentUsed={budgetSummary.percent_used || 0}
-                                                forecastPercent={trip.budget > 0 ? (((budgetSummary.total_spent || 0) + (budgetSummary.ai_estimated_total || 0)) / trip.budget * 100) : 0}
-                                                size="sm"
-                                            />
+                                            <div className="ml-2">
+                                                <BudgetHealthBadge
+                                                    percentUsed={budgetSummary.percent_used || 0}
+                                                    forecastPercent={trip.budget > 0 ? (((budgetSummary.total_spent || 0) + (budgetSummary.ai_estimated_total || 0)) / trip.budget * 100) : 0}
+                                                    size="sm"
+                                                />
+                                            </div>
                                         )}
                                     </div>
                                 </div>
-                                <div className="flex gap-3">
-                                    <Button variant="outline" onClick={handleShare} className="gap-2">
+                                <div className="flex gap-3 shrink-0">
+                                    <Button variant="outline" onClick={handleShare} className="gap-2 rounded-xl">
                                         <Share2 className="w-4 h-4" /> Share
                                     </Button>
-                                    <Button onClick={handleSave} className="gap-2">
-                                        <Save className="w-4 h-4" /> Save Trip
+                                    <Button onClick={handleSave} className="gap-2 rounded-xl shadow-lg">
+                                        <Save className="w-4 h-4" /> Save
                                     </Button>
                                 </div>
                             </div>
@@ -663,22 +678,22 @@ const ItineraryBuilder = () => {
                             )}
 
                             {/* Day Selector */}
-                            <div className="flex gap-2 overflow-x-auto mb-8 pb-2 no-scrollbar">
+                            <div className="flex gap-8 overflow-x-auto mb-10 border-b border-border no-scrollbar">
                                 {trip.days.map((day) => (
                                     <button
                                         key={day.id}
                                         onClick={() => setSelectedDay(day.id)}
-                                        className={`flex-shrink-0 px-5 py-2.5 rounded-xl font-medium transition-all relative ${selectedDay === day.id ? 'text-primary-foreground' : 'bg-card text-muted-foreground border border-border hover:bg-muted'
+                                        className={`flex-shrink-0 py-3 text-lg transition-all relative outline-none ${selectedDay === day.id ? 'text-foreground font-bold' : 'text-muted-foreground font-medium hover:text-foreground'
                                             }`}
                                     >
                                         {selectedDay === day.id && (
                                             <motion.div
                                                 layoutId="activeDay"
-                                                className="absolute inset-0 bg-primary rounded-xl"
+                                                className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground"
                                                 transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                                             />
                                         )}
-                                        <span className="relative z-10">Day {day.dayNumber}</span>
+                                        <span className="relative z-10 px-1">Day {day.dayNumber}</span>
                                     </button>
                                 ))}
                             </div>

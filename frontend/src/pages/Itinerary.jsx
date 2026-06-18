@@ -177,13 +177,13 @@ const Itinerary = () => {
                                     exit={{ opacity: 0, scale: 0.9 }}
                                     className="h-full"
                                 >
-                                    <Card className={`group relative h-full overflow-hidden hover:shadow-xl transition-all duration-300 ${trip.pinned ? 'border-primary ring-1 ring-primary' : ''}`}>
-                                        <div className="h-48 relative overflow-hidden group-hover:h-52 transition-all duration-300">
+                                    <div className={`group relative h-full flex flex-col gap-4 ${trip.pinned ? 'opacity-100' : 'opacity-90 hover:opacity-100 transition-opacity duration-300'}`}>
+                                        {/* Image Container */}
+                                        <div className={`relative w-full aspect-[4/3] rounded-[2rem] overflow-hidden bg-muted shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] transition-transform duration-500 ${isEditing ? 'scale-[0.98]' : 'group-hover:scale-[1.02]'}`}>
                                             <TripCardImage
                                                 destination={trip.destination}
-                                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                                             />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
                                             {/* Selection Overlay */}
                                             {isEditing && (
@@ -230,38 +230,36 @@ const Itinerary = () => {
                                                 </button>
                                             </div>
 
-                                            <div className="absolute bottom-4 left-6 z-10">
-                                                <h3 className="text-white text-2xl font-bold mb-1 shadow-sm uppercase tracking-wide">
-                                                    {trip.destination}
-                                                    {trip.segments && trip.segments.length > 1 && (
-                                                        <span className="ml-2 text-sm font-normal text-white/80 lowercase capitalize">
-                                                            (+{trip.segments.length - 1} more)
-                                                        </span>
-                                                    )}
-                                                </h3>
-                                                <div className="flex items-center text-white/90 text-sm gap-1 font-medium">
-                                                    <span className="bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded text-xs">
-                                                        {trip.title}
-                                                    </span>
-                                                </div>
-                                            </div>
                                         </div>
 
-                                        <CardContent className="p-6 relative">
-                                            {/* Disable link click when editing */}
-                                            {isEditing ? (
-                                                <div className="absolute inset-0 z-10 cursor-pointer" onClick={() => toggleSelection(trip.id)} />
-                                            ) : null}
-
-                                            <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6">
+                                        {/* Typography Container */}
+                                        <div className="px-2 pb-2 relative z-10">
+                                            <h3 className="text-xl font-bold text-foreground tracking-tight leading-tight">
+                                                {trip.destination}
+                                                {trip.segments && trip.segments.length > 1 && (
+                                                    <span className="ml-2 text-sm font-medium text-muted-foreground">
+                                                        (+{trip.segments.length - 1})
+                                                    </span>
+                                                )}
+                                            </h3>
+                                            <p className="text-sm font-medium text-muted-foreground mt-1">
+                                                {trip.title}
+                                            </p>
+                                            
+                                            <div className="flex items-center gap-4 mt-3 text-sm text-slate-500 dark:text-slate-400">
                                                 <div className="flex items-center gap-1.5">
-                                                    <Calendar className="w-4 h-4 text-primary" />
+                                                    <Calendar className="w-4 h-4" />
                                                     {new Date(trip.start_date || trip.startDate).toLocaleDateString()}
                                                 </div>
                                                 <div className="flex items-center gap-1.5">
-                                                    <Clock className="w-4 h-4 text-accent" />
+                                                    <Clock className="w-4 h-4" />
                                                     {trip.days?.length || 0} Days
                                                 </div>
+                                                {trip.pinned && (
+                                                    <div className="flex items-center gap-1 text-primary bg-primary/10 px-2 py-0.5 rounded-full text-xs font-semibold ml-auto">
+                                                        <Pin className="w-3 h-3 fill-current" /> Pinned
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <Link
@@ -273,15 +271,11 @@ const Itinerary = () => {
                                                         setCurrentTrip(trip.id);
                                                     }
                                                 }}
-                                                className={`inline-flex items-center font-medium transition-all ${isEditing
-                                                    ? 'text-muted-foreground cursor-default'
-                                                    : 'text-primary hover:gap-2 group-hover:text-primary/80'
-                                                    }`}
-                                            >
-                                                View Itinerary <ArrowRight className="w-4 h-4 ml-1" />
-                                            </Link>
-                                        </CardContent>
-                                    </Card>
+                                                className="absolute inset-0 z-0"
+                                                aria-label={`View itinerary for ${trip.destination}`}
+                                            />
+                                        </div>
+                                    </div>
                                 </motion.div>
                             ))}
                         </AnimatePresence>
