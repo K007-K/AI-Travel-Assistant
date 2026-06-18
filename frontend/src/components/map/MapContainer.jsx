@@ -28,9 +28,9 @@ export default function MapContainer({ trip, destination, onMapReady, highlighte
                 sources: {
                     'osm-tiles': {
                         type: 'raster',
-                        tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                        tiles: ['https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png'],
                         tileSize: 256,
-                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
                     },
                 },
                 layers: [
@@ -93,7 +93,7 @@ export default function MapContainer({ trip, destination, onMapReady, highlighte
     }, [highlightedSegmentId, mapLoaded, markers]);
 
     return (
-        <div className="h-full w-full rounded-3xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700 relative">
+        <div className="h-full w-full rounded-[2rem] overflow-hidden bg-background relative">
             <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
 
             {/* Imperative child layers — render nothing, just add to map */}

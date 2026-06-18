@@ -79,15 +79,15 @@ export default function MarkerLayer({ map, markers, bounds, onPinClick }) {
             el.dataset.segmentId = marker.id;
             el.innerHTML = `
                 <div style="
-                    width: 36px; height: 36px;
+                    width: 28px; height: 28px;
                     border-radius: 50%;
                     background: ${config.bg};
-                    border: 3px solid white;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                    border: 2px solid white;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
                     display: flex; align-items: center; justify-content: center;
-                    font-size: 16px; cursor: pointer;
+                    font-size: 14px; cursor: pointer;
                     transition: transform 0.2s;
-                " onmouseover="this.style.transform='scale(1.3)'" 
+                " onmouseover="this.style.transform='scale(1.2)'" 
                    onmouseout="this.style.transform='scale(1)'">
                     ${config.emoji}
                 </div>

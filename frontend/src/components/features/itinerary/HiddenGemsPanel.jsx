@@ -17,7 +17,7 @@ const HiddenGemsPanel = ({
     onAddGem,
 }) => {
     return (
-        <Card className="rounded-3xl border-border flex flex-col max-h-[calc(100vh-25rem)]">
+        <Card className="rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] bg-background border-none flex flex-col max-h-[calc(100vh-25rem)]">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                     <Sun className="w-5 h-5 text-yellow-500" /> Hidden Gems
